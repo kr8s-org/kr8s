@@ -3,12 +3,11 @@ import pytest
 import asyncio
 import uuid
 
-from dask_kubernetes.aiopykube import HTTPClient, KubeConfig
-from dask_kubernetes.aiopykube.objects import Pod
+from kr8s import HTTPClient, KubeConfig
+from kr8s.objects import Pod
 
 
-@pytest.mark.asyncio
-async def test_pod_create_and_delete(k8s_cluster):
+async def test_pod_create_and_delete():
     api = HTTPClient(KubeConfig.from_env())
     name = "test-" + uuid.uuid4().hex[:10]
     pod = Pod(

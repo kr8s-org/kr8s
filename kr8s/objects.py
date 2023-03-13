@@ -38,8 +38,8 @@ from pykube.objects import (
     PodDisruptionBudget as _PodDisruptionBudget,
     CustomResourceDefinition as _CustomResourceDefinition,
 )
-from dask_kubernetes.aiopykube.query import Query
-from dask_kubernetes.aiopykube.mixins import AsyncScalableMixin, AsyncMixin
+from kr8s.query import Query
+from kr8s.mixins import AsyncScalableMixin, AsyncMixin
 
 
 class AsyncObjectManager(ObjectManager):

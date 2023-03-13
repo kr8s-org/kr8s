@@ -1,0 +1,51 @@
+[project]
+name = "kr8s"
+authors = [
+    {name = "Jacob Tomlimson", email = "jacob@tomlinson.email"},
+]
+description = "A Kubernetes API library"
+readme = "README.md"
+keywords = ["kubernetes", "kubectl"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "aiohttp",
+    "pykube",
+    'importlib-metadata; python_version<"3.8"',
+]
+dynamic = ["version"]
+
+# [project.scripts]
+# my-script = "my_package.module:function"
+
+[tool.poetry]
+name = "kr8s"
+version = "0.1.0"
+description = "A Kubernetes API library"
+authors = ["Jacob Tomlinson <jacob@tomlinson.email>"]
+license = "BSD-3-Clause"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+aiohttp = "^3.8.4"
+pykube-ng = "^22.9.0"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2.2"
+pytest-asyncio = "^0.20.3"
+pytest-kind = {git = "https://codeberg.org/hjacobs/pytest-kind.git"}
+pytest-timeout = "^2.1.0"
+
+[tool.pytest.ini_options]
+addopts = "-v --keep-cluster --durations=10"
+timeout = 300
+reruns = 5
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

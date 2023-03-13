@@ -1,6 +1,6 @@
 """An asyncio shim for pykube-ng."""
 from pykube.query import now, Table, Query as _Query, WatchQuery as _WatchQuery
-from dask_kubernetes.aiopykube.mixins import AsyncMixin
+from kr8s.mixins import AsyncMixin
 
 
 class Query(_Query, AsyncMixin):
