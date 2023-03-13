@@ -17,9 +17,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-# [project.scripts]
-# my-script = "my_package.module:function"
-
 [tool.poetry]
 name = "kr8s"
 version = "0.1.0"
