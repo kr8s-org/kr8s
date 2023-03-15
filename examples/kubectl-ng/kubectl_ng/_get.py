@@ -44,6 +44,11 @@ async def get(
         help="Selector (field query) to filter on, supports '=', '==', and '!='."
         "(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.",
     ),
+    show_kind: bool = typer.Option(
+        False,
+        "--show-kind",
+        help="If present, list the resource type for the requested object(s).",
+    ),
 ):
     """Display one or many resources.
 
@@ -85,6 +90,7 @@ async def get(
         table.add_column("Age")
 
         for pod in pods:
+            name = f"pod/{pod.name}" if show_kind else pod.name
             n_containers = len(pod.obj["status"]["containerStatuses"])
             n_ready_containers = len(
                 [s for s in pod.obj["status"]["containerStatuses"] if s["ready"]]
@@ -103,7 +109,7 @@ async def get(
                 TIMESTAMP_FORMAT,
             )
             table.add_row(
-                pod.name,
+                name,
                 f"{ready_style}{n_ready_containers}/{n_containers}",
                 pod.obj["status"]["phase"],
                 f"{restarts} ({time_delta_to_string(datetime.now() - last_restart, 1, ' ago')})",
