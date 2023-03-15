@@ -1,2 +1,2 @@
 """An asyncio shim for pykube-ng."""
-from pykube import HTTPClient, KubeConfig  # noqa
+from pykube import HTTPClient, KubeConfig, all  # noqa

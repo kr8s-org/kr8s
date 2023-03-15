@@ -14,4 +14,7 @@ def time_delta_to_string(td: timedelta, accuracy: int = 1, suffix: str = "") -> 
     if not parts:
         return "Just Now"
     parts.reverse()
-    return "".join(parts[:accuracy]) + suffix
+    return (
+        "".join([part for part in parts[:accuracy] if not part.startswith("0")])
+        + suffix
+    )

@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
+import kr8s
 from kr8s import KubeConfig, HTTPClient
 from kr8s.objects import Pod
 
@@ -37,6 +38,12 @@ async def get(
         help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)."
         "Matching objects must satisfy all of the specified label constraints.",
     ),
+    field_selector: str = typer.Option(
+        "",
+        "--field-selector",
+        help="Selector (field query) to filter on, supports '=', '==', and '!='."
+        "(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.",
+    ),
 ):
     """Display one or many resources.
 
@@ -56,8 +63,15 @@ async def get(
             namespace = api.config.contexts[api.config.current_context]["namespace"]
         except KeyError:
             namespace = "default"
+    if all_namespaces:
+        namespace = kr8s.all
     if "pods" in resources or "pod" in resources:
-        pods = [pod async for pod in Pod.objects(api, namespace=namespace)]
+        query = Pod.objects(api, namespace=namespace)
+        if selector:
+            query = query.filter(selector=selector)
+        if field_selector:
+            query = query.filter(field_selector=field_selector)
+        pods = [pod async for pod in query]
 
         if not pods:
             console.print(f"No resources found in {namespace} namespace.")

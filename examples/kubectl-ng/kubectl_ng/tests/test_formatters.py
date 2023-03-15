@@ -13,3 +13,4 @@ def test_time_delta_to_string():
     assert time_delta_to_string(timedelta(hours=3), 1) == "3h"
     assert time_delta_to_string(timedelta(days=3, hours=4, minutes=2), 3) == "3d4h2m"
     assert time_delta_to_string(timedelta(days=3, hours=4, minutes=2), 2) == "3d4h"
+    assert time_delta_to_string(timedelta(days=3, hours=0, minutes=2), 2) == "3d"
