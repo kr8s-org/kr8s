@@ -49,6 +49,11 @@ async def get(
         "--show-kind",
         help="If present, list the resource type for the requested object(s).",
     ),
+    show_labels: bool = typer.Option(
+        False,
+        "--show-labels",
+        help="When printing, show all labels as the last column (default hide labels column).",
+    ),
     label_columns: List[str] = typer.Option(
         [],
         "-L",
@@ -95,6 +100,8 @@ async def get(
         table.add_column("Status")
         table.add_column("Restarts")
         table.add_column("Age")
+        if show_labels:
+            table.add_column("Labels")
         for column in label_columns:
             table.add_column(column)
 
@@ -117,7 +124,19 @@ async def get(
                 ],
                 TIMESTAMP_FORMAT,
             )
-            labels = [
+            labels = (
+                [
+                    ",".join(
+                        [
+                            f"{key}={value}"
+                            for key, value in pod.obj["metadata"]["labels"].items()
+                        ]
+                    )
+                ]
+                if show_labels
+                else []
+            )
+            column_labels = [
                 pod.obj["metadata"]["labels"].get(label, "") for label in label_columns
             ]
             table.add_row(
@@ -127,5 +146,6 @@ async def get(
                 f"{restarts} ({time_delta_to_string(datetime.now() - last_restart, 1, ' ago')})",
                 time_delta_to_string(datetime.now() - start_time, 2),
                 *labels,
+                *column_labels,
             )
         console.print(table)
