@@ -23,7 +23,7 @@ async def get(
         False,
         "-A",
         "--all-namespaces",
-        help="If present, list the requested object(s) across all namespaces."
+        help="If present, list the requested object(s) across all namespaces. "
         "Namespace in current context is ignored even if specified with --namespace.",
     ),
     namespace: str = typer.Option(
@@ -35,19 +35,26 @@ async def get(
         "",
         "-l",
         "--selector",
-        help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)."
+        help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). "
         "Matching objects must satisfy all of the specified label constraints.",
     ),
     field_selector: str = typer.Option(
         "",
         "--field-selector",
-        help="Selector (field query) to filter on, supports '=', '==', and '!='."
-        "(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.",
+        help="Selector (field query) to filter on, supports '=', '==', and '!='. "
+        "(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type. ",
     ),
     show_kind: bool = typer.Option(
         False,
         "--show-kind",
         help="If present, list the resource type for the requested object(s).",
+    ),
+    label_columns: List[str] = typer.Option(
+        [],
+        "-L",
+        "--label-columns",
+        help="Accepts a comma separated list of labels that are going to be presented as columns. Names are case-sensitive. "
+        "You can also use multiple flag options like -L label1 -L label2...",
     ),
 ):
     """Display one or many resources.
@@ -88,6 +95,8 @@ async def get(
         table.add_column("Status")
         table.add_column("Restarts")
         table.add_column("Age")
+        for column in label_columns:
+            table.add_column(column)
 
         for pod in pods:
             name = f"pod/{pod.name}" if show_kind else pod.name
@@ -108,11 +117,15 @@ async def get(
                 ],
                 TIMESTAMP_FORMAT,
             )
+            labels = [
+                pod.obj["metadata"]["labels"].get(label, "") for label in label_columns
+            ]
             table.add_row(
                 name,
                 f"{ready_style}{n_ready_containers}/{n_containers}",
                 pod.obj["status"]["phase"],
                 f"{restarts} ({time_delta_to_string(datetime.now() - last_restart, 1, ' ago')})",
                 time_delta_to_string(datetime.now() - start_time, 2),
+                *labels,
             )
         console.print(table)
