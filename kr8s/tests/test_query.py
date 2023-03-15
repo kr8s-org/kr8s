@@ -1,8 +1,6 @@
-import pytest
-
 from kr8s import HTTPClient, KubeConfig
-from kr8s.query import Query
 from kr8s.objects import Pod
+from kr8s.query import Query
 
 
 async def test_pod_query():

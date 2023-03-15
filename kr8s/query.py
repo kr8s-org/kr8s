@@ -1,5 +1,8 @@
 """An asyncio shim for pykube-ng."""
-from pykube.query import now, Table, Query as _Query, WatchQuery as _WatchQuery
+from pykube.query import Query as _Query
+from pykube.query import Table, now
+from pykube.query import WatchQuery as _WatchQuery
+
 from kr8s.mixins import AsyncMixin
 
 
@@ -49,7 +52,8 @@ class Query(_Query, AsyncMixin):
     @property
     def response(self):
         raise NotImplementedError(
-            "Properties cannot make HTTP requests. Use ``response = (await Query.execute()).json()`` instead."
+            "Properties cannot make HTTP requests."
+            "Use ``response = (await Query.execute()).json()`` instead."
         )
 
     def __len__(self):

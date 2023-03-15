@@ -1,45 +1,42 @@
 from typing import Optional
 
+from pykube.http import HTTPClient
+from pykube.objects import APIObject as _APIObject
+from pykube.objects import ClusterRole as _ClusterRole
+from pykube.objects import ClusterRoleBinding as _ClusterRoleBinding
+from pykube.objects import ConfigMap as _ConfigMap
+from pykube.objects import CronJob as _CronJob
+from pykube.objects import CustomResourceDefinition as _CustomResourceDefinition
+from pykube.objects import DaemonSet as _DaemonSet
+from pykube.objects import Deployment as _Deployment
+from pykube.objects import Endpoint as _Endpoint
+from pykube.objects import Event as _Event
+from pykube.objects import HorizontalPodAutoscaler as _HorizontalPodAutoscaler
+from pykube.objects import Ingress as _Ingress
+from pykube.objects import Job as _Job
+from pykube.objects import LimitRange as _LimitRange
+from pykube.objects import Namespace as _Namespace
+from pykube.objects import NamespacedAPIObject as _NamespacedAPIObject
+from pykube.objects import Node as _Node
+from pykube.objects import ObjectManager
+from pykube.objects import PersistentVolume as _PersistentVolume
+from pykube.objects import PersistentVolumeClaim as _PersistentVolumeClaim
+from pykube.objects import Pod as _Pod
+from pykube.objects import PodDisruptionBudget as _PodDisruptionBudget
+from pykube.objects import PodSecurityPolicy as _PodSecurityPolicy
+from pykube.objects import ReplicaSet as _ReplicaSet
+from pykube.objects import ReplicationController as _ReplicationController
+from pykube.objects import ResourceQuota as _ResourceQuota
+from pykube.objects import Role as _Role
+from pykube.objects import RoleBinding as _RoleBinding
+from pykube.objects import Secret as _Secret
+from pykube.objects import Service as _Service
+from pykube.objects import ServiceAccount as _ServiceAccount
+from pykube.objects import StatefulSet as _StatefulSet
 from requests import Response
 
-
-from pykube.http import HTTPClient
-from pykube.objects import (
-    ObjectManager,
-    APIObject as _APIObject,
-    NamespacedAPIObject as _NamespacedAPIObject,
-    ConfigMap as _ConfigMap,
-    CronJob as _CronJob,
-    DaemonSet as _DaemonSet,
-    Deployment as _Deployment,
-    Endpoint as _Endpoint,
-    Event as _Event,
-    LimitRange as _LimitRange,
-    ResourceQuota as _ResourceQuota,
-    ServiceAccount as _ServiceAccount,
-    Ingress as _Ingress,
-    Job as _Job,
-    Namespace as _Namespace,
-    Node as _Node,
-    Pod as _Pod,
-    ReplicationController as _ReplicationController,
-    ReplicaSet as _ReplicaSet,
-    Secret as _Secret,
-    Service as _Service,
-    PersistentVolume as _PersistentVolume,
-    PersistentVolumeClaim as _PersistentVolumeClaim,
-    HorizontalPodAutoscaler as _HorizontalPodAutoscaler,
-    StatefulSet as _StatefulSet,
-    Role as _Role,
-    RoleBinding as _RoleBinding,
-    ClusterRole as _ClusterRole,
-    ClusterRoleBinding as _ClusterRoleBinding,
-    PodSecurityPolicy as _PodSecurityPolicy,
-    PodDisruptionBudget as _PodDisruptionBudget,
-    CustomResourceDefinition as _CustomResourceDefinition,
-)
+from kr8s.mixins import AsyncMixin, AsyncScalableMixin
 from kr8s.query import Query
-from kr8s.mixins import AsyncScalableMixin, AsyncMixin
 
 
 class AsyncObjectManager(ObjectManager):

@@ -1,7 +1,6 @@
-import pytest
-
 import os
 
+import pytest
 from pytest_kind.cluster import KindCluster
 
 
@@ -21,4 +20,3 @@ def k8s_cluster(request):
     del os.environ["KUBECONFIG"]
     if not request.config.getoption("keep_cluster"):
         kind_cluster.delete()
-
