@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
+# SPDX-License-Identifier: BSD 3-Clause License
 from kr8s import HTTPClient, KubeConfig
 from kr8s.objects import Pod
 from kr8s.query import Query

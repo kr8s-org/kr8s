@@ -1,4 +1,6 @@
 """An asyncio shim for pykube-ng."""
+# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
+# SPDX-License-Identifier: BSD 3-Clause License
 from pykube.query import Query as _Query
 from pykube.query import Table, now
 from pykube.query import WatchQuery as _WatchQuery
