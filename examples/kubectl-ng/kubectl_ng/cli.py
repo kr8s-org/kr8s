@@ -2,12 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 from functools import wraps
-from typing import List
 
 import typer
-
-from kr8s import HTTPClient, KubeConfig
-from kr8s.objects import Pod
 
 from ._get import get
 

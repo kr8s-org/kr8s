@@ -37,14 +37,16 @@ async def get(
         "",
         "-l",
         "--selector",
-        help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). "
+        help="Selector (label query) to filter on, supports '=', '==', and '!='. "
+        "(e.g. -l key1=value1,key2=value2). "
         "Matching objects must satisfy all of the specified label constraints.",
     ),
     field_selector: str = typer.Option(
         "",
         "--field-selector",
         help="Selector (field query) to filter on, supports '=', '==', and '!='. "
-        "(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type. ",
+        "(e.g. --field-selector key1=value1,key2=value2). "
+        "The server only supports a limited number of field queries per type. ",
     ),
     show_kind: bool = typer.Option(
         False,
@@ -54,24 +56,26 @@ async def get(
     show_labels: bool = typer.Option(
         False,
         "--show-labels",
-        help="When printing, show all labels as the last column (default hide labels column).",
+        help="When printing, show all labels as the last column "
+        "(default hide labels column).",
     ),
     label_columns: List[str] = typer.Option(
         [],
         "-L",
         "--label-columns",
-        help="Accepts a comma separated list of labels that are going to be presented as columns. Names are case-sensitive. "
+        help="Accepts a comma separated list of labels that are going to be presented as columns. "
+        "Names are case-sensitive. "
         "You can also use multiple flag options like -L label1 -L label2...",
     ),
 ):
     """Display one or many resources.
 
-    Prints a table of the most important information about the specified resources. You can filter the list using a label
-    selector and the --selector flag. If the desired resource type is namespaced you will only see results in your current
-    namespace unless you pass --all-namespaces.
+    Prints a table of the most important information about the specified resources. You can filter the list using a
+    label selector and the --selector flag. If the desired resource type is namespaced you will only see results
+    in your current namespace unless you pass --all-namespaces.
 
-    By specifying the output as 'template' and providing a Jinja2 template as the value of the --template flag, you can filter
-    the attributes of the fetched resources.
+    By specifying the output as 'template' and providing a Jinja2 template as the value of the --template flag, you
+    can filter the attributes of the fetched resources.
 
     Use "kubectl api-resources" for a complete list of supported resources.
     """
