@@ -1,12 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
-import typer
-from typing import List
 from functools import wraps
 
-from kr8s import KubeConfig, HTTPClient
-from kr8s.objects import Pod
+import typer
 
 from ._get import get
 
