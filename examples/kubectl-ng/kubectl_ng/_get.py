@@ -1,15 +1,15 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
-import typer
-from typing import List
 from datetime import datetime
+from typing import List
 
+import typer
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 import kr8s
-from kr8s import KubeConfig, HTTPClient
+from kr8s import HTTPClient, KubeConfig
 from kr8s.objects import Pod
 
 from ._formatters import time_delta_to_string
