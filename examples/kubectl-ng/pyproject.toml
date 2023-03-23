@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "kubectl-ng"
+version = "0.1.0"
+description = ""
+authors = ["Jacob Tomlinson <jacob@tomlinson.email>"]
+readme = "README.md"
+packages = [{include = "kubectl_ng"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = "^0.7.0"
+rich = "^13.3.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+kubectl-ng = "kubectl_ng.cli:go"
