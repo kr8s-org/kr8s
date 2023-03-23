@@ -49,7 +49,7 @@ jobs:
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-        run: pytest
+        run: poetry run pytest kr8s
       - name: Debug k8s resources
         if: always()
         run: kubectl get all -A
