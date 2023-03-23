@@ -1,0 +1,55 @@
+name: "Test"
+on:
+  pull_request:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        kubernetes-version: ["1.25.0"]
+        include:
+        - python-version: "3.10"
+          kubernetes-version: "1.22.13"
+        - python-version: "3.10"
+          kubernetes-version: "1.23.10"
+        - python-version: "3.10"
+          kubernetes-version: "1.24.4"
+
+    env:
+      KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: snok/install-poetry@v1
+        with:
+          version: 1.1.12
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: cache deps
+        id: cache-deps
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: pydeps-${{ hashFiles('**/poetry.lock') }}
+      - run: poetry install --no-interaction --no-root
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+      - run: poetry install --no-interaction
+      - name: Run tests
+        env:
+          KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
+        run: pytest
+      - name: Debug k8s resources
+        if: always()
+        run: kubectl get all -A
