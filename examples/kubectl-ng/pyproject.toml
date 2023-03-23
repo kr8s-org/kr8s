@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kubectl-ng"
-version = "0.1.0"
+version = "0.0.0"
 description = ""
 authors = ["Jacob Tomlinson <jacob@tomlinson.email>"]
 readme = "README.md"
@@ -11,10 +11,17 @@ python = "^3.9"
 typer = "^0.7.0"
 rich = "^13.3.2"
 
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "semver"
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["kubectl_ng/__init__.py"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry.scripts]
