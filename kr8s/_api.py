@@ -1,5 +1,4 @@
 import ssl
-import tempfile
 
 import aiohttp
 
