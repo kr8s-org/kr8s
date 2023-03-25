@@ -1,8 +1,9 @@
-import os
 import base64
-import yaml
+import os
 import tempfile
 from pathlib import Path
+
+import yaml
 
 
 class KubeAuth:
@@ -36,7 +37,7 @@ class KubeAuth:
         else:
             if serviceaccount:
                 self.load_service_account()
-            if kubeconfig != False:
+            if kubeconfig is not False:
                 self.load_kubeconfig()
 
     def load_kubeconfig(self):

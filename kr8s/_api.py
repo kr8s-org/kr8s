@@ -1,7 +1,6 @@
-import aiohttp
-import tempfile
 import ssl
 
+import aiohttp
 
 from ._auth import KubeAuth
 
