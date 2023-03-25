@@ -1,8 +1,9 @@
-import os
 import base64
-import yaml
+import os
 import tempfile
 from pathlib import Path
+
+import yaml
 
 
 class KubeAuth:
