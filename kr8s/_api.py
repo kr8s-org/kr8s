@@ -36,6 +36,7 @@ class Kr8sApi:
             headers=headers,
             auth=userauth,
         )
+        # TODO close the session on exit
 
     async def get_version(self) -> dict:
         """Get the Kubernetes version"""
