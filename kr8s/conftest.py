@@ -1,11 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+import asyncio
 import os
+import socket
 import subprocess
 import time
+from contextlib import closing
 
 import pytest
 from pytest_kind.cluster import KindCluster
+
+
+def check_socket(host, port):
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        return sock.connect_ex((host, port)) == 0
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -39,5 +47,9 @@ async def kubectl_proxy(k8s_cluster):
         [k8s_cluster.kubectl_path, "proxy"],
         env={**os.environ, "KUBECONFIG": str(k8s_cluster.kubeconfig_path)},
     )
-    yield "http://localhost:8001"
+    host = "localhost"
+    port = 8001
+    while not check_socket(host, port):
+        await asyncio.sleep(0.1)
+    yield f"http://{host}:{port}"
     proxy.kill()
