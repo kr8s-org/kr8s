@@ -34,16 +34,17 @@ class KubeAuth:
         ).expanduser()
         if url:
             self.server = url
-        else:
-            if serviceaccount:
-                self.load_service_account()
-            if kubeconfig is not False:
-                self.load_kubeconfig()
+        if serviceaccount and not self.server:
+            self.load_service_account()
+        if kubeconfig is not False and not self.server:
+            self.load_kubeconfig()
+        if not self.server:
+            raise ValueError("Unable to find valid credentials")
 
     def load_kubeconfig(self):
         """Load kubernetes auth from kubeconfig."""
         if not self._kubeconfig.is_file():
-            raise ValueError(f"Kubeconfig file not found: {self._kubeconfig}")
+            return
         config = yaml.safe_load(self._kubeconfig.read_text())
         if "current-context" in config:
             [self._context] = [
@@ -96,9 +97,7 @@ class KubeAuth:
     def load_service_account(self):
         """Load credentials from service account."""
         if not self._serviceaccount.is_dir():
-            raise ValueError(
-                f"Service account directory not found: {self._serviceaccount}"
-            )
+            return
         host = os.environ["KUBERNETES_SERVICE_HOST"]
         port = os.environ["KUBERNETES_SERVICE_PORT"]
         self.server = f"https://{host}:{port}"
