@@ -1,14 +1,22 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import base64
 import os
 import socket
 import subprocess
+import tempfile
 import time
 from contextlib import closing
+from pathlib import Path
 
 import pytest
+import yaml
 from pytest_kind.cluster import KindCluster
+
+from kr8s._testutils import set_env
+
+HERE = Path(__file__).parent.resolve()
 
 
 def check_socket(host, port):
@@ -17,7 +25,7 @@ def check_socket(host, port):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def k8s_cluster(request):
+def k8s_cluster(request) -> KindCluster:
     image = None
     if version := os.environ.get("KUBERNETES_VERSION"):
         image = f"kindest/node:v{version}"
@@ -53,3 +61,40 @@ async def kubectl_proxy(k8s_cluster):
         await asyncio.sleep(0.1)
     yield f"http://{host}:{port}"
     proxy.kill()
+
+
+@pytest.fixture
+def serviceaccount(k8s_cluster):
+    # Load kubeconfig
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+
+    # Get the server host and port from the kubeconfig
+    _hostport = kubeconfig["clusters"][0]["cluster"]["server"].split("//")[1]
+    host, port = _hostport.split(":")
+
+    # Apply the serviceaccount.yaml
+    k8s_cluster.kubectl(
+        "apply", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
+    )
+
+    # Create a temporary directory and populate it with the serviceaccount files
+    with tempfile.TemporaryDirectory() as tempdir, set_env(
+        KUBERNETES_SERVICE_HOST=host, KUBERNETES_SERVICE_PORT=port
+    ):
+        tempdir = Path(tempdir)
+        # Create ca.crt in tempdir from the certificate-authority-data in kubeconfig
+        (tempdir / "ca.crt").write_text(
+            base64.b64decode(
+                kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
+            ).decode()
+        )
+        token = "abc123"
+        namespace = "default"
+        (tempdir / "token").write_text(token)
+        (tempdir / "namespace").write_text(namespace)
+        yield str(tempdir)
+
+    # Delete the serviceaccount.yaml
+    k8s_cluster.kubectl(
+        "delete", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
+    )
