@@ -1,5 +1,7 @@
 import base64
+import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -66,6 +68,31 @@ class KubeAuth:
 
         self.server = self._cluster["server"]
 
+        if "exec" in self._user:
+            if (
+                self._user["exec"]["apiVersion"]
+                != "client.authentication.k8s.io/v1beta1"
+            ):
+                raise ValueError(
+                    "Only client.authentication.k8s.io/v1beta1 is supported for exec auth"
+                )
+            command = self._user["exec"]["command"]
+            args = self._user["exec"].get("args", [])
+            env = os.environ.copy()
+            env.update(
+                **{e["name"]: e["value"] for e in self._user["exec"].get("env", [])}
+            )
+            data = json.loads(subprocess.check_output([command] + args, env=env))[
+                "status"
+            ]
+            if "token" in data:
+                self._user["token"] = data["token"]
+            elif "clientCertificateData" in data and "clientKeyData" in data:
+                self._user["client-certificate-data"] = data["clientCertificateData"]
+                self._user["client-key-data"] = data["clientKeyData"]
+            else:
+                raise KeyError(f"Did not find credentials in {command} output.")
+
         if "client-key-data" in self._user:
             key_file = tempfile.NamedTemporaryFile(delete=False)
             key_file.write(base64.b64decode(self._user["client-key-data"]))
@@ -89,7 +116,6 @@ class KubeAuth:
             self.password = self._user["password"]
         if "namespace" in self._context:
             self.namespace = self._context["namespace"]
-        # TODO: Handle exec auth
         # TODO: Handle auth-provider gcp auth
         # TODO: Handle auth-provider oidc auth
         # TODO: Handle auth-provider azure auth?
