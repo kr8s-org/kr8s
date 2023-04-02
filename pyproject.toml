@@ -38,6 +38,7 @@ python = "^3.8"
 aiohttp = "^3.8.4"
 pykube-ng = "^22.9.0"
 pyyaml = "^6.0"
+asyncio-atexit = "^1.0.1"
 
 
 [tool.poetry.group.test.dependencies]
