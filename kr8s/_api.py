@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import ssl
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 import aiohttp
 import asyncio_atexit
@@ -103,7 +103,7 @@ class Kr8sApi:
     async def get(
         self,
         kind: str,
-        *names: list[str],
+        *names: List[str],
         namespace: str = None,
         label_selector: str = None,
         field_selector: str = None,
