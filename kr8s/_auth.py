@@ -116,9 +116,7 @@ class KubeAuth:
             self.password = self._user["password"]
         if "namespace" in self._context:
             self.namespace = self._context["namespace"]
-        # TODO: Handle auth-provider gcp auth
         # TODO: Handle auth-provider oidc auth
-        # TODO: Handle auth-provider azure auth?
 
     def load_service_account(self):
         """Load credentials from service account."""
