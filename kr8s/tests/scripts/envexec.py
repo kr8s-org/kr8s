@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
+# SPDX-License-Identifier: BSD 3-Clause License
+#
 # Produce a valid client.authentication.k8s.io/v1beta1 ExecCredential from
 # environment variables.
 

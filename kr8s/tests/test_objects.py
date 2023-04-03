@@ -3,15 +3,15 @@
 import asyncio
 import uuid
 
-from kr8s import HTTPClient, KubeConfig
+import pytest
+
+import kr8s
 from kr8s.objects import Pod
 
 
 async def test_pod_create_and_delete():
-    api = HTTPClient(KubeConfig.from_env())
     name = "test-" + uuid.uuid4().hex[:10]
     pod = Pod(
-        api,
         {
             "apiVersion": "v1",
             "kind": "Pod",
@@ -30,3 +30,27 @@ async def test_pod_create_and_delete():
     while await pod.exists():
         await asyncio.sleep(0.1)
     assert not await pod.exists()
+
+
+async def test_list_and_ensure():
+    kubernetes = kr8s.Kr8sApi()
+    pods = await kubernetes.get("pods", namespace=kr8s.ALL)
+    assert len(pods) > 0
+    for pod in pods:
+        assert await pod.exists(ensure=True)
+
+
+async def test_nonexistant():
+    pod = Pod(
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "nonexistant",
+                "namespace": "nonexistant",
+            },
+        }
+    )
+    assert not await pod.exists()
+    with pytest.raises(kr8s.NotFoundError):
+        await pod.exists(ensure=True)
