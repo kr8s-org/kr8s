@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import ssl
-from typing import Tuple
+from typing import Tuple, Union
 
 import aiohttp
 import asyncio_atexit
@@ -68,7 +68,7 @@ class Kr8sApi:
         url: str = "",
         raise_for_status: bool = True,
         **kwargs,
-    ) -> Tuple[int, dict | str]:
+    ) -> Tuple[int, Union[dict, str]]:
         """Make a Kubernetes API request."""
         if not self._session:
             await self._create_session()
