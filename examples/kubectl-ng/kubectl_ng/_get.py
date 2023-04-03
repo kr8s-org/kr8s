@@ -9,8 +9,6 @@ from rich.console import Console
 from rich.table import Table
 
 import kr8s
-from kr8s import HTTPClient, KubeConfig
-from kr8s.objects import Pod
 
 from ._formatters import time_delta_to_string
 
@@ -33,7 +31,7 @@ async def get(
         "-n",
         "--namespace",
     ),
-    selector: str = typer.Option(
+    label_selector: str = typer.Option(
         "",
         "-l",
         "--selector",
@@ -80,21 +78,16 @@ async def get(
     Use "kubectl api-resources" for a complete list of supported resources.
     """
     resources = resources[1:]
-    api = HTTPClient(KubeConfig.from_env())
-    if not namespace:
-        try:
-            namespace = api.config.contexts[api.config.current_context]["namespace"]
-        except KeyError:
-            namespace = "default"
+    kubernetes = kr8s.Kr8sApi()
     if all_namespaces:
-        namespace = kr8s.all
+        namespace = kr8s.ALL
     if "pods" in resources or "pod" in resources:
-        query = Pod.objects(api, namespace=namespace)
-        if selector:
-            query = query.filter(selector=selector)
-        if field_selector:
-            query = query.filter(field_selector=field_selector)
-        pods = [pod async for pod in query]
+        pods = await kubernetes.get(
+            "pods",
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+        )
 
         if not pods:
             console.print(f"No resources found in {namespace} namespace.")
@@ -113,19 +106,19 @@ async def get(
 
         for pod in pods:
             name = f"pod/{pod.name}" if show_kind else pod.name
-            n_containers = len(pod.obj["status"]["containerStatuses"])
+            n_containers = len(pod.raw["status"]["containerStatuses"])
             n_ready_containers = len(
-                [s for s in pod.obj["status"]["containerStatuses"] if s["ready"]]
+                [s for s in pod.raw["status"]["containerStatuses"] if s["ready"]]
             )
             ready_style = (
                 "[orange3]" if n_ready_containers < n_containers else "[green]"
             )
             start_time = datetime.strptime(
-                pod.obj["metadata"]["creationTimestamp"], TIMESTAMP_FORMAT
+                pod.raw["metadata"]["creationTimestamp"], TIMESTAMP_FORMAT
             )
-            restarts = str(pod.obj["status"]["containerStatuses"][0]["restartCount"])
+            restarts = str(pod.raw["status"]["containerStatuses"][0]["restartCount"])
             last_restart = datetime.strptime(
-                list(pod.obj["status"]["containerStatuses"][0]["state"].values())[0][
+                list(pod.raw["status"]["containerStatuses"][0]["state"].values())[0][
                     "startedAt"
                 ],
                 TIMESTAMP_FORMAT,
@@ -135,7 +128,7 @@ async def get(
                     ",".join(
                         [
                             f"{key}={value}"
-                            for key, value in pod.obj["metadata"]["labels"].items()
+                            for key, value in pod.raw["metadata"]["labels"].items()
                         ]
                     )
                 ]
@@ -143,12 +136,12 @@ async def get(
                 else []
             )
             column_labels = [
-                pod.obj["metadata"]["labels"].get(label, "") for label in label_columns
+                pod.raw["metadata"]["labels"].get(label, "") for label in label_columns
             ]
             table.add_row(
                 name,
                 f"{ready_style}{n_ready_containers}/{n_containers}",
-                pod.obj["status"]["phase"],
+                pod.raw["status"]["phase"],
                 f"{restarts} ({time_delta_to_string(datetime.now() - last_restart, 1, ' ago')})",
                 time_delta_to_string(datetime.now() - start_time, 2),
                 *labels,

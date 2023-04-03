@@ -39,25 +39,25 @@ async def kubeconfig_with_exec(k8s_cluster):
 
 async def test_kubeconfig(k8s_cluster):
     kubernetes = Kr8sApi(kubeconfig=k8s_cluster.kubeconfig_path)
-    version = await kubernetes.get_version()
+    version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_url(kubectl_proxy):
     kubernetes = Kr8sApi(url=kubectl_proxy)
-    version = await kubernetes.get_version()
+    version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_no_config():
     with pytest.raises(ValueError):
         kubernetes = Kr8sApi(kubeconfig="/no/file/here")
-        await kubernetes.get_version()
+        await kubernetes.version()
 
 
 async def test_service_account(serviceaccount):
     kubernetes = Kr8sApi(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
-    await kubernetes.get_version()
+    await kubernetes.version()
 
     serviceaccount = Path(serviceaccount)
     assert kubernetes.auth.server
@@ -69,5 +69,5 @@ async def test_service_account(serviceaccount):
 
 async def test_exec(kubeconfig_with_exec):
     kubernetes = Kr8sApi(kubeconfig=kubeconfig_with_exec)
-    version = await kubernetes.get_version()
+    version = await kubernetes.version()
     assert "major" in version

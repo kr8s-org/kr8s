@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
+# SPDX-License-Identifier: BSD 3-Clause License
 import base64
 import json
 import os
@@ -114,8 +116,7 @@ class KubeAuth:
             self.username = self._user["username"]
         if "password" in self._user:
             self.password = self._user["password"]
-        if "namespace" in self._context:
-            self.namespace = self._context["namespace"]
+        self.namespace = self._context.get("namespace", "default")
         # TODO: Handle auth-provider oidc auth
 
     def load_service_account(self):

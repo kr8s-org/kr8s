@@ -1,9 +1,14 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
+# SPDX-License-Identifier: BSD 3-Clause License
 import ssl
+from typing import Tuple
 
 import aiohttp
 import asyncio_atexit
 
 from ._auth import KubeAuth
+
+ALL = "all"
 
 
 class Kr8sApi:
@@ -15,19 +20,15 @@ class Kr8sApi:
         self._serviceaccount = serviceaccount
         self._sslcontext = None
         self._session = None
-        self.auth = None
-
-    async def _create_session(self):
-        from . import __version__
-
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,
             serviceaccount=self._serviceaccount,
         )
 
+    async def _create_session(self):
+        headers = {"User-Agent": self.__version__, "content-type": "application/json"}
         self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        headers = {"User-Agent": f"kr8s/{__version__}"}
         if self.auth.client_key_file:
             self._sslcontext.load_cert_chain(
                 certfile=self.auth.client_cert_file,
@@ -53,16 +54,85 @@ class Kr8sApi:
         )
         asyncio_atexit.register(self._session.close)
 
-    async def get_version(self) -> dict:
+    async def version(self) -> dict:
         """Get the Kubernetes version"""
-        return await self.call_api(method="GET", base="/version")
+        _, version = await self.call_api(method="GET", version="", base="/version")
+        return version
 
-    async def call_api(self, method, version: str = "", base: str = "") -> dict:
+    async def call_api(
+        self,
+        method,
+        version: str = "v1",
+        base: str = "",
+        namespace: str = None,
+        url: str = "",
+        raise_for_status: bool = True,
+        **kwargs,
+    ) -> Tuple[int, dict | str]:
         """Make a Kubernetes API request."""
         if not self._session:
             await self._create_session()
+
+        if not base:
+            if version == "v1":
+                base = "/api"
+            elif "/" in version:
+                base = "/apis"
+            else:
+                raise ValueError("Unknown API version, base must be specified.")
+        parts = [base]
+        if version:
+            parts.append(version)
+        if namespace is not None:
+            parts.extend(["namespaces", namespace])
+        parts.append(url)
+        url = "/".join(parts)
+
         async with self._session.request(
-            method=method, url=f"{base}", ssl=self._sslcontext
+            method=method,
+            url=url,
+            ssl=self._sslcontext,
+            raise_for_status=raise_for_status,
+            **kwargs,
         ) as response:
             # TODO catch self.auth error and reauth a couple of times before giving up
-            return await response.json()
+            if response.content_type == "application/json":
+                return response.status, await response.json()
+            return response.status, await response.text()
+
+    async def get(
+        self,
+        kind: str,
+        *names: list[str],
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+    ) -> dict:
+        """Get a Kubernetes resource."""
+        from .objects import OBJECT_REGISTRY
+
+        if not namespace:
+            namespace = self.auth.namespace
+        if namespace is ALL:
+            namespace = ""
+
+        params = {}
+        if label_selector:
+            params["labelSelector"] = label_selector
+        if field_selector:
+            params["fieldSelector"] = field_selector
+        params = params or None
+        _, resourcelist = await self.call_api(
+            method="GET", url=kind, namespace=namespace, params=params
+        )
+        obj_cls = OBJECT_REGISTRY.get(
+            resourcelist["kind"].replace("List", ""), resourcelist["apiVersion"]
+        )
+        if "items" in resourcelist:
+            return [obj_cls(item, api=self) for item in resourcelist["items"]]
+
+    @property
+    def __version__(self):
+        from . import __version__
+
+        return f"kr8s/{__version__}"

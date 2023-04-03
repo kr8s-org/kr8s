@@ -88,7 +88,7 @@ def serviceaccount(k8s_cluster):
                 kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
             ).decode()
         )
-        token = "abc123"
+        token = k8s_cluster.kubectl("create", "token", "pytest")
         namespace = "default"
         (tempdir / "token").write_text(token)
         (tempdir / "namespace").write_text(namespace)
