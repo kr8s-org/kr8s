@@ -5,6 +5,7 @@ from functools import wraps
 
 import typer
 
+from ._api_resources import api_resources
 from ._get import get
 
 
@@ -24,6 +25,7 @@ def register(app, func):
 
 app = typer.Typer()
 register(app, get)
+register(app, api_resources)
 
 
 def go():

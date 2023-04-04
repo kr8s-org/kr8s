@@ -75,7 +75,7 @@ async def get(
     By specifying the output as 'template' and providing a Jinja2 template as the value of the --template flag, you
     can filter the attributes of the fetched resources.
 
-    Use "kubectl api-resources" for a complete list of supported resources.
+    Use "kubectl-ng api-resources" for a complete list of supported resources.
     """
     resources = resources[1:]
     kubernetes = kr8s.Kr8sApi()
