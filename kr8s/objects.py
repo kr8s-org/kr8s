@@ -4,6 +4,7 @@ import json
 from typing import Optional
 
 from ._api import Kr8sApi
+from ._data_utils import list_dict_unpack
 from ._exceptions import NotFoundError
 
 
@@ -41,6 +42,14 @@ class APIObject:
         self.raw = resource
         self.api = api or Kr8sApi()
 
+    def __repr__(self):
+        """Return a string representation of the Kubernetes resource."""
+        return f"<{self.kind} {self.name}>"
+
+    def __str__(self):
+        """Return a string representation of the Kubernetes resource."""
+        return self.name
+
     @property
     def name(self) -> str:
         """Name of the Kubernetes resource."""
@@ -49,6 +58,31 @@ class APIObject:
     @property
     def namespace(self) -> Optional[str]:
         return None
+
+    @property
+    def metadata(self) -> dict:
+        """Metadata of the Kubernetes resource."""
+        return self.raw["metadata"]
+
+    @property
+    def spec(self) -> dict:
+        """Spec of the Kubernetes resource."""
+        return self.raw["spec"]
+
+    @property
+    def status(self) -> dict:
+        """Status of the Kubernetes resource."""
+        return self.raw["status"]
+
+    @property
+    def labels(self) -> dict:
+        """Labels of the Kubernetes resource."""
+        return self.raw["metadata"]["labels"]
+
+    @property
+    def annotations(self) -> dict:
+        """Annotations of the Kubernetes resource."""
+        return self.raw["metadata"]["annotations"]
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
@@ -88,6 +122,27 @@ class APIObject:
             data=json.dumps(data),
         )
 
+    async def refresh(self) -> None:
+        """Refresh this object from Kubernetes."""
+        _, self.raw = await self.api.call_api(
+            "GET",
+            version=self.version,
+            url=f"{self.endpoint}/{self.name}",
+            namespace=self.namespace,
+        )
+
+    async def update(self) -> None:
+        """Update this object in Kubernetes."""
+        raise NotImplementedError("Updating is not yet implemented")
+
+    async def patch(self, patch: dict) -> None:
+        """Patch this object in Kubernetes."""
+        raise NotImplementedError("Patching is not yet implemented")
+
+    async def watch(self, timeout: int = None):
+        """Watch this object in Kubernetes."""
+        raise NotImplementedError("Watching is not yet implemented")
+
 
 class NamespacedAPIObject(APIObject):
     @property
@@ -104,6 +159,15 @@ class Pod(NamespacedAPIObject):
     kind = "Pod"
     plural = "pods"
     singular = "pod"
+
+    async def ready(self):
+        await self.refresh()
+        conditions = list_dict_unpack(
+            self.status.get("conditions", []),
+            key="type",
+            value="status",
+        )
+        return "Ready" in conditions and conditions.get("Ready", "False") == "True"
 
 
 OBJECT_REGISTRY.register(Pod)
