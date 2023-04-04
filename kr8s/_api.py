@@ -131,6 +131,26 @@ class Kr8sApi:
         if "items" in resourcelist:
             return [obj_cls(item, api=self) for item in resourcelist["items"]]
 
+    async def api_resources(self) -> dict:
+        """Get the Kubernetes API resources."""
+        resources = []
+        _, core_api_list = await self.call_api(method="GET", version="", base="/api")
+        for version in core_api_list["versions"]:
+            _, resource = await self.call_api(
+                method="GET", version="", base="/api", url=version
+            )
+            resources.extend([{"version": version, **r} for r in resource["resources"]])
+        _, api_list = await self.call_api(method="GET", version="", base="/apis")
+        for api in api_list["groups"]:
+            for version in api["versions"]:
+                _, resource = await self.call_api(
+                    method="GET", version="", base="/apis", url=version["groupVersion"]
+                )
+                resources.extend(
+                    [{"version": version, **r} for r in resource["resources"]]
+                )
+        return resources
+
     @property
     def __version__(self):
         from . import __version__
