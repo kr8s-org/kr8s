@@ -73,3 +73,11 @@ async def test_pod_metadata(example_pod_spec):
     assert "example-" in pod.name
     assert "containers" in pod.spec
     assert "phase" in pod.status
+
+
+async def test_patch_pod(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    assert "patched" not in pod.labels
+    await pod.patch({"metadata": {"labels": {"patched": "true"}}})
+    assert "patched" in pod.labels
