@@ -43,7 +43,7 @@ async def test_list_and_ensure():
     pods = await kubernetes.get("pods", namespace=kr8s.ALL)
     assert len(pods) > 0
     for pod in pods:
-        await pod.reload()
+        await pod.refresh()
         assert await pod.exists(ensure=True)
 
 
