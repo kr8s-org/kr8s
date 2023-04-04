@@ -131,13 +131,19 @@ class APIObject:
             namespace=self.namespace,
         )
 
-    async def update(self) -> None:
-        """Update this object in Kubernetes."""
-        raise NotImplementedError("Updating is not yet implemented")
-
-    async def patch(self, patch: dict) -> None:
+    async def patch(self, patch, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
-        raise NotImplementedError("Patching is not yet implemented")
+        url = f"{self.endpoint}/{self.name}"
+        if subresource:
+            url = f"{url}/{subresource}"
+        _, self.raw = await self.api.call_api(
+            "PATCH",
+            version=self.version,
+            url=url,
+            namespace=self.namespace,
+            data=json.dumps(patch),
+            headers={"Content-Type": "application/merge-patch+json"},
+        )
 
     async def watch(self, timeout: int = None):
         """Watch this object in Kubernetes."""
