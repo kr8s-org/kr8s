@@ -14,7 +14,9 @@ ALL = "all"
 class Kr8sApi:
     """A kr8s object for interacting with the Kubernetes API"""
 
-    def __init__(self, url=None, kubeconfig=None, serviceaccount=None) -> None:
+    def __init__(
+        self, url=None, kubeconfig=None, serviceaccount=None, namespace=None
+    ) -> None:
         self._url = url
         self._kubeconfig = kubeconfig
         self._serviceaccount = serviceaccount
@@ -24,6 +26,7 @@ class Kr8sApi:
             url=self._url,
             kubeconfig=self._kubeconfig,
             serviceaccount=self._serviceaccount,
+            namespace=namespace,
         )
 
     async def _create_session(self):
@@ -122,11 +125,12 @@ class Kr8sApi:
         if field_selector:
             params["fieldSelector"] = field_selector
         params = params or None
+        obj_cls = get_class(kind)
         _, resourcelist = await self.call_api(
-            method="GET", url=kind, namespace=namespace, params=params
-        )
-        obj_cls = get_class(
-            resourcelist["kind"].replace("List", ""), resourcelist["apiVersion"]
+            method="GET",
+            url=kind,
+            namespace=namespace if obj_cls.namespaced else None,
+            params=params,
         )
         if "items" in resourcelist:
             return [obj_cls(item, api=self) for item in resourcelist["items"]]

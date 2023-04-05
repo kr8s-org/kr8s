@@ -18,6 +18,7 @@ class KubeAuth:
         kubeconfig=None,
         url=None,
         serviceaccount="/var/run/secrets/kubernetes.io/serviceaccount",
+        namespace=None,
     ) -> None:
         self.server = None
         self.client_cert_file = None
@@ -26,7 +27,7 @@ class KubeAuth:
         self.token = None
         self.username = None
         self.password = None
-        self.namespace = None
+        self.namespace = namespace
         self._context = None
         self._cluster = None
         self._user = None
@@ -116,7 +117,8 @@ class KubeAuth:
             self.username = self._user["username"]
         if "password" in self._user:
             self.password = self._user["password"]
-        self.namespace = self._context.get("namespace", "default")
+        if self.namespace is None:
+            self.namespace = self._context.get("namespace", "default")
         # TODO: Handle auth-provider oidc auth
 
     def load_service_account(self):
@@ -128,4 +130,5 @@ class KubeAuth:
         self.server = f"https://{host}:{port}"
         self.token = (self._serviceaccount / "token").read_text()
         self.server_ca_file = str(self._serviceaccount / "ca.crt")
-        self.namespace = (self._serviceaccount / "namespace").read_text()
+        if self.namespace is None:
+            self.namespace = (self._serviceaccount / "namespace").read_text()

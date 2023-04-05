@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+import asyncio
 import json
+from typing import Any, Optional
 
 from ._api import Kr8sApi
 from ._data_utils import list_dict_unpack
@@ -11,6 +13,8 @@ class APIObject:
     """Base class for Kubernetes objects."""
 
     namespaced = False
+    scalable = False
+    scalable_spec = "replicas"
 
     def __init__(self, resource: dict, api: Kr8sApi = None) -> None:
         """Initialize an APIObject."""
@@ -64,6 +68,13 @@ class APIObject:
     def annotations(self) -> dict:
         """Annotations of the Kubernetes resource."""
         return self.raw["metadata"]["annotations"]
+
+    @property
+    def replicas(self) -> int:
+        """Replicas of the Kubernetes resource."""
+        if self.scalable:
+            return self.raw["spec"][self.scalable_spec]
+        raise NotImplementedError(f"{self.kind} is not scalable")
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
@@ -125,6 +136,14 @@ class APIObject:
             data=json.dumps(patch),
             headers={"Content-Type": "application/merge-patch+json"},
         )
+
+    async def scale(self, replicas=None):
+        """Scale this object in Kubernetes."""
+        await self.exists(ensure=True)
+        await self.patch({"spec": {self.scalable_spec: replicas}})
+        while self.replicas != replicas:
+            await self.refresh()
+            await asyncio.sleep(0.1)
 
     async def watch(self, timeout: int = None):
         """Watch this object in Kubernetes."""
@@ -221,6 +240,18 @@ class Node(APIObject):
     singular = "node"
     namespaced = False
 
+    @property
+    def unschedulable(self):
+        if "unschedulable" in self.raw["spec"]:
+            return self.raw["spec"]["unschedulable"]
+        return False
+
+    async def cordon(self):
+        await self.patch({"spec": {"unschedulable": True}})
+
+    async def uncordon(self):
+        await self.patch({"spec": {"unschedulable": False}})
+
 
 class PersistentVolumeClaim(APIObject):
     """A Kubernetes PersistentVolumeClaim."""
@@ -263,6 +294,19 @@ class Pod(APIObject):
         )
         return "Ready" in conditions and conditions.get("Ready", "False") == "True"
 
+    async def logs(
+        self,
+        container=None,
+        pretty=None,
+        previous=False,
+        since_seconds=None,
+        since_time=None,
+        timestamps=False,
+        tail_lines=None,
+        limit_bytes=None,
+    ):
+        raise NotImplementedError("Logs are not yet implemented")
+
 
 class PodTemplate(APIObject):
     """A Kubernetes PodTemplate."""
@@ -284,6 +328,10 @@ class ReplicationController(APIObject):
     plural = "replicationcontrollers"
     singular = "replicationcontroller"
     namespaced = True
+    scalable = True
+
+    async def ready(self):
+        raise NotImplementedError("Ready is not yet implemented")
 
 
 class ResourceQuota(APIObject):
@@ -329,6 +377,25 @@ class Service(APIObject):
     singular = "service"
     namespaced = True
 
+    def proxy_http_request(
+        self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
+    ) -> None:
+        raise NotImplementedError("Proxy is not yet implemented")
+
+    def proxy_http_get(self, path: str, port: Optional[int] = None, **kwargs) -> None:
+        raise NotImplementedError("Proxy is not yet implemented")
+
+    def proxy_http_post(self, path: str, port: Optional[int] = None, **kwargs) -> None:
+        raise NotImplementedError("Proxy is not yet implemented")
+
+    def proxy_http_put(self, path: str, port: Optional[int] = None, **kwargs) -> None:
+        raise NotImplementedError("Proxy is not yet implemented")
+
+    def proxy_http_delete(
+        self, path: str, port: Optional[int] = None, **kwargs
+    ) -> None:
+        raise NotImplementedError("Proxy is not yet implemented")
+
 
 ## apps/v1 objects
 
@@ -364,6 +431,13 @@ class Deployment(APIObject):
     plural = "deployments"
     singular = "deployment"
     namespaced = True
+    scalable = True
+
+    async def ready(self):
+        raise NotImplementedError("Deployment does not have a ready status yet")
+
+    async def rollout_undo(self, target_revision=None):
+        raise NotImplementedError("Deployment does not have a rollout undo method yet")
 
 
 class ReplicaSet(APIObject):
@@ -375,6 +449,7 @@ class ReplicaSet(APIObject):
     plural = "replicasets"
     singular = "replicaset"
     namespaced = True
+    scalable = True
 
 
 class StatefulSet(APIObject):
@@ -386,6 +461,7 @@ class StatefulSet(APIObject):
     plural = "statefulsets"
     singular = "statefulset"
     namespaced = True
+    scalable = True
 
 
 ## autoscaling/v1 objects
@@ -425,6 +501,8 @@ class Job(APIObject):
     plural = "jobs"
     singular = "job"
     namespaced = True
+    scalable = True
+    scalable_spec = "parallelism"
 
 
 ## networking.k8s.io/v1 objects
@@ -524,14 +602,30 @@ class Role(APIObject):
     namespaced = True
 
 
+## apiextensions.k8s.io/v1 objects
+
+
+class CustomResourceDefinition(APIObject):
+    """A Kubernetes CustomResourceDefinition."""
+
+    version = "apiextensions.k8s.io/v1"
+    endpoint = "customresourcedefinitions"
+    kind = "CustomResourceDefinition"
+    plural = "customresourcedefinitions"
+    singular = "customresourcedefinition"
+    namespaced = False
+
+
 def get_class(kind, version=None):
     for cls in APIObject.__subclasses__():
-        if cls.kind == kind and (version is None or cls.version == version):
+        if (cls.kind == kind or cls.singular == kind or cls.plural == kind) and (
+            version is None or cls.version == version
+        ):
             return cls
     raise KeyError(f"No object registered for {version}/{kind}")
 
 
-def object_from_spec(spec: dict) -> APIObject:
+def object_from_spec(spec: dict, api: Kr8sApi = None) -> APIObject:
     """Create an APIObject from a Kubernetes resource spec.
 
     Args:
@@ -544,4 +638,4 @@ def object_from_spec(spec: dict) -> APIObject:
         ValueError: If the resource kind or API version is not supported.
     """
     cls = get_class(spec["kind"], spec["apiVersion"])
-    return cls(spec)
+    return cls(spec, api=api)

@@ -6,17 +6,25 @@ import uuid
 import pytest
 
 import kr8s
-from kr8s.objects import APIObject, Pod, Service, get_class, object_from_spec
+from kr8s.objects import (
+    APIObject,
+    Deployment,
+    Pod,
+    Service,
+    get_class,
+    object_from_spec,
+)
 
 
 @pytest.fixture
-async def example_pod_spec():
+async def example_pod_spec(ns):
     name = "example-" + uuid.uuid4().hex[:10]
     return {
         "apiVersion": "v1",
         "kind": "Pod",
         "metadata": {
             "name": name,
+            "namespace": ns,
             "labels": {"hello": "world"},
             "annotations": {"foo": "bar"},
         },
@@ -27,13 +35,14 @@ async def example_pod_spec():
 
 
 @pytest.fixture
-async def example_service_spec():
+async def example_service_spec(ns):
     name = "example-" + uuid.uuid4().hex[:10]
     return {
         "apiVersion": "v1",
         "kind": "Service",
         "metadata": {
             "name": name,
+            "namespace": ns,
             "labels": {"hello": "world"},
             "annotations": {"foo": "bar"},
         },
@@ -44,9 +53,41 @@ async def example_service_spec():
     }
 
 
+@pytest.fixture
+async def example_deployment_spec(ns):
+    name = "example-" + uuid.uuid4().hex[:10]
+    return {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+            "name": name,
+            "namespace": ns,
+            "labels": {"hello": "world"},
+            "annotations": {"foo": "bar"},
+        },
+        "spec": {
+            "replicas": 1,
+            "selector": {"matchLabels": {"app": name}},
+            "template": {
+                "metadata": {"labels": {"app": name}},
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "pause",
+                            "image": "gcr.io/google_containers/pause",
+                        }
+                    ]
+                },
+            },
+        },
+    }
+
+
 async def test_pod_create_and_delete(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
+    with pytest.raises(NotImplementedError):
+        pod.replicas
     assert await pod.exists()
     while not await pod.ready():
         await asyncio.sleep(0.1)
@@ -91,6 +132,7 @@ async def test_pod_metadata(example_pod_spec):
     assert "example-" in pod.name
     assert "containers" in pod.spec
     assert "phase" in pod.status
+    await pod.delete()
 
 
 async def test_patch_pod(example_pod_spec):
@@ -99,6 +141,7 @@ async def test_patch_pod(example_pod_spec):
     assert "patched" not in pod.labels
     await pod.patch({"metadata": {"labels": {"patched": "true"}}})
     assert "patched" in pod.labels
+    await pod.delete()
 
 
 async def test_all_v1_objects_represented():
@@ -112,6 +155,7 @@ async def test_all_v1_objects_represented():
         "networking.k8s.io/v1",
         "policy/v1",
         "rbac.authorization.k8s.io/v1",
+        "apiextensions.k8s.io/v1",
     )
     # for supported_api in supported_apis:
     #     assert supported_api in [obj["version"] for obj in objects]
@@ -145,3 +189,25 @@ async def test_subclass_registration():
         namespaced = True
 
     get_class("MyResource", "foo.kr8s.org/v1alpha1")
+
+
+async def test_deployment_scale(example_deployment_spec):
+    deployment = Deployment(example_deployment_spec)
+    await deployment.create()
+    assert deployment.replicas == 1
+    await deployment.scale(2)
+    assert deployment.replicas == 2
+    await deployment.scale(1)
+    assert deployment.replicas == 1
+    await deployment.delete()
+
+
+async def test_node():
+    kubernetes = kr8s.Kr8sApi()
+    nodes = await kubernetes.get("nodes")
+    assert len(nodes) > 0
+    for node in nodes:
+        assert node.unschedulable is False
+        await node.cordon()
+        assert node.unschedulable is True
+        await node.uncordon()
