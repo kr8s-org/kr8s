@@ -4,6 +4,8 @@ import asyncio
 import json
 from typing import Any, Optional
 
+from aiohttp import ClientResponse
+
 from ._api import Kr8sApi
 from ._data_utils import list_dict_unpack
 from ._exceptions import NotFoundError
@@ -286,6 +288,7 @@ class Pod(APIObject):
     namespaced = True
 
     async def ready(self):
+        """Check if the pod is ready."""
         await self.refresh()
         conditions = list_dict_unpack(
             self.status.get("conditions", []),
@@ -305,7 +308,32 @@ class Pod(APIObject):
         tail_lines=None,
         limit_bytes=None,
     ):
-        raise NotImplementedError("Logs are not yet implemented")
+        params = {}
+        if container is not None:
+            params["container"] = container
+        if pretty is not None:
+            params["pretty"] = pretty
+        if previous:
+            params["previous"] = "true"
+        if since_seconds is not None and since_time is None:
+            params["sinceSeconds"] = int(since_seconds)
+        elif since_time is not None and since_seconds is None:
+            params["sinceTime"] = since_time
+        if timestamps:
+            params["timestamps"] = "true"
+        if tail_lines is not None:
+            params["tailLines"] = int(tail_lines)
+        if limit_bytes is not None:
+            params["limitBytes"] = int(limit_bytes)
+
+        _, resp = await self.api.call_api(
+            "GET",
+            version=self.version,
+            url=f"{self.endpoint}/{self.name}/log",
+            namespace=self.namespace,
+            params=params,
+        )
+        return resp
 
 
 class PodTemplate(APIObject):
@@ -331,7 +359,13 @@ class ReplicationController(APIObject):
     scalable = True
 
     async def ready(self):
-        raise NotImplementedError("Ready is not yet implemented")
+        """Check if the deployment is ready."""
+        await self.refresh()
+        return (
+            self.raw["status"].get("observedGeneration", 0)
+            >= self.raw["metadata"]["generation"]
+            and self.raw["status"].get("readyReplicas", 0) == self.replicas
+        )
 
 
 class ResourceQuota(APIObject):
@@ -377,24 +411,49 @@ class Service(APIObject):
     singular = "service"
     namespaced = True
 
-    def proxy_http_request(
+    async def proxy_http_request(
         self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
-    ) -> None:
-        raise NotImplementedError("Proxy is not yet implemented")
+    ) -> ClientResponse:
+        """Issue a HTTP request with specific HTTP method to proxy of a Service.
 
-    def proxy_http_get(self, path: str, port: Optional[int] = None, **kwargs) -> None:
-        raise NotImplementedError("Proxy is not yet implemented")
+        Args:
+            method: HTTP method to use.
+            path: Path to proxy.
+            port: Port to proxy to. If not specified, the first port in the
+                Service's spec will be used.
+            **kwargs: Additional keyword arguments to pass to the API call.
+        """
+        if port is None:
+            port = self.raw["spec"]["ports"][0]["port"]
+        _, response = await self.api.call_api(
+            method,
+            version=self.version,
+            url=f"{self.endpoint}/{self.name}:{port}/proxy/{path}",
+            namespace=self.namespace,
+            raw=True,
+            **kwargs,
+        )
+        return response
 
-    def proxy_http_post(self, path: str, port: Optional[int] = None, **kwargs) -> None:
-        raise NotImplementedError("Proxy is not yet implemented")
-
-    def proxy_http_put(self, path: str, port: Optional[int] = None, **kwargs) -> None:
-        raise NotImplementedError("Proxy is not yet implemented")
-
-    def proxy_http_delete(
+    async def proxy_http_get(
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> None:
-        raise NotImplementedError("Proxy is not yet implemented")
+        return await self.proxy_http_request("GET", path, port, **kwargs)
+
+    async def proxy_http_post(
+        self, path: str, port: Optional[int] = None, **kwargs
+    ) -> None:
+        return await self.proxy_http_request("POST", path, port, **kwargs)
+
+    async def proxy_http_put(
+        self, path: str, port: Optional[int] = None, **kwargs
+    ) -> None:
+        return await self.proxy_http_request("PUT", path, port, **kwargs)
+
+    async def proxy_http_delete(
+        self, path: str, port: Optional[int] = None, **kwargs
+    ) -> None:
+        return await self.proxy_http_request("DELETE", path, port, **kwargs)
 
 
 ## apps/v1 objects
@@ -434,10 +493,13 @@ class Deployment(APIObject):
     scalable = True
 
     async def ready(self):
-        raise NotImplementedError("Deployment does not have a ready status yet")
-
-    async def rollout_undo(self, target_revision=None):
-        raise NotImplementedError("Deployment does not have a rollout undo method yet")
+        """Check if the deployment is ready."""
+        await self.refresh()
+        return (
+            self.raw["status"].get("observedGeneration", 0)
+            >= self.raw["metadata"]["generation"]
+            and self.raw["status"].get("readyReplicas", 0) == self.replicas
+        )
 
 
 class ReplicaSet(APIObject):

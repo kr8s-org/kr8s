@@ -3,6 +3,7 @@
 import asyncio
 import uuid
 
+import aiohttp
 import pytest
 
 import kr8s
@@ -197,6 +198,8 @@ async def test_deployment_scale(example_deployment_spec):
     assert deployment.replicas == 1
     await deployment.scale(2)
     assert deployment.replicas == 2
+    while not await deployment.ready():
+        await asyncio.sleep(0.1)
     await deployment.scale(1)
     assert deployment.replicas == 1
     await deployment.delete()
@@ -211,3 +214,21 @@ async def test_node():
         await node.cordon()
         assert node.unschedulable is True
         await node.uncordon()
+
+
+async def test_service_proxy():
+    kubernetes = kr8s.Kr8sApi()
+    [service] = await kubernetes.get("services", "kubernetes")
+    assert service.name == "kubernetes"
+    data = await service.proxy_http_get("/version", raise_for_status=False)
+    assert isinstance(data, aiohttp.ClientResponse)
+
+
+async def test_pod_logs(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    log = await pod.logs(container="pause")
+    assert isinstance(log, str)
+    await pod.delete()

@@ -70,6 +70,7 @@ class Kr8sApi:
         namespace: str = None,
         url: str = "",
         raise_for_status: bool = True,
+        raw: bool = False,
         **kwargs,
     ) -> Tuple[int, Union[dict, str]]:
         """Make a Kubernetes API request."""
@@ -99,6 +100,8 @@ class Kr8sApi:
             **kwargs,
         ) as response:
             # TODO catch self.auth error and reauth a couple of times before giving up
+            if raw:
+                return response.status, response
             if response.content_type == "application/json":
                 return response.status, await response.json()
             return response.status, await response.text()
