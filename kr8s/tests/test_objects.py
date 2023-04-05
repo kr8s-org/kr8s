@@ -6,7 +6,7 @@ import uuid
 import pytest
 
 import kr8s
-from kr8s.objects import OBJECT_REGISTRY, APIObject, Pod
+from kr8s.objects import APIObject, Pod, Service, get_class, object_from_spec
 
 
 @pytest.fixture
@@ -22,6 +22,24 @@ async def example_pod_spec():
         },
         "spec": {
             "containers": [{"name": "pause", "image": "gcr.io/google_containers/pause"}]
+        },
+    }
+
+
+@pytest.fixture
+async def example_service_spec():
+    name = "example-" + uuid.uuid4().hex[:10]
+    return {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+            "name": name,
+            "labels": {"hello": "world"},
+            "annotations": {"foo": "bar"},
+        },
+        "spec": {
+            "ports": [{"port": 80, "targetPort": 9376}],
+            "selector": {"app": "MyApp"},
         },
     }
 
@@ -91,7 +109,6 @@ async def test_all_v1_objects_represented():
         "apps/v1",
         "autoscaling/v2",
         "batch/v1",
-        "events.k8s.io/v1",
         "networking.k8s.io/v1",
         "policy/v1",
         "rbac.authorization.k8s.io/v1",
@@ -100,4 +117,31 @@ async def test_all_v1_objects_represented():
     #     assert supported_api in [obj["version"] for obj in objects]
     objects = [obj for obj in objects if obj["version"] in supported_apis]
     for obj in objects:
-        assert issubclass(OBJECT_REGISTRY.get(obj["kind"], obj["version"]), APIObject)
+        assert get_class(obj["kind"], obj["version"])
+
+
+async def test_object_from_spec(example_pod_spec, example_service_spec):
+    pod = object_from_spec(example_pod_spec)
+    assert isinstance(pod, Pod)
+    assert pod.name == example_pod_spec["metadata"]["name"]
+    assert pod.spec == example_pod_spec["spec"]
+
+    service = object_from_spec(example_service_spec)
+    assert isinstance(service, Service)
+    assert service.name == example_service_spec["metadata"]["name"]
+    assert service.spec == example_service_spec["spec"]
+
+
+async def test_subclass_registration():
+    with pytest.raises(KeyError):
+        get_class("MyResource", "foo.kr8s.org/v1alpha1")
+
+    class MyResource(APIObject):
+        version = "foo.kr8s.org/v1alpha1"
+        endpoint = "myresources"
+        kind = "MyResource"
+        plural = "myresources"
+        singular = "myresource"
+        namespaced = True
+
+    get_class("MyResource", "foo.kr8s.org/v1alpha1")

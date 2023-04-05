@@ -7,31 +7,6 @@ from ._data_utils import list_dict_unpack
 from ._exceptions import NotFoundError
 
 
-class _ObjectRegistry:
-    """A registry of Kubernetes objects."""
-
-    def __init__(self):
-        self.objects = {}
-
-    def register(self, cls):
-        if not issubclass(cls, APIObject):
-            raise TypeError(f"{cls} must be a subclass of APIObject")
-        self.objects[f"{cls.version}/{cls.kind}"] = cls
-        return cls
-
-    def unregister(self, cls):
-        del self.objects[f"{cls.version}/{cls.kind}"]
-
-    def get(self, kind, version=None):
-        for cls in self.objects.values():
-            if cls.kind == kind and (version is None or cls.version == version):
-                return cls
-        raise KeyError(f"Unknown object {version}/{kind}")
-
-
-OBJECT_REGISTRY = _ObjectRegistry()
-
-
 class APIObject:
     """Base class for Kubernetes objects."""
 
@@ -355,24 +330,6 @@ class Service(APIObject):
     namespaced = True
 
 
-OBJECT_REGISTRY.register(Binding)
-OBJECT_REGISTRY.register(ComponentStatus)
-OBJECT_REGISTRY.register(ConfigMap)
-OBJECT_REGISTRY.register(Endpoints)
-OBJECT_REGISTRY.register(Event)
-OBJECT_REGISTRY.register(LimitRange)
-OBJECT_REGISTRY.register(Namespace)
-OBJECT_REGISTRY.register(Node)
-OBJECT_REGISTRY.register(PersistentVolumeClaim)
-OBJECT_REGISTRY.register(PersistentVolume)
-OBJECT_REGISTRY.register(Pod)
-OBJECT_REGISTRY.register(PodTemplate)
-OBJECT_REGISTRY.register(ReplicationController)
-OBJECT_REGISTRY.register(ResourceQuota)
-OBJECT_REGISTRY.register(Secret)
-OBJECT_REGISTRY.register(ServiceAccount)
-OBJECT_REGISTRY.register(Service)
-
 ## apps/v1 objects
 
 
@@ -431,12 +388,6 @@ class StatefulSet(APIObject):
     namespaced = True
 
 
-OBJECT_REGISTRY.register(ControllerRevision)
-OBJECT_REGISTRY.register(DaemonSet)
-OBJECT_REGISTRY.register(Deployment)
-OBJECT_REGISTRY.register(ReplicaSet)
-OBJECT_REGISTRY.register(StatefulSet)
-
 ## autoscaling/v1 objects
 
 
@@ -450,8 +401,6 @@ class HorizontalPodAutoscaler(APIObject):
     singular = "horizontalpodautoscaler"
     namespaced = True
 
-
-OBJECT_REGISTRY.register(HorizontalPodAutoscaler)
 
 ## batch/v1 objects
 
@@ -476,26 +425,6 @@ class Job(APIObject):
     plural = "jobs"
     singular = "job"
     namespaced = True
-
-
-OBJECT_REGISTRY.register(CronJob)
-OBJECT_REGISTRY.register(Job)
-
-## events.k8s.io/v1 objects
-
-
-class Event(APIObject):
-    """A Kubernetes Event."""
-
-    version = "events.k8s.io/v1"
-    endpoint = "events"
-    kind = "Event"
-    plural = "events"
-    singular = "event"
-    namespaced = True
-
-
-OBJECT_REGISTRY.register(Event)
 
 
 ## networking.k8s.io/v1 objects
@@ -534,10 +463,6 @@ class NetworkPolicy(APIObject):
     namespaced = True
 
 
-OBJECT_REGISTRY.register(IngressClass)
-OBJECT_REGISTRY.register(Ingress)
-OBJECT_REGISTRY.register(NetworkPolicy)
-
 ## policy/v1 objects
 
 
@@ -551,8 +476,6 @@ class PodDisruptionBudget(APIObject):
     singular = "poddisruptionbudget"
     namespaced = True
 
-
-OBJECT_REGISTRY.register(PodDisruptionBudget)
 
 ## rbac.authorization.k8s.io/v1 objects
 
@@ -601,7 +524,24 @@ class Role(APIObject):
     namespaced = True
 
 
-OBJECT_REGISTRY.register(ClusterRoleBinding)
-OBJECT_REGISTRY.register(ClusterRole)
-OBJECT_REGISTRY.register(RoleBinding)
-OBJECT_REGISTRY.register(Role)
+def get_class(kind, version=None):
+    for cls in APIObject.__subclasses__():
+        if cls.kind == kind and (version is None or cls.version == version):
+            return cls
+    raise KeyError(f"No object registered for {version}/{kind}")
+
+
+def object_from_spec(spec: dict) -> APIObject:
+    """Create an APIObject from a Kubernetes resource spec.
+
+    Args:
+        spec: A Kubernetes resource spec.
+
+    Returns:
+        A corresponding APIObject subclass instance.
+
+    Raises:
+        ValueError: If the resource kind or API version is not supported.
+    """
+    cls = get_class(spec["kind"], spec["apiVersion"])
+    return cls(spec)

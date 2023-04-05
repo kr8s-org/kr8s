@@ -109,7 +109,7 @@ class Kr8sApi:
         field_selector: str = None,
     ) -> dict:
         """Get a Kubernetes resource."""
-        from .objects import OBJECT_REGISTRY
+        from .objects import get_class
 
         if not namespace:
             namespace = self.auth.namespace
@@ -125,7 +125,7 @@ class Kr8sApi:
         _, resourcelist = await self.call_api(
             method="GET", url=kind, namespace=namespace, params=params
         )
-        obj_cls = OBJECT_REGISTRY.get(
+        obj_cls = get_class(
             resourcelist["kind"].replace("List", ""), resourcelist["apiVersion"]
         )
         if "items" in resourcelist:
