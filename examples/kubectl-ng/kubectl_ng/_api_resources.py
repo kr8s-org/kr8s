@@ -50,22 +50,22 @@ async def api_resources(
 
     Examples:
         # Print the supported API resources
-        kubectl api-resources
+        kubectl-ng api-resources
 
         # Print the supported API resources with more information
-        kubectl api-resources -o wide
+        kubectl-ng api-resources -o wide
 
         # Print the supported API resources sorted by a column
-        kubectl api-resources --sort-by=name
+        kubectl-ng api-resources --sort-by=name
 
         # Print the supported namespaced resources
-        kubectl api-resources --namespaced=true
+        kubectl-ng api-resources --namespaced=true
 
         # Print the supported non-namespaced resources
-        kubectl api-resources --namespaced=false
+        kubectl-ng api-resources --namespaced=false
 
         # Print the supported API resources with a specific APIGroup
-        kubectl api-resources --api-group=rbac.authorization.k8s.io
+        kubectl-ng api-resources --api-group=rbac.authorization.k8s.io
 
     """
     kubernetes = kr8s.Kr8sApi()
