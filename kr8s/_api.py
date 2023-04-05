@@ -139,14 +139,26 @@ class Kr8sApi:
             _, resource = await self.call_api(
                 method="GET", version="", base="/api", url=version
             )
-            resources.extend([{"version": version, **r} for r in resource["resources"]])
+            resources.extend(
+                [
+                    {"version": version, **r}
+                    for r in resource["resources"]
+                    if "/" not in r["name"]
+                ]
+            )
         _, api_list = await self.call_api(method="GET", version="", base="/apis")
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
             version = api["versions"][0]["groupVersion"]
             _, resource = await self.call_api(
                 method="GET", version="", base="/apis", url=version
             )
-            resources.extend([{"version": version, **r} for r in resource["resources"]])
+            resources.extend(
+                [
+                    {"version": version, **r}
+                    for r in resource["resources"]
+                    if "/" not in r["name"]
+                ]
+            )
         return resources
 
     @property
