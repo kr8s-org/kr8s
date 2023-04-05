@@ -418,6 +418,28 @@ class HorizontalPodAutoscaler(APIObject):
     namespaced = True
 
 
+class CronJob(APIObject):
+    """A Kubernetes CronJob."""
+
+    version = "batch/v1"
+    endpoint = "cronjobs"
+    kind = "CronJob"
+    plural = "cronjobs"
+    singular = "cronjob"
+    namespaced = True
+
+
+class Job(APIObject):
+    """A Kubernetes Job."""
+
+    version = "batch/v1"
+    endpoint = "jobs"
+    kind = "Job"
+    plural = "jobs"
+    singular = "job"
+    namespaced = True
+
+
 OBJECT_REGISTRY.register(Binding)
 OBJECT_REGISTRY.register(ComponentStatus)
 OBJECT_REGISTRY.register(ConfigMap)
@@ -441,3 +463,5 @@ OBJECT_REGISTRY.register(Deployment)
 OBJECT_REGISTRY.register(ReplicaSet)
 OBJECT_REGISTRY.register(StatefulSet)
 OBJECT_REGISTRY.register(HorizontalPodAutoscaler)
+OBJECT_REGISTRY.register(CronJob)
+OBJECT_REGISTRY.register(Job)
