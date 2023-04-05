@@ -6,7 +6,7 @@ import uuid
 import pytest
 
 import kr8s
-from kr8s.objects import Pod
+from kr8s.objects import OBJECT_REGISTRY, APIObject, Pod
 
 
 @pytest.fixture
@@ -81,3 +81,11 @@ async def test_patch_pod(example_pod_spec):
     assert "patched" not in pod.labels
     await pod.patch({"metadata": {"labels": {"patched": "true"}}})
     assert "patched" in pod.labels
+
+
+async def test_all_v1_objects_represented():
+    kubernetes = kr8s.Kr8sApi()
+    objects = await kubernetes.api_resources()
+    objects = [obj for obj in objects if obj["version"] == "v1"]
+    for obj in objects:
+        assert issubclass(OBJECT_REGISTRY.get(obj["kind"], obj["version"]), APIObject)

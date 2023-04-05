@@ -156,6 +156,116 @@ class APIObject:
         raise NotImplementedError("Watching is not yet implemented")
 
 
+class Binding(APIObject):
+    """A Kubernetes Binding."""
+
+    version = "v1"
+    endpoint = "bindings"
+    kind = "Binding"
+    plural = "bindings"
+    singular = "binding"
+    namespaced = True
+
+
+class ComponentStatus(APIObject):
+    """A Kubernetes ComponentStatus."""
+
+    version = "v1"
+    endpoint = "componentstatuses"
+    kind = "ComponentStatus"
+    plural = "componentstatuses"
+    singular = "componentstatus"
+    namespaced = False
+
+
+class ConfigMap(APIObject):
+    """A Kubernetes ConfigMap."""
+
+    version = "v1"
+    endpoint = "configmaps"
+    kind = "ConfigMap"
+    plural = "configmaps"
+    singular = "configmap"
+    namespaced = True
+
+
+class Endpoints(APIObject):
+    """A Kubernetes Endpoints."""
+
+    version = "v1"
+    endpoint = "endpoints"
+    kind = "Endpoints"
+    plural = "endpoints"
+    singular = "endpoint"
+    namespaced = True
+
+
+class Event(APIObject):
+    """A Kubernetes Event."""
+
+    version = "v1"
+    endpoint = "events"
+    kind = "Event"
+    plural = "events"
+    singular = "event"
+    namespaced = True
+
+
+class LimitRange(APIObject):
+    """A Kubernetes LimitRange."""
+
+    version = "v1"
+    endpoint = "limitranges"
+    kind = "LimitRange"
+    plural = "limitranges"
+    singular = "limitrange"
+    namespaced = True
+
+
+class Namespace(APIObject):
+    """A Kubernetes Namespace."""
+
+    version = "v1"
+    endpoint = "namespaces"
+    kind = "Namespace"
+    plural = "namespaces"
+    singular = "namespace"
+    namespaced = False
+
+
+class Node(APIObject):
+    """A Kubernetes Node."""
+
+    version = "v1"
+    endpoint = "nodes"
+    kind = "Node"
+    plural = "nodes"
+    singular = "node"
+    namespaced = False
+
+
+class PersistentVolumeClaim(APIObject):
+    """A Kubernetes PersistentVolumeClaim."""
+
+    version = "v1"
+    endpoint = "persistentvolumeclaims"
+    kind = "PersistentVolumeClaim"
+    plural = "persistentvolumeclaims"
+    singular = "persistentvolumeclaim"
+    namespaced = True
+
+
+class PersistentVolume(APIObject):
+    """A Kubernetes PersistentVolume."""
+
+    version = "v1"
+    endpoint = "persistentvolumes"
+    kind = "PersistentVolume"
+    plural = "persistentvolumes"
+    singular = "persistentvolume"
+    namespaced = False
+
+
 class Pod(APIObject):
     """A Kubernetes Pod."""
 
@@ -176,4 +286,86 @@ class Pod(APIObject):
         return "Ready" in conditions and conditions.get("Ready", "False") == "True"
 
 
+class PodTemplate(APIObject):
+    """A Kubernetes PodTemplate."""
+
+    version = "v1"
+    endpoint = "podtemplates"
+    kind = "PodTemplate"
+    plural = "podtemplates"
+    singular = "podtemplate"
+    namespaced = True
+
+
+class ReplicationController(APIObject):
+    """A Kubernetes ReplicationController."""
+
+    version = "v1"
+    endpoint = "replicationcontrollers"
+    kind = "ReplicationController"
+    plural = "replicationcontrollers"
+    singular = "replicationcontroller"
+    namespaced = True
+
+
+class ResourceQuota(APIObject):
+    """A Kubernetes ResourceQuota."""
+
+    version = "v1"
+    endpoint = "resourcequotas"
+    kind = "ResourceQuota"
+    plural = "resourcequotas"
+    singular = "resourcequota"
+    namespaced = True
+
+
+class Secret(APIObject):
+    """A Kubernetes Secret."""
+
+    version = "v1"
+    endpoint = "secrets"
+    kind = "Secret"
+    plural = "secrets"
+    singular = "secret"
+    namespaced = True
+
+
+class ServiceAccount(APIObject):
+    """A Kubernetes ServiceAccount."""
+
+    version = "v1"
+    endpoint = "serviceaccounts"
+    kind = "ServiceAccount"
+    plural = "serviceaccounts"
+    singular = "serviceaccount"
+    namespaced = True
+
+
+class Service(APIObject):
+    """A Kubernetes Service."""
+
+    version = "v1"
+    endpoint = "services"
+    kind = "Service"
+    plural = "services"
+    singular = "service"
+    namespaced = True
+
+
+OBJECT_REGISTRY.register(Binding)
+OBJECT_REGISTRY.register(ComponentStatus)
+OBJECT_REGISTRY.register(ConfigMap)
+OBJECT_REGISTRY.register(Endpoints)
+OBJECT_REGISTRY.register(Event)
+OBJECT_REGISTRY.register(LimitRange)
+OBJECT_REGISTRY.register(Namespace)
+OBJECT_REGISTRY.register(Node)
+OBJECT_REGISTRY.register(PersistentVolumeClaim)
+OBJECT_REGISTRY.register(PersistentVolume)
 OBJECT_REGISTRY.register(Pod)
+OBJECT_REGISTRY.register(PodTemplate)
+OBJECT_REGISTRY.register(ReplicationController)
+OBJECT_REGISTRY.register(ResourceQuota)
+OBJECT_REGISTRY.register(Secret)
+OBJECT_REGISTRY.register(ServiceAccount)
+OBJECT_REGISTRY.register(Service)
