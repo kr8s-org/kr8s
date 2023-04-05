@@ -156,6 +156,9 @@ class APIObject:
         raise NotImplementedError("Watching is not yet implemented")
 
 
+## v1 objects
+
+
 class Binding(APIObject):
     """A Kubernetes Binding."""
 
@@ -352,6 +355,27 @@ class Service(APIObject):
     namespaced = True
 
 
+OBJECT_REGISTRY.register(Binding)
+OBJECT_REGISTRY.register(ComponentStatus)
+OBJECT_REGISTRY.register(ConfigMap)
+OBJECT_REGISTRY.register(Endpoints)
+OBJECT_REGISTRY.register(Event)
+OBJECT_REGISTRY.register(LimitRange)
+OBJECT_REGISTRY.register(Namespace)
+OBJECT_REGISTRY.register(Node)
+OBJECT_REGISTRY.register(PersistentVolumeClaim)
+OBJECT_REGISTRY.register(PersistentVolume)
+OBJECT_REGISTRY.register(Pod)
+OBJECT_REGISTRY.register(PodTemplate)
+OBJECT_REGISTRY.register(ReplicationController)
+OBJECT_REGISTRY.register(ResourceQuota)
+OBJECT_REGISTRY.register(Secret)
+OBJECT_REGISTRY.register(ServiceAccount)
+OBJECT_REGISTRY.register(Service)
+
+## apps/v1 objects
+
+
 class ControllerRevision(APIObject):
     """A Kubernetes ControllerRevision."""
 
@@ -407,6 +431,15 @@ class StatefulSet(APIObject):
     namespaced = True
 
 
+OBJECT_REGISTRY.register(ControllerRevision)
+OBJECT_REGISTRY.register(DaemonSet)
+OBJECT_REGISTRY.register(Deployment)
+OBJECT_REGISTRY.register(ReplicaSet)
+OBJECT_REGISTRY.register(StatefulSet)
+
+## autoscaling/v1 objects
+
+
 class HorizontalPodAutoscaler(APIObject):
     """A Kubernetes HorizontalPodAutoscaler."""
 
@@ -416,6 +449,11 @@ class HorizontalPodAutoscaler(APIObject):
     plural = "horizontalpodautoscalers"
     singular = "horizontalpodautoscaler"
     namespaced = True
+
+
+OBJECT_REGISTRY.register(HorizontalPodAutoscaler)
+
+## batch/v1 objects
 
 
 class CronJob(APIObject):
@@ -440,28 +478,130 @@ class Job(APIObject):
     namespaced = True
 
 
-OBJECT_REGISTRY.register(Binding)
-OBJECT_REGISTRY.register(ComponentStatus)
-OBJECT_REGISTRY.register(ConfigMap)
-OBJECT_REGISTRY.register(Endpoints)
-OBJECT_REGISTRY.register(Event)
-OBJECT_REGISTRY.register(LimitRange)
-OBJECT_REGISTRY.register(Namespace)
-OBJECT_REGISTRY.register(Node)
-OBJECT_REGISTRY.register(PersistentVolumeClaim)
-OBJECT_REGISTRY.register(PersistentVolume)
-OBJECT_REGISTRY.register(Pod)
-OBJECT_REGISTRY.register(PodTemplate)
-OBJECT_REGISTRY.register(ReplicationController)
-OBJECT_REGISTRY.register(ResourceQuota)
-OBJECT_REGISTRY.register(Secret)
-OBJECT_REGISTRY.register(ServiceAccount)
-OBJECT_REGISTRY.register(Service)
-OBJECT_REGISTRY.register(ControllerRevision)
-OBJECT_REGISTRY.register(DaemonSet)
-OBJECT_REGISTRY.register(Deployment)
-OBJECT_REGISTRY.register(ReplicaSet)
-OBJECT_REGISTRY.register(StatefulSet)
-OBJECT_REGISTRY.register(HorizontalPodAutoscaler)
 OBJECT_REGISTRY.register(CronJob)
 OBJECT_REGISTRY.register(Job)
+
+## events.k8s.io/v1 objects
+
+
+class Event(APIObject):
+    """A Kubernetes Event."""
+
+    version = "events.k8s.io/v1"
+    endpoint = "events"
+    kind = "Event"
+    plural = "events"
+    singular = "event"
+    namespaced = True
+
+
+OBJECT_REGISTRY.register(Event)
+
+
+## networking.k8s.io/v1 objects
+
+
+class IngressClass(APIObject):
+    """A Kubernetes IngressClass."""
+
+    version = "networking.k8s.io/v1"
+    endpoint = "ingressclasses"
+    kind = "IngressClass"
+    plural = "ingressclasses"
+    singular = "ingressclass"
+    namespaced = False
+
+
+class Ingress(APIObject):
+    """A Kubernetes Ingress."""
+
+    version = "networking.k8s.io/v1"
+    endpoint = "ingresses"
+    kind = "Ingress"
+    plural = "ingresses"
+    singular = "ingress"
+    namespaced = True
+
+
+class NetworkPolicy(APIObject):
+    """A Kubernetes NetworkPolicy."""
+
+    version = "networking.k8s.io/v1"
+    endpoint = "networkpolicies"
+    kind = "NetworkPolicy"
+    plural = "networkpolicies"
+    singular = "networkpolicy"
+    namespaced = True
+
+
+OBJECT_REGISTRY.register(IngressClass)
+OBJECT_REGISTRY.register(Ingress)
+OBJECT_REGISTRY.register(NetworkPolicy)
+
+## policy/v1 objects
+
+
+class PodDisruptionBudget(APIObject):
+    """A Kubernetes PodDisruptionBudget."""
+
+    version = "policy/v1"
+    endpoint = "poddisruptionbudgets"
+    kind = "PodDisruptionBudget"
+    plural = "poddisruptionbudgets"
+    singular = "poddisruptionbudget"
+    namespaced = True
+
+
+OBJECT_REGISTRY.register(PodDisruptionBudget)
+
+## rbac.authorization.k8s.io/v1 objects
+
+
+class ClusterRoleBinding(APIObject):
+    """A Kubernetes ClusterRoleBinding."""
+
+    version = "rbac.authorization.k8s.io/v1"
+    endpoint = "clusterrolebindings"
+    kind = "ClusterRoleBinding"
+    plural = "clusterrolebindings"
+    singular = "clusterrolebinding"
+    namespaced = False
+
+
+class ClusterRole(APIObject):
+    """A Kubernetes ClusterRole."""
+
+    version = "rbac.authorization.k8s.io/v1"
+    endpoint = "clusterroles"
+    kind = "ClusterRole"
+    plural = "clusterroles"
+    singular = "clusterrole"
+    namespaced = False
+
+
+class RoleBinding(APIObject):
+    """A Kubernetes RoleBinding."""
+
+    version = "rbac.authorization.k8s.io/v1"
+    endpoint = "rolebindings"
+    kind = "RoleBinding"
+    plural = "rolebindings"
+    singular = "rolebinding"
+    namespaced = True
+
+
+class Role(APIObject):
+    """A Kubernetes Role."""
+
+    version = "rbac.authorization.k8s.io/v1"
+    endpoint = "roles"
+    kind = "Role"
+    plural = "roles"
+    singular = "role"
+    namespaced = True
+
+
+OBJECT_REGISTRY.register(ClusterRoleBinding)
+OBJECT_REGISTRY.register(ClusterRole)
+OBJECT_REGISTRY.register(RoleBinding)
+OBJECT_REGISTRY.register(Role)
