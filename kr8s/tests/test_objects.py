@@ -16,6 +16,8 @@ from kr8s.objects import (
     object_from_spec,
 )
 
+DEFAULT_LABELS = {"created-by": "kr8s-tests"}
+
 
 @pytest.fixture
 async def example_pod_spec(ns):
@@ -26,7 +28,7 @@ async def example_pod_spec(ns):
         "metadata": {
             "name": name,
             "namespace": ns,
-            "labels": {"hello": "world"},
+            "labels": {"hello": "world", **DEFAULT_LABELS},
             "annotations": {"foo": "bar"},
         },
         "spec": {
@@ -44,7 +46,7 @@ async def example_service_spec(ns):
         "metadata": {
             "name": name,
             "namespace": ns,
-            "labels": {"hello": "world"},
+            "labels": {"hello": "world", **DEFAULT_LABELS},
             "annotations": {"foo": "bar"},
         },
         "spec": {
@@ -63,7 +65,7 @@ async def example_deployment_spec(ns):
         "metadata": {
             "name": name,
             "namespace": ns,
-            "labels": {"hello": "world"},
+            "labels": {"hello": "world", **DEFAULT_LABELS},
             "annotations": {"foo": "bar"},
         },
         "spec": {
