@@ -352,6 +352,72 @@ class Service(APIObject):
     namespaced = True
 
 
+class ControllerRevision(APIObject):
+    """A Kubernetes ControllerRevision."""
+
+    version = "apps/v1"
+    endpoint = "controllerrevisions"
+    kind = "ControllerRevision"
+    plural = "controllerrevisions"
+    singular = "controllerrevision"
+    namespaced = True
+
+
+class DaemonSet(APIObject):
+    """A Kubernetes DaemonSet."""
+
+    version = "apps/v1"
+    endpoint = "daemonsets"
+    kind = "DaemonSet"
+    plural = "daemonsets"
+    singular = "daemonset"
+    namespaced = True
+
+
+class Deployment(APIObject):
+    """A Kubernetes Deployment."""
+
+    version = "apps/v1"
+    endpoint = "deployments"
+    kind = "Deployment"
+    plural = "deployments"
+    singular = "deployment"
+    namespaced = True
+
+
+class ReplicaSet(APIObject):
+    """A Kubernetes ReplicaSet."""
+
+    version = "apps/v1"
+    endpoint = "replicasets"
+    kind = "ReplicaSet"
+    plural = "replicasets"
+    singular = "replicaset"
+    namespaced = True
+
+
+class StatefulSet(APIObject):
+    """A Kubernetes StatefulSet."""
+
+    version = "apps/v1"
+    endpoint = "statefulsets"
+    kind = "StatefulSet"
+    plural = "statefulsets"
+    singular = "statefulset"
+    namespaced = True
+
+
+class HorizontalPodAutoscaler(APIObject):
+    """A Kubernetes HorizontalPodAutoscaler."""
+
+    version = "autoscaling/v2"
+    endpoint = "horizontalpodautoscalers"
+    kind = "HorizontalPodAutoscaler"
+    plural = "horizontalpodautoscalers"
+    singular = "horizontalpodautoscaler"
+    namespaced = True
+
+
 OBJECT_REGISTRY.register(Binding)
 OBJECT_REGISTRY.register(ComponentStatus)
 OBJECT_REGISTRY.register(ConfigMap)
@@ -369,3 +435,9 @@ OBJECT_REGISTRY.register(ResourceQuota)
 OBJECT_REGISTRY.register(Secret)
 OBJECT_REGISTRY.register(ServiceAccount)
 OBJECT_REGISTRY.register(Service)
+OBJECT_REGISTRY.register(ControllerRevision)
+OBJECT_REGISTRY.register(DaemonSet)
+OBJECT_REGISTRY.register(Deployment)
+OBJECT_REGISTRY.register(ReplicaSet)
+OBJECT_REGISTRY.register(StatefulSet)
+OBJECT_REGISTRY.register(HorizontalPodAutoscaler)

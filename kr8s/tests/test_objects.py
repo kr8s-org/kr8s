@@ -86,6 +86,8 @@ async def test_patch_pod(example_pod_spec):
 async def test_all_v1_objects_represented():
     kubernetes = kr8s.Kr8sApi()
     objects = await kubernetes.api_resources()
-    objects = [obj for obj in objects if obj["version"] == "v1"]
+    objects = [
+        obj for obj in objects if obj["version"] in ("v1", "apps/v1", "autoscaling/v2")
+    ]
     for obj in objects:
         assert issubclass(OBJECT_REGISTRY.get(obj["kind"], obj["version"]), APIObject)
