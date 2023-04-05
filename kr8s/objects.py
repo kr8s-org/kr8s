@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import json
-from typing import Optional
 
 from ._api import Kr8sApi
 from ._data_utils import list_dict_unpack
@@ -36,6 +35,8 @@ OBJECT_REGISTRY = _ObjectRegistry()
 class APIObject:
     """Base class for Kubernetes objects."""
 
+    namespaced = False
+
     def __init__(self, resource: dict, api: Kr8sApi = None) -> None:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
@@ -56,7 +57,12 @@ class APIObject:
         return self.raw["metadata"]["name"]
 
     @property
-    def namespace(self) -> Optional[str]:
+    def namespace(self) -> str:
+        """Namespace of the Kubernetes resource."""
+        if self.namespaced:
+            return self.raw.get("metadata", {}).get(
+                "namespace", self.api.auth.namespace
+            )
         return None
 
     @property
@@ -150,14 +156,7 @@ class APIObject:
         raise NotImplementedError("Watching is not yet implemented")
 
 
-class NamespacedAPIObject(APIObject):
-    @property
-    def namespace(self) -> str:
-        """Namespace of the Kubernetes resource."""
-        return self.raw.get("metadata", {}).get("namespace", self.api.auth.namespace)
-
-
-class Pod(NamespacedAPIObject):
+class Pod(APIObject):
     """A Kubernetes Pod."""
 
     version = "v1"
@@ -165,6 +164,7 @@ class Pod(NamespacedAPIObject):
     kind = "Pod"
     plural = "pods"
     singular = "pod"
+    namespaced = True
 
     async def ready(self):
         await self.refresh()
