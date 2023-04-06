@@ -8,7 +8,7 @@
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
 
 > **Warning**
-> This project is an early alpha and is not ready for prime time.
+> This is beta software and might not be ready for prime time.
 
 A Kubernetes API for Python
 
