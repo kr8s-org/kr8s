@@ -21,6 +21,12 @@ async def test_get_pods(namespace):
     assert isinstance(pods[0], Pod)
 
 
+async def test_get_deployments():
+    kubernetes = kr8s.Kr8sApi()
+    deployments = await kubernetes.get("deployments")
+    assert isinstance(deployments, list)
+
+
 async def test_api_resources():
     kubernetes = kr8s.Kr8sApi()
     resources = await kubernetes.api_resources()
