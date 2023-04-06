@@ -140,7 +140,7 @@ class Kr8sApi:
             return [
                 obj_cls(item, api=self)
                 for item in resourcelist["items"]
-                if item["metadata"]["name"] in names
+                if not names or item["metadata"]["name"] in names
             ]
 
     async def api_resources(self) -> dict:
