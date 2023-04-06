@@ -138,6 +138,16 @@ async def test_pod_metadata(example_pod_spec):
     await pod.delete()
 
 
+async def test_pod_missing_labels_annotations(example_pod_spec):
+    del example_pod_spec["metadata"]["labels"]
+    del example_pod_spec["metadata"]["annotations"]
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    assert not pod.labels
+    assert not pod.annotations
+    await pod.delete()
+
+
 async def test_patch_pod(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
