@@ -148,6 +148,19 @@ async def test_pod_missing_labels_annotations(example_pod_spec):
     await pod.delete()
 
 
+async def test_pod_get(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    pod2 = await Pod.get(pod.name, namespace=pod.namespace)
+    assert pod2.name == pod.name
+    assert pod2.namespace == pod.namespace
+    await pod.delete()
+    while await pod.exists():
+        await asyncio.sleep(0.1)
+    with pytest.raises(kr8s.NotFoundError):
+        await pod2.delete()
+
+
 async def test_patch_pod(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
