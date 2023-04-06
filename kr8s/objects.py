@@ -4,6 +4,7 @@ import asyncio
 import json
 from typing import Any, Optional
 
+import aiohttp
 from aiohttp import ClientResponse
 
 from ._api import Kr8sApi
@@ -85,6 +86,23 @@ class APIObject:
             return self.raw["spec"][self.scalable_spec]
         raise NotImplementedError(f"{self.kind} is not scalable")
 
+    @classmethod
+    async def get(
+        cls, name: str, namespace: str = None, api: Kr8sApi = None, **kwargs
+    ) -> "APIObject":
+        """Get a Kubernetes resource by name."""
+
+        api = api or Kr8sApi()
+        try:
+            resources = await api.get(cls.endpoint, name, namespace=namespace, **kwargs)
+            [resource] = resources
+        except ValueError:
+            raise ValueError(
+                f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
+            )
+
+        return resource
+
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
         status, _ = await self.api.call_api(
@@ -115,13 +133,16 @@ class APIObject:
         data = {}
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
-        await self.api.call_api(
-            "DELETE",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}",
-            namespace=self.namespace,
-            data=json.dumps(data),
-        )
+        try:
+            await self.api.call_api(
+                "DELETE",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}",
+                namespace=self.namespace,
+                data=json.dumps(data),
+            )
+        except aiohttp.ClientResponseError as e:
+            raise NotFoundError(f"Object {self.name} does not exist") from e
 
     async def refresh(self) -> None:
         """Refresh this object from Kubernetes."""

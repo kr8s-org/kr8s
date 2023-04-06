@@ -137,7 +137,11 @@ class Kr8sApi:
             params=params,
         )
         if "items" in resourcelist:
-            return [obj_cls(item, api=self) for item in resourcelist["items"]]
+            return [
+                obj_cls(item, api=self)
+                for item in resourcelist["items"]
+                if item["metadata"]["name"] in names
+            ]
 
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
