@@ -132,6 +132,7 @@ class Kr8sApi:
         _, resourcelist = await self.call_api(
             method="GET",
             url=kind,
+            version=obj_cls.version,
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
         )
