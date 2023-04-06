@@ -65,12 +65,18 @@ class APIObject:
     @property
     def labels(self) -> dict:
         """Labels of the Kubernetes resource."""
-        return self.raw["metadata"]["labels"]
+        try:
+            return self.raw["metadata"]["labels"]
+        except KeyError:
+            return {}
 
     @property
     def annotations(self) -> dict:
         """Annotations of the Kubernetes resource."""
-        return self.raw["metadata"]["annotations"]
+        try:
+            return self.raw["metadata"]["annotations"]
+        except KeyError:
+            return {}
 
     @property
     def replicas(self) -> int:
