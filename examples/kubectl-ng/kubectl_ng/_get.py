@@ -78,7 +78,7 @@ async def get(
     Use "kubectl-ng api-resources" for a complete list of supported resources.
     """
     resources = resources[1:]
-    kubernetes = kr8s.Kr8sApi()
+    kubernetes = kr8s.api()
     if all_namespaces:
         namespace = kr8s.ALL
     if "pods" in resources or "pod" in resources:

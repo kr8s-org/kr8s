@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import ssl
+import weakref
 from typing import List, Tuple, Union
 
 import aiohttp
@@ -11,23 +12,24 @@ from ._auth import KubeAuth
 ALL = "all"
 
 
-class Kr8sApi:
+class Kr8sApi(object):
     """A kr8s object for interacting with the Kubernetes API"""
 
-    def __init__(
-        self, url=None, kubeconfig=None, serviceaccount=None, namespace=None
-    ) -> None:
-        self._url = url
-        self._kubeconfig = kubeconfig
-        self._serviceaccount = serviceaccount
+    _instances = weakref.WeakValueDictionary()
+
+    def __init__(self, **kwargs) -> None:
+        self._url = kwargs.get("url")
+        self._kubeconfig = kwargs.get("kubeconfig")
+        self._serviceaccount = kwargs.get("serviceaccount")
         self._sslcontext = None
         self._session = None
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,
             serviceaccount=self._serviceaccount,
-            namespace=namespace,
+            namespace=kwargs.get("namespace"),
         )
+        Kr8sApi._instances[frozenset(kwargs.items())] = self
 
     async def _create_session(self):
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
@@ -178,3 +180,27 @@ class Kr8sApi:
         from . import __version__
 
         return f"kr8s/{__version__}"
+
+
+def api(url=None, kubeconfig=None, serviceaccount=None, namespace=None) -> Kr8sApi:
+    """Create a kr8s object for interacting with the Kubernetes API.
+
+    If a kr8s object already exists with the same arguments, it will be returned.
+    """
+
+    def _f(**kwargs):
+        key = frozenset(kwargs.items())
+        if key in Kr8sApi._instances:
+            return Kr8sApi._instances[key]
+        if all(k is None for k in kwargs.values()) and list(
+            Kr8sApi._instances.values()
+        ):
+            return list(Kr8sApi._instances.values())[0]
+        return Kr8sApi(**kwargs)
+
+    return _f(
+        url=url,
+        kubeconfig=kubeconfig,
+        serviceaccount=serviceaccount,
+        namespace=namespace,
+    )

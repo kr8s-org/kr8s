@@ -101,7 +101,7 @@ async def test_pod_create_and_delete(example_pod_spec):
 
 
 async def test_list_and_ensure():
-    kubernetes = kr8s.Kr8sApi()
+    kubernetes = kr8s.api()
     pods = await kubernetes.get("pods", namespace=kr8s.ALL)
     assert len(pods) > 0
     for pod in pods:
@@ -171,7 +171,7 @@ async def test_patch_pod(example_pod_spec):
 
 
 async def test_all_v1_objects_represented():
-    kubernetes = kr8s.Kr8sApi()
+    kubernetes = kr8s.api()
     objects = await kubernetes.api_resources()
     supported_apis = (
         "v1",
@@ -231,7 +231,7 @@ async def test_deployment_scale(example_deployment_spec):
 
 
 async def test_node():
-    kubernetes = kr8s.Kr8sApi()
+    kubernetes = kr8s.api()
     nodes = await kubernetes.get("nodes")
     assert len(nodes) > 0
     for node in nodes:
@@ -242,7 +242,7 @@ async def test_node():
 
 
 async def test_service_proxy():
-    kubernetes = kr8s.Kr8sApi()
+    kubernetes = kr8s.api()
     [service] = await kubernetes.get("services", "kubernetes")
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
