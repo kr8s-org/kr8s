@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from kr8s import Kr8sApi
+import kr8s
 from kr8s._testutils import set_env
 
 HERE = Path(__file__).parent.resolve()
@@ -38,25 +38,25 @@ async def kubeconfig_with_exec(k8s_cluster):
 
 
 async def test_kubeconfig(k8s_cluster):
-    kubernetes = Kr8sApi(kubeconfig=k8s_cluster.kubeconfig_path)
+    kubernetes = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
     version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_url(kubectl_proxy):
-    kubernetes = Kr8sApi(url=kubectl_proxy)
+    kubernetes = kr8s.api(url=kubectl_proxy)
     version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_no_config():
     with pytest.raises(ValueError):
-        kubernetes = Kr8sApi(kubeconfig="/no/file/here")
+        kubernetes = kr8s.api(kubeconfig="/no/file/here")
         await kubernetes.version()
 
 
 async def test_service_account(serviceaccount):
-    kubernetes = Kr8sApi(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+    kubernetes = kr8s.api(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
     await kubernetes.version()
 
     serviceaccount = Path(serviceaccount)
@@ -68,6 +68,6 @@ async def test_service_account(serviceaccount):
 
 
 async def test_exec(kubeconfig_with_exec):
-    kubernetes = Kr8sApi(kubeconfig=kubeconfig_with_exec)
+    kubernetes = kr8s.api(kubeconfig=kubeconfig_with_exec)
     version = await kubernetes.version()
     assert "major" in version

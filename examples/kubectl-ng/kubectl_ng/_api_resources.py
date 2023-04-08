@@ -68,7 +68,7 @@ async def api_resources(
         kubectl-ng api-resources --api-group=rbac.authorization.k8s.io
 
     """
-    kubernetes = kr8s.Kr8sApi()
+    kubernetes = kr8s.api()
     categories = [c.strip() for c in categories.split(",")] if categories else None
     verbs = [v.strip() for v in verbs.split(",")] if verbs else None
 

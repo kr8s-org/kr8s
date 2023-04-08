@@ -7,9 +7,10 @@ from typing import Any, Optional
 import aiohttp
 from aiohttp import ClientResponse
 
-from ._api import Kr8sApi
-from ._data_utils import list_dict_unpack
-from ._exceptions import NotFoundError
+import kr8s
+from kr8s._api import Kr8sApi
+from kr8s._data_utils import list_dict_unpack
+from kr8s._exceptions import NotFoundError
 
 
 class APIObject:
@@ -23,8 +24,7 @@ class APIObject:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
         self.raw = resource
-        # TODO discover existing Kr8sApi object if one exists
-        self.api = api or Kr8sApi()
+        self.api = api or kr8s.api()
 
     def __repr__(self):
         """Return a string representation of the Kubernetes resource."""
@@ -92,7 +92,7 @@ class APIObject:
     ) -> "APIObject":
         """Get a Kubernetes resource by name."""
 
-        api = api or Kr8sApi()
+        api = api or kr8s.api()
         try:
             resources = await api.get(cls.endpoint, name, namespace=namespace, **kwargs)
             [resource] = resources
