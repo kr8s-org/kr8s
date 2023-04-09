@@ -91,6 +91,16 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+async def test_pod_watch(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    async for event, obj in pod.watch():
+        assert event in ("ADDED", "MODIFIED", "DELETED")
+        assert obj.name == pod.name
+        break
+    await pod.delete()
+
+
 async def test_patch_pod(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()

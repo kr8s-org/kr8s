@@ -113,6 +113,7 @@ class Kr8sApi(object):
         namespace: str = None,
         label_selector: str = None,
         field_selector: str = None,
+        params: dict = None,
         watch: bool = False,
     ) -> dict:
         """Get a Kubernetes resource."""
@@ -122,8 +123,8 @@ class Kr8sApi(object):
             namespace = self.auth.namespace
         if namespace is ALL:
             namespace = ""
-
-        params = {}
+        if params is None:
+            params = {}
         if label_selector:
             params["labelSelector"] = label_selector
         if field_selector:
@@ -171,6 +172,7 @@ class Kr8sApi(object):
         namespace: str = None,
         label_selector: str = None,
         field_selector: str = None,
+        since: str = None,
     ):
         """Watch a Kubernetes resource."""
         async with self._get_kind(
@@ -178,6 +180,7 @@ class Kr8sApi(object):
             namespace=namespace,
             label_selector=label_selector,
             field_selector=field_selector,
+            params={"resourceVersion": since} if since else None,
             watch=True,
         ) as (obj_cls, response):
             async for line in response.content:

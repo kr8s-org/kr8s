@@ -181,9 +181,17 @@ class APIObject:
             await self.refresh()
             await asyncio.sleep(0.1)
 
-    async def watch(self, timeout: int = None):
+    async def watch(self):
         """Watch this object in Kubernetes."""
-        raise NotImplementedError("Watching is not yet implemented")
+        since = self.metadata.get("resourceVersion")
+        async for event, obj in self.api.watch(
+            self.endpoint,
+            namespace=self.namespace,
+            field_selector=f"metadata.name={self.name}",
+            since=since,
+        ):
+            self.raw = obj.raw
+            yield event, self
 
 
 ## v1 objects
