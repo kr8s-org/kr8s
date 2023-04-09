@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+import contextlib
 import ssl
 import weakref
-from typing import List, Tuple, Union
+from typing import List
 
 import aiohttp
 import asyncio_atexit
@@ -61,9 +62,10 @@ class Kr8sApi(object):
 
     async def version(self) -> dict:
         """Get the Kubernetes version"""
-        _, version = await self.call_api(method="GET", version="", base="/version")
-        return version
+        async with self.call_api(method="GET", version="", base="/version") as response:
+            return await response.json()
 
+    @contextlib.asynccontextmanager
     async def call_api(
         self,
         method,
@@ -72,9 +74,8 @@ class Kr8sApi(object):
         namespace: str = None,
         url: str = "",
         raise_for_status: bool = True,
-        raw: bool = False,
         **kwargs,
-    ) -> Tuple[int, Union[dict, str]]:
+    ) -> aiohttp.ClientResponse:
         """Make a Kubernetes API request."""
         if not self._session:
             await self._create_session()
@@ -102,11 +103,7 @@ class Kr8sApi(object):
             **kwargs,
         ) as response:
             # TODO catch self.auth error and reauth a couple of times before giving up
-            if raw:
-                return response.status, response
-            if response.content_type == "application/json":
-                return response.status, await response.json()
-            return response.status, await response.text()
+            yield response
 
     async def get(
         self,
@@ -131,13 +128,14 @@ class Kr8sApi(object):
             params["fieldSelector"] = field_selector
         params = params or None
         obj_cls = get_class(kind)
-        _, resourcelist = await self.call_api(
+        async with self.call_api(
             method="GET",
             url=kind,
             version=obj_cls.version,
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
-        )
+        ) as response:
+            resourcelist = await response.json()
         if "items" in resourcelist:
             return [
                 obj_cls(item, api=self)
@@ -148,11 +146,14 @@ class Kr8sApi(object):
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
-        _, core_api_list = await self.call_api(method="GET", version="", base="/api")
+        async with self.call_api(method="GET", version="", base="/api") as response:
+            core_api_list = await response.json()
+
         for version in core_api_list["versions"]:
-            _, resource = await self.call_api(
+            async with self.call_api(
                 method="GET", version="", base="/api", url=version
-            )
+            ) as response:
+                resource = await response.json()
             resources.extend(
                 [
                     {"version": version, **r}
@@ -160,12 +161,14 @@ class Kr8sApi(object):
                     if "/" not in r["name"]
                 ]
             )
-        _, api_list = await self.call_api(method="GET", version="", base="/apis")
+        async with self.call_api(method="GET", version="", base="/apis") as response:
+            api_list = await response.json()
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
             version = api["versions"][0]["groupVersion"]
-            _, resource = await self.call_api(
+            async with self.call_api(
                 method="GET", version="", base="/apis", url=version
-            )
+            ) as response:
+                resource = await response.json()
             resources.extend(
                 [
                     {"version": version, **r}
