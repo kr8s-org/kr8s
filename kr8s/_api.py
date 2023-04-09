@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import contextlib
+import json
 import ssl
 import weakref
 from typing import List
@@ -77,7 +78,7 @@ class Kr8sApi(object):
         **kwargs,
     ) -> aiohttp.ClientResponse:
         """Make a Kubernetes API request."""
-        if not self._session:
+        if not self._session or self._session.closed:
             await self._create_session()
 
         if not base:
@@ -105,13 +106,14 @@ class Kr8sApi(object):
             # TODO catch self.auth error and reauth a couple of times before giving up
             yield response
 
-    async def get(
+    @contextlib.asynccontextmanager
+    async def _get_kind(
         self,
         kind: str,
-        *names: List[str],
         namespace: str = None,
         label_selector: str = None,
         field_selector: str = None,
+        watch: bool = False,
     ) -> dict:
         """Get a Kubernetes resource."""
         from .objects import get_class
@@ -126,6 +128,8 @@ class Kr8sApi(object):
             params["labelSelector"] = label_selector
         if field_selector:
             params["fieldSelector"] = field_selector
+        if watch:
+            params["watch"] = "true" if watch else "false"
         params = params or None
         obj_cls = get_class(kind)
         async with self.call_api(
@@ -135,13 +139,50 @@ class Kr8sApi(object):
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
         ) as response:
+            yield obj_cls, response
+
+    async def get(
+        self,
+        kind: str,
+        *names: List[str],
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+    ) -> List[object]:
+        """Get a Kubernetes resource."""
+        async with self._get_kind(
+            kind,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+        ) as (obj_cls, response):
             resourcelist = await response.json()
-        if "items" in resourcelist:
-            return [
-                obj_cls(item, api=self)
-                for item in resourcelist["items"]
-                if not names or item["metadata"]["name"] in names
-            ]
+            if "items" in resourcelist:
+                return [
+                    obj_cls(item, api=self)
+                    for item in resourcelist["items"]
+                    if not names or item["metadata"]["name"] in names
+                ]
+            return []
+
+    async def watch(
+        self,
+        kind: str,
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+    ):
+        """Watch a Kubernetes resource."""
+        async with self._get_kind(
+            kind,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            watch=True,
+        ) as (obj_cls, response):
+            async for line in response.content:
+                event = json.loads(line)
+                yield event["type"], obj_cls(event["object"], api=self)
 
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""

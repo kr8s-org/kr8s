@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
-import uuid
 
 import aiohttp
 import pytest
@@ -15,75 +14,6 @@ from kr8s.objects import (
     get_class,
     object_from_spec,
 )
-
-DEFAULT_LABELS = {"created-by": "kr8s-tests"}
-
-
-@pytest.fixture
-async def example_pod_spec(ns):
-    name = "example-" + uuid.uuid4().hex[:10]
-    return {
-        "apiVersion": "v1",
-        "kind": "Pod",
-        "metadata": {
-            "name": name,
-            "namespace": ns,
-            "labels": {"hello": "world", **DEFAULT_LABELS},
-            "annotations": {"foo": "bar"},
-        },
-        "spec": {
-            "containers": [{"name": "pause", "image": "gcr.io/google_containers/pause"}]
-        },
-    }
-
-
-@pytest.fixture
-async def example_service_spec(ns):
-    name = "example-" + uuid.uuid4().hex[:10]
-    return {
-        "apiVersion": "v1",
-        "kind": "Service",
-        "metadata": {
-            "name": name,
-            "namespace": ns,
-            "labels": {"hello": "world", **DEFAULT_LABELS},
-            "annotations": {"foo": "bar"},
-        },
-        "spec": {
-            "ports": [{"port": 80, "targetPort": 9376}],
-            "selector": {"app": "MyApp"},
-        },
-    }
-
-
-@pytest.fixture
-async def example_deployment_spec(ns):
-    name = "example-" + uuid.uuid4().hex[:10]
-    return {
-        "apiVersion": "apps/v1",
-        "kind": "Deployment",
-        "metadata": {
-            "name": name,
-            "namespace": ns,
-            "labels": {"hello": "world", **DEFAULT_LABELS},
-            "annotations": {"foo": "bar"},
-        },
-        "spec": {
-            "replicas": 1,
-            "selector": {"matchLabels": {"app": name}},
-            "template": {
-                "metadata": {"labels": {"app": name}},
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "pause",
-                            "image": "gcr.io/google_containers/pause",
-                        }
-                    ]
-                },
-            },
-        },
-    }
 
 
 async def test_pod_create_and_delete(example_pod_spec):
