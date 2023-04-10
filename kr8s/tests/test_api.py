@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+import asyncio
+
 import pytest
 
 import kr8s
@@ -53,6 +55,26 @@ async def test_get_pods(namespace):
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
+
+
+async def test_watch_pods(example_pod_spec):
+    kubernetes = kr8s.api()
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    async for event, obj in kubernetes.watch("pods"):
+        assert event in ["ADDED", "MODIFIED", "DELETED"]
+        assert isinstance(obj, Pod)
+        if obj.name == pod.name:
+            if event == "ADDED":
+                await obj.patch({"metadata": {"labels": {"test": "test"}}})
+            elif event == "MODIFIED" and "test" in obj.labels and await obj.exists():
+                await obj.delete()
+                while await obj.exists():
+                    await asyncio.sleep(0.1)
+            elif event == "DELETED":
+                break
 
 
 async def test_get_deployments():

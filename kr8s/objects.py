@@ -105,13 +105,14 @@ class APIObject:
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
-        status, _ = await self.api.call_api(
+        async with self.api.call_api(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}",
             namespace=self.namespace,
             raise_for_status=False,
-        )
+        ) as resp:
+            status = resp.status
         if status == 200:
             return True
         if ensure:
@@ -120,13 +121,14 @@ class APIObject:
 
     async def create(self) -> None:
         """Create this object in Kubernetes."""
-        _, self.raw = await self.api.call_api(
+        async with self.api.call_api(
             "POST",
             version=self.version,
             url=self.endpoint,
             namespace=self.namespace,
             data=json.dumps(self.raw),
-        )
+        ) as resp:
+            self.raw = await resp.json()
 
     async def delete(self, propagation_policy: str = None) -> None:
         """Delete this object from Kubernetes."""
@@ -134,38 +136,41 @@ class APIObject:
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
         try:
-            await self.api.call_api(
+            async with self.api.call_api(
                 "DELETE",
                 version=self.version,
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
                 data=json.dumps(data),
-            )
+            ) as resp:
+                self.raw = await resp.json()
         except aiohttp.ClientResponseError as e:
             raise NotFoundError(f"Object {self.name} does not exist") from e
 
     async def refresh(self) -> None:
         """Refresh this object from Kubernetes."""
-        _, self.raw = await self.api.call_api(
+        async with self.api.call_api(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}",
             namespace=self.namespace,
-        )
+        ) as resp:
+            self.raw = await resp.json()
 
     async def patch(self, patch, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if subresource:
             url = f"{url}/{subresource}"
-        _, self.raw = await self.api.call_api(
+        async with self.api.call_api(
             "PATCH",
             version=self.version,
             url=url,
             namespace=self.namespace,
             data=json.dumps(patch),
             headers={"Content-Type": "application/merge-patch+json"},
-        )
+        ) as resp:
+            self.raw = await resp.json()
 
     async def scale(self, replicas=None):
         """Scale this object in Kubernetes."""
@@ -176,9 +181,17 @@ class APIObject:
             await self.refresh()
             await asyncio.sleep(0.1)
 
-    async def watch(self, timeout: int = None):
+    async def watch(self):
         """Watch this object in Kubernetes."""
-        raise NotImplementedError("Watching is not yet implemented")
+        since = self.metadata.get("resourceVersion")
+        async for event, obj in self.api.watch(
+            self.endpoint,
+            namespace=self.namespace,
+            field_selector=f"metadata.name={self.name}",
+            since=since,
+        ):
+            self.raw = obj.raw
+            yield event, self
 
 
 ## v1 objects
@@ -355,14 +368,14 @@ class Pod(APIObject):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
 
-        _, resp = await self.api.call_api(
+        async with self.api.call_api(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}/log",
             namespace=self.namespace,
             params=params,
-        )
-        return resp
+        ) as resp:
+            return await resp.text()
 
 
 class PodTemplate(APIObject):
@@ -454,15 +467,14 @@ class Service(APIObject):
         """
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
-        _, response = await self.api.call_api(
+        async with self.api.call_api(
             method,
             version=self.version,
             url=f"{self.endpoint}/{self.name}:{port}/proxy/{path}",
             namespace=self.namespace,
-            raw=True,
             **kwargs,
-        )
-        return response
+        ) as response:
+            return response
 
     async def proxy_http_get(
         self, path: str, port: Optional[int] = None, **kwargs
