@@ -37,6 +37,10 @@ copybutton_prompt_is_regexp = True
 html_theme = "furo"
 html_static_path = ["_static"]
 
+html_theme_options = {
+    "light_logo": "branding/logo-solo.png",
+    "dark_logo": "branding/logo-solo.png",
+}
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
