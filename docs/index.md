@@ -1,4 +1,4 @@
-# kr8s
+# <img alt="kr8s" title="kr8s" src="_static/branding/text-trimmed.png" style="max-height: 100px" />
 
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kr8s)](https://pypi.org/project/kr8s/)
@@ -32,8 +32,8 @@ The `dask-kubernetes` project used a mix of [kubernetes](https://github.com/kube
 
 To improve maintenance and code reuse `kr8s` was born to extract the Kubernetes library code in `dask-kubernetes` and replace it with something simpler and more complete. Thank you to everyone who contributed to `dask-kubernetes` and we hope you contribute to `kr8s` too.
 
-
 ```{toctree}
 :maxdepth: 2
-:caption: Contents:
+:caption: Misc
+branding
 ```

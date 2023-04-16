@@ -1,1 +1,3 @@
-
+body:not([data-theme="light"]) h1 img {
+    filter: invert(1);
+}
