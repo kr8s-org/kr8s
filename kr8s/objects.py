@@ -23,7 +23,7 @@ class APIObject:
     def __init__(self, resource: dict, api: Kr8sApi = None) -> None:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
-        self.raw = resource
+        self._raw = resource
         self.api = api or kr8s.api()
 
     def __repr__(self):
@@ -33,6 +33,15 @@ class APIObject:
     def __str__(self):
         """Return a string representation of the Kubernetes resource."""
         return self.name
+
+    @property
+    def raw(self) -> str:
+        """Raw object returned from the Kubernetes API."""
+        return self._raw
+
+    @raw.setter
+    def raw(self, value):
+        self._raw = value
 
     @property
     def name(self) -> str:
@@ -174,6 +183,8 @@ class APIObject:
 
     async def scale(self, replicas=None):
         """Scale this object in Kubernetes."""
+        if not self.scalable:
+            raise NotImplementedError(f"{self.kind} is not scalable")
         await self.exists(ensure=True)
         # TODO support dot notation in self.scalable_spec to support nested fields
         await self.patch({"spec": {self.scalable_spec: replicas}})

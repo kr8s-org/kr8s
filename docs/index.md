@@ -9,13 +9,17 @@
 This is beta software and might not be ready for prime time.
 ```
 
-A Kubernetes API for Python.
+A Kubernetes API for Python. Inspired by `kubectl`.
 
 ## Quickstart
+
+### Installation
 
 ```console
 $ pip install kr8s
 ```
+
+### Client API
 
 ```python
 import kr8s
@@ -24,16 +28,63 @@ api = kr8s.api()
 pods = await api.get("pods")
 ```
 
-## History
+### Object API
 
-This project was originally spun out from [dask-kubernetes](https://github.com/dask/dask-kubernetes) which provides utilities for deploying [Dask](https://www.dask.org/) clusters on Kubernetes.
+```python
+from kr8s.object import Pod
 
-The `dask-kubernetes` project used a mix of [kubernetes](https://github.com/kubernetes-client/python), [kubernetes-asyncio](https://github.com/tomplus/kubernetes_asyncio) and [pykube-ng](https://codeberg.org/hjacobs/pykube-ng) (and some subprocess calls to [kubectl](https://kubernetes.io/docs/reference/kubectl/)) to interact with the Kubernetes API. It also contained a whole load of glue code to work around missing features and get everything working together.
+pod = Pod({
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": "my-pod",
+        },
+        "spec": {
+            "containers": [{"name": "pause", "image": "gcr.io/google_containers/pause",}]
+        },
+    })
 
-To improve maintenance and code reuse `kr8s` was born to extract the Kubernetes library code in `dask-kubernetes` and replace it with something simpler and more complete. Thank you to everyone who contributed to `dask-kubernetes` and we hope you contribute to `kr8s` too.
+await pod.create()
+```
+
+
+```{toctree}
+:maxdepth: 2
+:caption: Getting Started
+:hidden: true
+installation
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Foundations
+:hidden: true
+authentication
+client
+object
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Development
+:hidden: true
+contributing
+releasing
+```
 
 ```{toctree}
 :maxdepth: 2
 :caption: Misc
+:hidden: true
 branding
+history
 ```
+
+
+```{toctree}
+:maxdepth: 2
+:caption: API Reference
+:hidden: true
+autoapi/kr8s/index
+```
+

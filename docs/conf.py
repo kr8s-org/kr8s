@@ -23,13 +23,38 @@ extensions = [
     "sphinx_copybutton",
     "sphinxcontrib.mermaid",
     "myst_parser",
+    "sphinx.ext.autodoc",
+    "autoapi.extension",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# -- copybutton configuration ---------------------------------------------------
+
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
+
+# -- autoapi configuration ---------------------------------------------------
+
+autodoc_typehints = "signature"  # autoapi respects this
+
+autoapi_type = "python"
+autoapi_dirs = ["../kr8s"]
+autoapi_template_dir = "_templates/autoapi"
+autoapi_options = [
+    "members",
+    "inherited-members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "imported-members",
+]
+autoapi_ignore = ["*tests*", "*conftest*"]
+# autoapi_python_use_implicit_namespaces = True
+autoapi_keep_files = True
+# autoapi_generate_api_docs = False
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

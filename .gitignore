@@ -141,3 +141,5 @@ cython_debug/
 .pytest-kind/
 .pytest_cache/
 .ruff_cache/
+
+docs/autoapi/
