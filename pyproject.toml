@@ -55,6 +55,7 @@ furo = "^2023.3.27"
 sphinx-copybutton = "^0.5.1"
 sphinx-design = "^0.3.0"
 sphinxcontrib-mermaid = "^0.8.1"
+sphinx-autoapi = "^2.1.0"
 
 [tool.pytest.ini_options]
 addopts = "-v --keep-cluster --durations=10"

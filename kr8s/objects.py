@@ -23,7 +23,7 @@ class APIObject:
     def __init__(self, resource: dict, api: Kr8sApi = None) -> None:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
-        self.raw = resource
+        self._raw = resource
         self.api = api or kr8s.api()
 
     def __repr__(self):
@@ -33,6 +33,15 @@ class APIObject:
     def __str__(self):
         """Return a string representation of the Kubernetes resource."""
         return self.name
+
+    @property
+    def raw(self) -> str:
+        """Raw object returned from the Kubernetes API."""
+        return self._raw
+
+    @raw.setter
+    def raw(self, value):
+        self._raw = value
 
     @property
     def name(self) -> str:

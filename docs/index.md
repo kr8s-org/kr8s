@@ -80,3 +80,11 @@ branding
 history
 ```
 
+
+```{toctree}
+:maxdepth: 2
+:caption: API Reference
+:hidden: true
+autoapi/kr8s/index
+```
+

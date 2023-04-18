@@ -28,7 +28,7 @@ Legacy `auth-provider` methods are not currently supported along with OIDC.
 You can also manually specify authentication information when you create your kr8s client object.
 
 ```{note}
-When using the [Object API](object) you may not even need to create an API client, however when configuring credentials manually it can still be helpful to create an instance of the client via `kr8s.api(...)` as this API client will be cached and reused by objects in the future.
+When using the [Object API](object) you may not even need to create an API client, however when configuring credentials manually it can still be helpful to create an instance of the client via [](#kr8s.api) as this API client will be cached and reused by objects in the future.
 
 See [Client Caching](client) for more information.
 ```
@@ -60,7 +60,7 @@ client = kr8s.api(kubeconfig="/path/to/kube/config")
 
 ### Service Account
 
-When running a Pod with a service account credentials will be mounted into `/var/run/secrets/kubernetes.io/serviceaccount` so `kr8s` will also check there. However you can specify an alternate path if you know that service account style credentials are stored elsewhere.
+When running inside a Pod with a service account, credentials will be mounted into `/var/run/secrets/kubernetes.io/serviceaccount` so `kr8s` will also check there. However you can specify an alternate path if you know that service account style credentials are stored elsewhere.
 
 ```python
 import kr8s
