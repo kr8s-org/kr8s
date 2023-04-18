@@ -174,6 +174,8 @@ class APIObject:
 
     async def scale(self, replicas=None):
         """Scale this object in Kubernetes."""
+        if not self.scalable:
+            raise NotImplementedError(f"{self.kind} is not scalable")
         await self.exists(ensure=True)
         # TODO support dot notation in self.scalable_spec to support nested fields
         await self.patch({"spec": {self.scalable_spec: replicas}})
