@@ -83,12 +83,13 @@ class Api(object):
     @contextlib.asynccontextmanager
     async def call_api(
         self,
-        method,
+        method: str = "GET",
         version: str = "v1",
         base: str = "",
         namespace: str = None,
         url: str = "",
         raise_for_status: bool = True,
+        websocket: bool = False,
         **kwargs,
     ) -> aiohttp.ClientResponse:
         """Make a Kubernetes API request."""
@@ -110,15 +111,23 @@ class Api(object):
         parts.append(url)
         url = "/".join(parts)
 
-        async with self._session.request(
-            method=method,
-            url=url,
-            ssl=self._sslcontext,
-            raise_for_status=raise_for_status,
-            **kwargs,
-        ) as response:
-            # TODO catch self.auth error and reauth a couple of times before giving up
-            yield response
+        if websocket:
+            async with self._session.ws_connect(
+                url=url,
+                ssl=self._sslcontext,
+                **kwargs,
+            ) as response:
+                yield response
+        else:
+            async with self._session.request(
+                method=method,
+                url=url,
+                ssl=self._sslcontext,
+                raise_for_status=raise_for_status,
+                **kwargs,
+            ) as response:
+                # TODO catch self.auth error and reauth a couple of times before giving up
+                yield response
 
     @contextlib.asynccontextmanager
     async def _get_kind(

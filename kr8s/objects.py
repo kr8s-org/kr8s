@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import json
-from typing import Any, Optional
+import random
+from typing import Any, List, Optional, Union
 
 import aiohttp
 from aiohttp import ClientResponse
@@ -11,6 +12,7 @@ import kr8s
 from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
+from kr8s._portforward import PortForward
 
 
 class APIObject:
@@ -388,6 +390,17 @@ class Pod(APIObject):
         ) as resp:
             return await resp.text()
 
+    def port_forward(self, *ports) -> Union[PortForward, List[PortForward]]:
+        """Port forward a pod."""
+        if len(ports) % 2 != 0:
+            raise ValueError("ports must be in pairs of local, remote")
+        forwards = []
+        for local_port, remote_port in zip(ports[::2], ports[1::2]):
+            forwards.append(PortForward(self, local_port, remote_port))
+        if len(forwards) == 1:
+            return forwards[0]
+        return forwards
+
 
 class PodTemplate(APIObject):
     """A Kubernetes PodTemplate."""
@@ -506,6 +519,14 @@ class Service(APIObject):
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> None:
         return await self.proxy_http_request("DELETE", path, port, **kwargs)
+
+    async def port_forward(self, *ports) -> Union[PortForward, List[PortForward]]:
+        """Port forward a service."""
+        pods = await self.api.get("pods", label_selector=self.labels)
+        pods = [pod for pod in pods if await pod.ready()]
+        if len(pods) == 0:
+            raise ValueError("no ready pods found for service")
+        return await random.choice(pods).port_forward(*ports)
 
 
 ## apps/v1 objects

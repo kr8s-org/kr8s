@@ -16,6 +16,18 @@ from kr8s.objects import (
 )
 
 
+@pytest.fixture
+async def nginx_pod(example_pod_spec):
+    example_pod_spec["spec"]["containers"][0]["image"] = "nginx:latest"
+    example_pod_spec["spec"]["containers"][0]["ports"] = [{"containerPort": 80}]
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    yield pod
+    await pod.delete()
+
+
 async def test_pod_create_and_delete(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
@@ -197,3 +209,22 @@ async def test_pod_logs(example_pod_spec):
     log = await pod.logs(container="pause")
     assert isinstance(log, str)
     await pod.delete()
+
+
+async def test_pod_port_forward_context_manager(nginx_pod):
+    pf = nginx_pod.port_forward(8089, 80)
+    async with pf as port:
+        assert port == 8089
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"http://localhost:{port}") as resp:
+                assert resp.status == 200
+
+
+async def test_pod_port_forward(nginx_pod):
+    pf = await nginx_pod.port_forward(8080, 80)
+    assert pf.local_port == 8080
+    assert pf.remote_port == 80
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://localhost:{pf.local_port}") as resp:
+            assert resp.status == 200
+    await pf.close()
