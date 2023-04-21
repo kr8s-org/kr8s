@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import socket
 from contextlib import asynccontextmanager
 from functools import partial
 
@@ -52,23 +53,17 @@ async def ws_to_tcp(websocket, writer):
 
 
 @asynccontextmanager
-async def portforward(pod, local_port, remote_port):
-    async with pod.api.call_api(
-        version=pod.version,
-        url=f"{pod.endpoint}/{pod.name}/portforward",
-        namespace=pod.namespace,
-        websocket=True,
-        params={
-            "name": pod.name,
-            "namespace": pod.namespace,
-            "ports": f"{remote_port}",
-        },
-    ) as websocket:
-        server = await asyncio.start_server(
-            partial(sync_sockets, websocket), port=local_port
-        )
-        async with server:
-            await server.start_serving()
-            yield local_port
-            server.close()
-            await server.wait_closed()
+async def ws_sync(websocket, local_port=None):
+    """Start a tcp server and forward all connections to a websocket."""
+    if local_port is None:
+        local_port = 0
+    server = await asyncio.start_server(
+        partial(sync_sockets, websocket), port=local_port
+    )
+    async with server:
+        await server.start_serving()
+        for sock in server.sockets:
+            if sock.family == socket.AF_INET:
+                yield sock.getsockname()[1]
+        server.close()
+        await server.wait_closed()

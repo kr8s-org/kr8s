@@ -13,7 +13,7 @@ import kr8s
 from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
-from kr8s._portforward import portforward
+from kr8s._portforward import ws_sync
 
 
 class APIObject:
@@ -391,9 +391,22 @@ class Pod(APIObject):
         ) as resp:
             return await resp.text()
 
-    def portforward(self, local_port, remote_port) -> portforward:
+    @asynccontextmanager
+    async def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod."""
-        return portforward(self, local_port, remote_port)
+        async with self.api.call_api(
+            version=self.version,
+            url=f"{self.endpoint}/{self.name}/portforward",
+            namespace=self.namespace,
+            websocket=True,
+            params={
+                "name": self.name,
+                "namespace": self.namespace,
+                "ports": f"{remote_port}",
+            },
+        ) as websocket:
+            async with ws_sync(websocket, local_port) as port:
+                yield port
 
 
 class PodTemplate(APIObject):
@@ -515,18 +528,14 @@ class Service(APIObject):
         return await self.proxy_http_request("DELETE", path, port, **kwargs)
 
     @asynccontextmanager
-    async def portforward(self, local_port, remote_port) -> portforward:
+    async def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a service."""
-        pods = await self.api.get(
-            "pods",
-            label_selector=",".join(
-                [f"{key}={value}" for key, value in self.labels.items()]
-            ),
-        )
+        pod_selector = ",".join([f"{k}={v}" for k, v in self.labels.items()])
+        pods = await self.api.get("pods", label_selector=pod_selector)
         pods = [pod for pod in pods if await pod.ready()]
         if len(pods) == 0:
-            raise ValueError("no ready pods found for service")
-        async with random.choice(pods).portforward(local_port, remote_port) as port:
+            raise ValueError("No ready pods found for service")
+        async with random.choice(pods).portforward(remote_port, local_port) as port:
             yield port
 
 
