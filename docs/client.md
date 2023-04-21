@@ -11,8 +11,8 @@ version = await api.version()
 print(version)
 ```
 
-```{note}
-Calling [](#kr8s.api) returns an instance of [](#kr8s.Api). In most use cases the API client should be thought of as a singleton due to [client caching](#client-caching).
+```{tip}
+Calling [](#kr8s.api) returns a cached instance of [](#kr8s.Api). In most use cases [](#kr8s.api) should be thought of as a singleton due to [client caching](#client-caching).
 ```
 
 The client API is inspired by `kubectl` rather than the Kubernetes API directly as it's more likely that developers will be familiar with `kubectl`.
