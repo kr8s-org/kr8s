@@ -12,7 +12,7 @@ print(version)
 ```
 
 ```{note}
-Calling [](#kr8s.api) returns an instance of [](#kr8s._api.Api). We do not recommend instantiating this object directly and encourage you to use the [](#kr8s.api) factory function in order to benefit from [client caching](#client-caching).
+Calling [](#kr8s.api) returns an instance of [](#kr8s.Api). In most use cases the API client should be thought of as a singleton due to [client caching](#client-caching).
 ```
 
 The client API is inspired by `kubectl` rather than the Kubernetes API directly as it's more likely that developers will be familiar with `kubectl`.
@@ -59,27 +59,56 @@ print(version)
 
 ## Client caching
 
-It is always recommended to create client objects via the [](#kr8s.api) factory function.
+It is always recommended to create client objects via the [](#kr8s.api) factory function. In most use cases where you are interacting with a single Kubernetes cluster you can think of this as a singleton.
 
-This function will cache client objects that are created with the same arguments.
+However, the factory function dues support creating multiple clients and will only cache client objects that are created with the same arguments.
 
 ```python
 import kr8s
 
 api = kr8s.api(kubeconfig="/foo/bar")
 api2 = kr8s.api(kubeconfig="/foo/bar")
-# api2 is api due to caching
+# api2 is a pointer to api due to caching
 
 api3 = kr8s.api(kubeconfig="/fizz/buzz")
-# api3 is not api or api2 because it was created with different arguments
+# api3 is a new kr8s.Api instance as it was created with different arguments
 ```
 
-Calling [](#kr8s.api) with no arguments will also return the first client from the cache if one exists. This is useful as you may want to explicitly create a client with custom auth at the start of your code and treat it like a singleton. The Object API makes use of this when instantiating objects.
+Calling [](#kr8s.api) with no arguments will also return the first client from the cache if one exists. This is useful as you may want to explicitly create a client with custom auth at the start of your code and treat it like a singleton. The [Object API](object) makes use of this when instantiating objects with `api=None`.
 
 ```python
 import kr8s
 
 api = kr8s.api(kubeconfig="/foo/bar")
 api2 = kr8s.api()
-# api2 is api due to caching
+# api2 is a pointer to api due to caching
 ```
+
+```python
+from kr8s.objects import Pod
+
+pod = await Pod.get("some-pod")
+# pod.api is a pointer to api despite not being passed a reference due to caching
+```
+
+````{danger}
+If you have a strong requirement to avoid the cache, perhaps the `KUBECONFIG` env var gets modified between calls to `kr8s.api()` and you need it to return different clients, then you can bypass the factory and instantiate [](#kr8s.Api) directly.
+
+However, **this is not recommend** and will likely break caching everywhere so you'll need to be sure to pass your API client around.
+
+```python
+import kr8s
+
+api = kr8s.Api(bypass_factory=True)
+api2 = kr8s.Api(bypass_factory=True)
+# api and api2 are different instances of kr8s.Api
+```
+
+```python
+from kr8s.objects import Pod
+
+pod = await Pod.get("some-pod", api=api2)
+# be sure to pass a reference around as caching will no longer work
+```
+
+````
