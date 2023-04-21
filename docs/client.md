@@ -12,7 +12,7 @@ print(version)
 ```
 
 ```{note}
-Calling [](#kr8s.api) returns an instance of [](#kr8s._api.Kr8sApi). We do not recommend instantiating this object directly and encourage you to use the [](#kr8s.api) factory function in order to benefit from [client caching](#client-caching).
+Calling [](#kr8s.api) returns an instance of [](#kr8s._api.Api). We do not recommend instantiating this object directly and encourage you to use the [](#kr8s.api) factory function in order to benefit from [client caching](#client-caching).
 ```
 
 The client API is inspired by `kubectl` rather than the Kubernetes API directly as it's more likely that developers will be familiar with `kubectl`.
@@ -29,7 +29,7 @@ for pod in pods:
 
 ## Low-level API calls
 
-For situations where there may not be an appropriate method to call or you want to call the Kubernetes API directly you can use the [`api.call_api`](#kr8s.Kr8sApi.call_api) context manager.
+For situations where there may not be an appropriate method to call or you want to call the Kubernetes API directly you can use the [`api.call_api`](#kr8s.Api.call_api) context manager.
 
 To make API requests for resources more convenience `call_api` allows building the url via various kwargs.
 

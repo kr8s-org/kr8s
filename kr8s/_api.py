@@ -14,8 +14,14 @@ from ._auth import KubeAuth
 ALL = "all"
 
 
-class Kr8sApi(object):
-    """A kr8s object for interacting with the Kubernetes API"""
+class Api(object):
+    """A kr8s object for interacting with the Kubernetes API.
+
+    .. warning::
+        This class is not intended to be instantiated directly. Instead, use the
+        :func:`kr8s.api` function to get a singleton instance of the API.
+
+    """
 
     _instances = weakref.WeakValueDictionary()
 
@@ -31,7 +37,7 @@ class Kr8sApi(object):
             serviceaccount=self._serviceaccount,
             namespace=kwargs.get("namespace"),
         )
-        Kr8sApi._instances[frozenset(kwargs.items())] = self
+        Api._instances[frozenset(kwargs.items())] = self
 
     async def _create_session(self):
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
@@ -229,21 +235,19 @@ class Kr8sApi(object):
         return f"kr8s/{__version__}"
 
 
-def api(url=None, kubeconfig=None, serviceaccount=None, namespace=None) -> Kr8sApi:
-    """Create a kr8s object for interacting with the Kubernetes API.
+def api(url=None, kubeconfig=None, serviceaccount=None, namespace=None) -> Api:
+    """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments, it will be returned.
     """
 
     def _f(**kwargs):
         key = frozenset(kwargs.items())
-        if key in Kr8sApi._instances:
-            return Kr8sApi._instances[key]
-        if all(k is None for k in kwargs.values()) and list(
-            Kr8sApi._instances.values()
-        ):
-            return list(Kr8sApi._instances.values())[0]
-        return Kr8sApi(**kwargs)
+        if key in Api._instances:
+            return Api._instances[key]
+        if all(k is None for k in kwargs.values()) and list(Api._instances.values()):
+            return list(Api._instances.values())[0]
+        return Api(**kwargs)
 
     return _f(
         url=url,
