@@ -8,6 +8,14 @@ import kr8s
 from kr8s.objects import Pod
 
 
+async def test_factory_bypass():
+    with pytest.raises(ValueError, match="kr8s.api()"):
+        _ = kr8s.Api()
+        assert not kr8s.Api._instances
+    _ = kr8s.api()
+    assert kr8s.Api._instances
+
+
 async def test_api_factory(serviceaccount):
     k1 = kr8s.api()
     k2 = kr8s.api()

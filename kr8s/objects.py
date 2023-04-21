@@ -8,7 +8,7 @@ import aiohttp
 from aiohttp import ClientResponse
 
 import kr8s
-from kr8s._api import Kr8sApi
+from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
 
@@ -20,7 +20,7 @@ class APIObject:
     scalable = False
     scalable_spec = "replicas"
 
-    def __init__(self, resource: dict, api: Kr8sApi = None) -> None:
+    def __init__(self, resource: dict, api: Api = None) -> None:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
         self._raw = resource
@@ -97,7 +97,7 @@ class APIObject:
 
     @classmethod
     async def get(
-        cls, name: str, namespace: str = None, api: Kr8sApi = None, **kwargs
+        cls, name: str, namespace: str = None, api: Api = None, **kwargs
     ) -> "APIObject":
         """Get a Kubernetes resource by name."""
 
@@ -739,7 +739,7 @@ def get_class(kind, version=None):
     raise KeyError(f"No object registered for {version}/{kind}")
 
 
-def object_from_spec(spec: dict, api: Kr8sApi = None) -> APIObject:
+def object_from_spec(spec: dict, api: Api = None) -> APIObject:
     """Create an APIObject from a Kubernetes resource spec.
 
     Args:
