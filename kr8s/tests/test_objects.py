@@ -18,14 +18,28 @@ from kr8s.objects import (
 
 @pytest.fixture
 async def nginx_pod(example_pod_spec):
+    example_pod_spec["metadata"]["name"] = (
+        "nginx-" + example_pod_spec["metadata"]["name"]
+    )
     example_pod_spec["spec"]["containers"][0]["image"] = "nginx:latest"
     example_pod_spec["spec"]["containers"][0]["ports"] = [{"containerPort": 80}]
+    example_pod_spec["metadata"]["labels"]["app"] = example_pod_spec["metadata"]["name"]
     pod = Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
     yield pod
     await pod.delete()
+
+
+@pytest.fixture
+async def nginx_service(example_service_spec, nginx_pod):
+    example_service_spec["metadata"]["name"] = nginx_pod.name
+    example_service_spec["spec"]["selector"] = nginx_pod.labels
+    service = Service(example_service_spec)
+    await service.create()
+    yield service
+    await service.delete()
 
 
 async def test_pod_create_and_delete(example_pod_spec):
@@ -212,19 +226,20 @@ async def test_pod_logs(example_pod_spec):
 
 
 async def test_pod_port_forward_context_manager(nginx_pod):
-    pf = nginx_pod.port_forward(8089, 80)
-    async with pf as port:
+    async with nginx_pod.portforward(8089, 80) as port:
         assert port == 8089
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{port}") as resp:
+            async with session.get(f"http://localhost:{port}/") as resp:
                 assert resp.status == 200
+            async with session.get(f"http://localhost:{port}/foo") as resp:
+                assert resp.status == 404
 
 
-async def test_pod_port_forward(nginx_pod):
-    pf = await nginx_pod.port_forward(8080, 80)
-    assert pf.local_port == 8080
-    assert pf.remote_port == 80
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://localhost:{pf.local_port}") as resp:
-            assert resp.status == 200
-    await pf.close()
+async def test_service_port_forward_context_manager(nginx_service):
+    async with nginx_service.portforward(8089, 80) as port:
+        assert port == 8089
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"http://localhost:{port}/") as resp:
+                assert resp.status == 200
+            async with session.get(f"http://localhost:{port}/foo") as resp:
+                assert resp.status == 404

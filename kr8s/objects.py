@@ -3,7 +3,8 @@
 import asyncio
 import json
 import random
-from typing import Any, List, Optional, Union
+from contextlib import asynccontextmanager
+from typing import Any, Optional
 
 import aiohttp
 from aiohttp import ClientResponse
@@ -12,7 +13,7 @@ import kr8s
 from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
-from kr8s._portforward import PortForward
+from kr8s._portforward import portforward
 
 
 class APIObject:
@@ -390,16 +391,9 @@ class Pod(APIObject):
         ) as resp:
             return await resp.text()
 
-    def port_forward(self, *ports) -> Union[PortForward, List[PortForward]]:
+    def portforward(self, local_port, remote_port) -> portforward:
         """Port forward a pod."""
-        if len(ports) % 2 != 0:
-            raise ValueError("ports must be in pairs of local, remote")
-        forwards = []
-        for local_port, remote_port in zip(ports[::2], ports[1::2]):
-            forwards.append(PortForward(self, local_port, remote_port))
-        if len(forwards) == 1:
-            return forwards[0]
-        return forwards
+        return portforward(self, local_port, remote_port)
 
 
 class PodTemplate(APIObject):
@@ -520,13 +514,20 @@ class Service(APIObject):
     ) -> None:
         return await self.proxy_http_request("DELETE", path, port, **kwargs)
 
-    async def port_forward(self, *ports) -> Union[PortForward, List[PortForward]]:
+    @asynccontextmanager
+    async def portforward(self, local_port, remote_port) -> portforward:
         """Port forward a service."""
-        pods = await self.api.get("pods", label_selector=self.labels)
+        pods = await self.api.get(
+            "pods",
+            label_selector=",".join(
+                [f"{key}={value}" for key, value in self.labels.items()]
+            ),
+        )
         pods = [pod for pod in pods if await pod.ready()]
         if len(pods) == 0:
             raise ValueError("no ready pods found for service")
-        return await random.choice(pods).port_forward(*ports)
+        async with random.choice(pods).portforward(local_port, remote_port) as port:
+            yield port
 
 
 ## apps/v1 objects
