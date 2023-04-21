@@ -21,6 +21,8 @@ class Api(object):
         This class is not intended to be instantiated directly. Instead, use the
         :func:`kr8s.api` function to get a singleton instance of the API.
 
+        See https://docs.kr8s.org/en/latest/client.html#client-caching.
+
     """
 
     _instances = weakref.WeakValueDictionary()
