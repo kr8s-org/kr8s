@@ -26,6 +26,12 @@ class Api(object):
     _instances = weakref.WeakValueDictionary()
 
     def __init__(self, **kwargs) -> None:
+        if not kwargs.pop("bypass_factory", False):
+            raise ValueError(
+                "Use kr8s.api() to get an instance of Api. "
+                "See https://docs.kr8s.org/en/latest/client.html#client-caching."
+            )
+
         self._url = kwargs.get("url")
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
@@ -247,7 +253,7 @@ def api(url=None, kubeconfig=None, serviceaccount=None, namespace=None) -> Api:
             return Api._instances[key]
         if all(k is None for k in kwargs.values()) and list(Api._instances.values()):
             return list(Api._instances.values())[0]
-        return Api(**kwargs)
+        return Api(**kwargs, bypass_factory=True)
 
     return _f(
         url=url,
