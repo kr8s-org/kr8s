@@ -50,6 +50,8 @@ jobs:
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
         run: poetry run pytest kr8s
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
       - name: Debug k8s resources
         if: always()
         run: kubectl get all -A
