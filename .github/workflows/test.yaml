@@ -52,6 +52,8 @@ jobs:
         run: poetry run pytest kr8s
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
+        with:
+          files: .coverage
       - name: Debug k8s resources
         if: always()
         run: kubectl get all -A
