@@ -1,6 +1,7 @@
 <div style="text-align: center; width: 100%;"><img src="branding/logo-wide.png" style="max-height: 200px;" /></div>
 
 [![Test](https://github.com/kr8s-org/kr8s/actions/workflows/test.yaml/badge.svg)](https://github.com/kr8s-org/kr8s/actions/workflows/test.yaml)
+[![Codecov](https://img.shields.io/codecov/c/gh/kr8s-org/kr8s)](https://app.codecov.io/gh/kr8s-org/kr8s)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/kr8s-org/kr8s/main.svg)](https://results.pre-commit.ci/latest/github/kr8s-org/kr8s/main)
 [![Documentation Status](https://readthedocs.org/projects/kr8s/badge/?version=latest)](https://kr8s.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
