@@ -51,8 +51,7 @@ async def test_url(kubectl_proxy):
 
 async def test_no_config():
     with pytest.raises(ValueError):
-        kubernetes = kr8s.api(kubeconfig="/no/file/here")
-        await kubernetes.version()
+        kr8s.api(kubeconfig="/no/file/here")
 
 
 async def test_service_account(serviceaccount):
