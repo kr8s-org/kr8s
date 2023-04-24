@@ -11,7 +11,7 @@ from kr8s.objects import Pod
 async def test_factory_bypass():
     with pytest.raises(ValueError, match="kr8s.api()"):
         _ = kr8s.Api()
-        assert not kr8s.Api._instances
+    assert not kr8s.Api._instances
     _ = kr8s.api()
     assert kr8s.Api._instances
 
@@ -54,6 +54,13 @@ async def test_version():
     kubernetes = kr8s.api()
     version = await kubernetes.version()
     assert "major" in version
+
+
+async def test_bad_api_version():
+    kubernetes = kr8s.api()
+    with pytest.raises(ValueError):
+        async with kubernetes.call_api("GET", version="foo"):
+            pass  # pragma: no cover
 
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])

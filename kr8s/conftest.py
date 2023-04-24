@@ -114,7 +114,7 @@ def k8s_cluster(request) -> KindCluster:
             time.sleep(1)
     yield kind_cluster
     del os.environ["KUBECONFIG"]
-    if not request.config.getoption("keep_cluster"):
+    if not request.config.getoption("keep_cluster"):  # pragma: no cover
         kind_cluster.delete()
 
 
