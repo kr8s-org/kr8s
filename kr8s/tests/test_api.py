@@ -60,7 +60,7 @@ async def test_bad_api_version():
     kubernetes = kr8s.api()
     with pytest.raises(ValueError):
         async with kubernetes.call_api("GET", version="foo"):
-            pass
+            pass  # pragma: no cover
 
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
