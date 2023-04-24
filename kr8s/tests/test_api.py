@@ -11,7 +11,7 @@ from kr8s.objects import Pod
 async def test_factory_bypass():
     with pytest.raises(ValueError, match="kr8s.api()"):
         _ = kr8s.Api()
-        assert not kr8s.Api._instances
+    assert not kr8s.Api._instances
     _ = kr8s.api()
     assert kr8s.Api._instances
 
