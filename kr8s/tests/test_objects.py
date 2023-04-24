@@ -91,6 +91,25 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+async def test_selectors(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.exists():
+        await asyncio.sleep(0.1)
+
+    kubernetes = kr8s.api()
+    pods = await kubernetes.get(
+        "pods", namespace=kr8s.ALL, label_selector="hello=world"
+    )
+    assert len(pods) == 1
+
+    pods = await kubernetes.get(
+        "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + pod.name
+    )
+    assert len(pods) == 1
+    await pod.delete()
+
+
 async def test_pod_watch(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
