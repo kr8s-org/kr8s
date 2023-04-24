@@ -92,15 +92,14 @@ async def test_pod_get(example_pod_spec):
 
 
 async def test_selectors(example_pod_spec):
+    example_pod_spec["metadata"]["labels"]["abc"] = "123def"
     pod = Pod(example_pod_spec)
     await pod.create()
     while not await pod.exists():
         await asyncio.sleep(0.1)
 
     kubernetes = kr8s.api()
-    pods = await kubernetes.get(
-        "pods", namespace=kr8s.ALL, label_selector="hello=world"
-    )
+    pods = await kubernetes.get("pods", namespace=kr8s.ALL, label_selector="abc=123def")
     assert len(pods) == 1
 
     pods = await kubernetes.get(
