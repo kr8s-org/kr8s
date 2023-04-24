@@ -107,6 +107,12 @@ async def test_selectors(example_pod_spec):
         "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + pod.name
     )
     assert len(pods) == 1
+
+    pods = await kubernetes.get(
+        "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + "foo-bar-baz"
+    )
+    assert len(pods) == 0
+
     await pod.delete()
 
 
