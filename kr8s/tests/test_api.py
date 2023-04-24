@@ -56,6 +56,13 @@ async def test_version():
     assert "major" in version
 
 
+async def test_bad_api_version():
+    kubernetes = kr8s.api()
+    with pytest.raises(ValueError):
+        async with kubernetes.call_api("GET", version="foo"):
+            pass
+
+
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
 async def test_get_pods(namespace):
     kubernetes = kr8s.api()
