@@ -18,9 +18,10 @@ async def sync_sockets(websocket, reader, writer):
             asyncio.create_task(ws_to_tcp(websocket, writer)),
         ]
         await asyncio.gather(*tasks)
-    except ConnectionClosedError:
+    except ConnectionClosedError as e:
         for task in tasks:
             task.cancel()
+        raise e
     finally:
         writer.close()
 
