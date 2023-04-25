@@ -17,7 +17,7 @@ from kr8s.objects import (
 
 
 @pytest.fixture
-async def nginx_pod(example_pod_spec):
+async def nginx_pod(k8s_cluster, example_pod_spec):
     example_pod_spec["metadata"]["name"] = (
         "nginx-" + example_pod_spec["metadata"]["name"]
     )
@@ -28,6 +28,15 @@ async def nginx_pod(example_pod_spec):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
+    k8s_cluster.kubectl(
+        "exec",
+        example_pod_spec["metadata"]["name"],
+        "dd",
+        "if=/dev/random",
+        "of=/usr/share/nginx/html/foo.dat",
+        "bs=4M",
+        "count=10",
+    )
     yield pod
     await pod.delete()
 
@@ -255,6 +264,9 @@ async def test_port_forward(nginx_service):
                 assert resp.status == 200
             async with session.get(f"http://localhost:{port}/foo") as resp:
                 assert resp.status == 404
+            async with session.get(f"http://localhost:{port}/foo.dat") as resp:
+                assert resp.status == 200
+                await resp.read()
 
     async with nginx_service.portforward(80) as port:
         async with aiohttp.ClientSession() as session:
