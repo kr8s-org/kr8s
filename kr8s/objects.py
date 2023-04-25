@@ -391,12 +391,9 @@ class Pod(APIObject):
         ) as resp:
             return await resp.text()
 
-    @asynccontextmanager
-    async def portforward(self, remote_port: int, local_port: int = None) -> int:
+    def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod."""
-        pf = PortForward(self, remote_port, local_port)
-        async with pf.run() as port:
-            yield port
+        return PortForward(self, remote_port, local_port)
 
 
 class PodTemplate(APIObject):

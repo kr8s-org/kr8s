@@ -21,6 +21,14 @@ class PortForward:
         self.pod = pod
         self.connection_attempts = 0
         self._tasks = []
+        self._run = None
+
+    async def __aenter__(self, *args, **kwargs):
+        self._run = self.run()
+        return await self._run.__aenter__(*args, **kwargs)
+
+    async def __aexit__(self, *args, **kwargs):
+        return await self._run.__aexit__(*args, **kwargs)
 
     @asynccontextmanager
     async def run(self):
@@ -54,7 +62,7 @@ class PortForward:
                     self.websocket = websocket
                     while not self.websocket.closed:
                         await asyncio.sleep(0.1)
-            except aiohttp.WSServerHandshakeError:
+            except (aiohttp.WSServerHandshakeError, aiohttp.ServerDisconnectedError):
                 await asyncio.sleep(0.1)
 
     async def sync_sockets(self, reader, writer):
