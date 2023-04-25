@@ -97,6 +97,9 @@ class PortForward:
                         # Keep track of our channels. Could be useful later for listening to multiple ports.
                         channels.append(message.data[0])
                     else:
+                        if message.data[0] % 2 == 1:
+                            # Odd channels are for errors. We should probably do something with this.
+                            continue
                         writer.write(message.data[1:])
                         await writer.drain()
             else:
