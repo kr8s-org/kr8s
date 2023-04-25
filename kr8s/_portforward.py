@@ -19,6 +19,7 @@ class PortForward:
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
         self.pod = pod
+        self.connection_attempts = 0
         self._tasks = []
 
     @asynccontextmanager
@@ -36,6 +37,7 @@ class PortForward:
 
     async def connect_websocket(self):
         while self.running:
+            self.connection_attempts += 1
             try:
                 async with self.pod.api.call_api(
                     version=self.pod.version,
@@ -46,6 +48,7 @@ class PortForward:
                         "name": self.pod.name,
                         "namespace": self.pod.namespace,
                         "ports": f"{self.remote_port}",
+                        "_preload_content": "false",
                     },
                 ) as websocket:
                     self.websocket = websocket
@@ -78,6 +81,7 @@ class PortForward:
                 raise ConnectionClosedError("TCP socket closed")
             else:
                 # Send data to channel 0 of the websocket.
+                # TODO Support multiple channels for multiple ports.
                 while self.websocket is None or self.websocket.closed:
                     await asyncio.sleep(0.1)
                 await self.websocket.send_bytes(b"\x00" + data)
