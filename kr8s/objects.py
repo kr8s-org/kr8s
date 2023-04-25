@@ -394,19 +394,8 @@ class Pod(APIObject):
     @asynccontextmanager
     async def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod."""
-        async with self.api.call_api(
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}/portforward",
-            namespace=self.namespace,
-            websocket=True,
-            params={
-                "name": self.name,
-                "namespace": self.namespace,
-                "ports": f"{remote_port}",
-            },
-        ) as websocket:
-            async with ws_sync(websocket, local_port) as port:
-                yield port
+        async with ws_sync(self, remote_port, local_port) as port:
+            yield port
 
 
 class PodTemplate(APIObject):
