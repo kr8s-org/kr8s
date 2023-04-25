@@ -111,7 +111,9 @@ class PortForward:
                     else:
                         if message.data[0] % 2 == 1:
                             # Odd channels are for errors. We should probably do something with this.
-                            continue
+                            error = message.data[1:].decode()
+                            print(error)
+                            raise ConnectionClosedError(error)
                         writer.write(message.data[1:])
                         await writer.drain()
             else:

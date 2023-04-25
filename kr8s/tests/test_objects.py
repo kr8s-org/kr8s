@@ -28,9 +28,11 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
+    # TODO replace with pod.exec() once implemented
     k8s_cluster.kubectl(
         "exec",
         example_pod_spec["metadata"]["name"],
+        "--",
         "dd",
         "if=/dev/random",
         "of=/usr/share/nginx/html/foo.dat",
