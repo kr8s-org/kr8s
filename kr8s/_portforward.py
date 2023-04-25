@@ -33,7 +33,7 @@ class PortForward:
     @asynccontextmanager
     async def run(self):
         self.server = await asyncio.start_server(
-            self.sync_sockets, port=self.local_port
+            self.sync_sockets, port=self.local_port, host="0.0.0.0"
         )
         async with self.server:
             await self.server.start_serving()
