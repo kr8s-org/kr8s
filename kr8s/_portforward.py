@@ -36,20 +36,23 @@ class PortForward:
 
     async def connect_websocket(self):
         while self.running:
-            async with self.pod.api.call_api(
-                version=self.pod.version,
-                url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
-                namespace=self.pod.namespace,
-                websocket=True,
-                params={
-                    "name": self.pod.name,
-                    "namespace": self.pod.namespace,
-                    "ports": f"{self.remote_port}",
-                },
-            ) as websocket:
-                self.websocket = websocket
-                while not self.websocket.closed:
-                    await asyncio.sleep(0.1)
+            try:
+                async with self.pod.api.call_api(
+                    version=self.pod.version,
+                    url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
+                    namespace=self.pod.namespace,
+                    websocket=True,
+                    params={
+                        "name": self.pod.name,
+                        "namespace": self.pod.namespace,
+                        "ports": f"{self.remote_port}",
+                    },
+                ) as websocket:
+                    self.websocket = websocket
+                    while not self.websocket.closed:
+                        await asyncio.sleep(0.1)
+            except aiohttp.WSServerHandshakeError:
+                await asyncio.sleep(0.1)
 
     async def sync_sockets(self, reader, writer):
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
