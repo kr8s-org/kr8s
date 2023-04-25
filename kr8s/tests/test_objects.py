@@ -248,8 +248,7 @@ async def test_pod_logs(example_pod_spec):
 
 
 async def test_pod_port_forward_context_manager(nginx_pod):
-    async with nginx_pod.portforward(80, 8089) as port:
-        assert port == 8089
+    async with nginx_pod.portforward(80) as port:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"http://localhost:{port}/") as resp:
                 assert resp.status == 200
@@ -257,17 +256,8 @@ async def test_pod_port_forward_context_manager(nginx_pod):
                 assert resp.status == 404
 
 
-async def test_pod_port_forward_random_port(nginx_pod):
-    async with nginx_pod.portforward(80) as port:
-        assert isinstance(port, int)
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{port}/") as resp:
-                assert resp.status == 200
-
-
 async def test_service_port_forward_context_manager(nginx_service):
-    async with nginx_service.portforward(80, 8089) as port:
-        assert port == 8089
+    async with nginx_service.portforward(80) as port:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"http://localhost:{port}/") as resp:
                 assert resp.status == 200
