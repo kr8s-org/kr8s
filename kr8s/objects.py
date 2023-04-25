@@ -13,7 +13,7 @@ import kr8s
 from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
-from kr8s._portforward import ws_sync
+from kr8s._portforward import PortForward
 
 
 class APIObject:
@@ -394,7 +394,8 @@ class Pod(APIObject):
     @asynccontextmanager
     async def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod."""
-        async with ws_sync(self, remote_port, local_port) as port:
+        pf = PortForward(self, remote_port, local_port)
+        async with pf.run() as port:
             yield port
 
 

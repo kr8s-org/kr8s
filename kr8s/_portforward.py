@@ -10,12 +10,29 @@ from ._exceptions import ConnectionClosedError
 
 
 class PortForward:
-    def __init__(self, pod, remote_port) -> None:
+    """Start a tcp server and forward all connections to a Pod port."""
+
+    def __init__(self, pod, remote_port, local_port=None) -> None:
         self.running = True
+        self.server = None
         self.websocket = None
         self.remote_port = remote_port
+        self.local_port = local_port if local_port is not None else 0
         self.pod = pod
         self._tasks = []
+
+    @asynccontextmanager
+    async def run(self):
+        self.server = await asyncio.start_server(
+            self.sync_sockets, port=self.local_port
+        )
+        async with self.server:
+            await self.server.start_serving()
+            for sock in self.server.sockets:
+                if sock.family == socket.AF_INET:
+                    yield sock.getsockname()[1]
+            self.server.close()
+            await self.server.wait_closed()
 
     async def connect_websocket(self):
         while self.running:
@@ -81,19 +98,3 @@ class PortForward:
                         await writer.drain()
             else:
                 await asyncio.sleep(0.1)
-
-
-@asynccontextmanager
-async def ws_sync(pod, remote_port, local_port=None):
-    """Start a tcp server and forward all connections to a websocket."""
-    if local_port is None:
-        local_port = 0
-    pf = PortForward(pod, remote_port)
-    server = await asyncio.start_server(pf.sync_sockets, port=local_port)
-    async with server:
-        await server.start_serving()
-        for sock in server.sockets:
-            if sock.family == socket.AF_INET:
-                yield sock.getsockname()[1]
-        server.close()
-        await server.wait_closed()
