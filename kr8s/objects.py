@@ -4,7 +4,7 @@ import asyncio
 import json
 import random
 from contextlib import asynccontextmanager
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import aiohttp
 from aiohttp import ClientResponse
@@ -517,12 +517,16 @@ class Service(APIObject):
     ) -> None:
         return await self.proxy_http_request("DELETE", path, port, **kwargs)
 
+    async def ready_pods(self) -> List[Pod]:
+        """Return a list of ready pods for this service."""
+        pod_selector = ",".join([f"{k}={v}" for k, v in self.labels.items()])
+        pods = await self.api.get("pods", label_selector=pod_selector)
+        return [pod for pod in pods if await pod.ready()]
+
     @asynccontextmanager
     async def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a service."""
-        pod_selector = ",".join([f"{k}={v}" for k, v in self.labels.items()])
-        pods = await self.api.get("pods", label_selector=pod_selector)
-        pods = [pod for pod in pods if await pod.ready()]
+        pods = await self.ready_pods()
         if len(pods) == 0:
             raise ValueError("No ready pods found for service")
         async with random.choice(pods).portforward(remote_port, local_port) as port:

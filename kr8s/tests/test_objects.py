@@ -247,7 +247,8 @@ async def test_pod_logs(example_pod_spec):
     await pod.delete()
 
 
-async def test_pod_port_forward_context_manager(nginx_pod):
+async def test_port_forward(nginx_service):
+    [nginx_pod] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80) as port:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"http://localhost:{port}/") as resp:
@@ -255,8 +256,6 @@ async def test_pod_port_forward_context_manager(nginx_pod):
             async with session.get(f"http://localhost:{port}/foo") as resp:
                 assert resp.status == 404
 
-
-async def test_service_port_forward_context_manager(nginx_service):
     async with nginx_service.portforward(80) as port:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"http://localhost:{port}/") as resp:
