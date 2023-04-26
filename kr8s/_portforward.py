@@ -113,6 +113,8 @@ class PortForward:
                 else:
                     # Send data to channel 0 of the websocket.
                     # TODO Support multiple channels for multiple ports.
+                    while not self.websocket or self.websocket.closed:
+                        await asyncio.sleep(0.1)
                     await self.websocket.send_bytes(b"\x00" + data)
             else:
                 await asyncio.sleep(0.1)
