@@ -351,7 +351,12 @@ class Pod(APIObject):
             key="type",
             value="status",
         )
-        return "Ready" in conditions and conditions.get("Ready", "False") == "True"
+        return (
+            "Ready" in conditions
+            and "ContainersReady" in conditions
+            and conditions.get("Ready", "False") == "True"
+            and conditions.get("ContainersReady", "False") == "True"
+        )
 
     async def logs(
         self,
