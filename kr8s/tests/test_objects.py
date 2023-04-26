@@ -23,6 +23,12 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
     )
     example_pod_spec["spec"]["containers"][0]["image"] = "nginx:latest"
     example_pod_spec["spec"]["containers"][0]["ports"] = [{"containerPort": 80}]
+    example_pod_spec["spec"]["containers"][0]["livenessProbe"] = {
+        "httpGet": {"path": "/", "port": 80},
+        "initialDelaySeconds": 1,
+        "periodSeconds": 1,
+        "timeoutSeconds": 5,
+    }
     example_pod_spec["metadata"]["labels"]["app"] = example_pod_spec["metadata"]["name"]
     pod = Pod(example_pod_spec)
     await pod.create()
