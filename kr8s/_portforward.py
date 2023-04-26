@@ -98,6 +98,8 @@ class PortForward:
             await asyncio.gather(*self.tasks)
         except ConnectionClosedError as e:
             self.running = False
+            self.server.close()
+            await self.server.wait_closed()
             for task in self.tasks:
                 task.cancel()
             raise e
