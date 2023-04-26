@@ -133,7 +133,9 @@ class PortForward:
                     else:
                         if message.data[0] % 2 == 1:
                             # Odd channels are for errors.
-                            raise ConnectionClosedError(message.data[1:].decode())
+                            # raise ConnectionClosedError(message.data[1:].decode())
+                            await self.websocket.close()
+                            continue
                         writer.write(message.data[1:])
                         await writer.drain()
             else:
