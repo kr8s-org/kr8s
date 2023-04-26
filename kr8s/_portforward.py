@@ -20,8 +20,11 @@ class PortForward:
         self.local_port = local_port if local_port is not None else 0
         self.pod = pod
         self.connection_attempts = 0
+        self._loop = asyncio.get_event_loop()
         self._tasks = []
         self._run = None
+        self._bg_future = None
+        self._bg_task = None
 
     async def __aenter__(self, *args, **kwargs):
         self._run = self.run()
@@ -29,6 +32,25 @@ class PortForward:
 
     async def __aexit__(self, *args, **kwargs):
         return await self._run.__aexit__(*args, **kwargs)
+
+    async def start(self):
+        if self._bg_task is not None:
+            return
+
+        async def f():
+            self._bg_future = self._loop.create_future()
+            async with self as port:
+                self.local_port = port
+                await self._bg_future
+
+        self._bg_task = asyncio.create_task(f())
+        while self.local_port == 0:
+            await asyncio.sleep(0.1)
+        return self.local_port
+
+    async def stop(self):
+        self._bg_future.set_result(None)
+        self._bg_task = None
 
     @asynccontextmanager
     async def run(self):
@@ -110,10 +132,8 @@ class PortForward:
                         channels.append(message.data[0])
                     else:
                         if message.data[0] % 2 == 1:
-                            # Odd channels are for errors. We should probably do something with this.
-                            error = message.data[1:].decode()
-                            print(error)
-                            raise ConnectionClosedError(error)
+                            # Odd channels are for errors.
+                            raise ConnectionClosedError(message.data[1:].decode())
                         writer.write(message.data[1:])
                         await writer.drain()
             else:

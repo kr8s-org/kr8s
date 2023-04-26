@@ -258,8 +258,8 @@ async def test_pod_logs(example_pod_spec):
     await pod.delete()
 
 
-async def test_port_forward(nginx_service):
-    [nginx_pod] = await nginx_service.ready_pods()
+async def test_port_forward_context_manager(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80) as port:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"http://localhost:{port}/") as resp:
@@ -276,3 +276,21 @@ async def test_port_forward(nginx_service):
                 assert resp.status == 200
             async with session.get(f"http://localhost:{port}/foo") as resp:
                 assert resp.status == 404
+
+
+async def test_port_forward_start_stop(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+    pf = nginx_pod.portforward(80)
+    assert pf._bg_task is None
+    port = await pf.start()
+    assert pf._bg_task is not None
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://localhost:{port}/") as resp:
+            assert resp.status == 200
+        async with session.get(f"http://localhost:{port}/foo") as resp:
+            assert resp.status == 404
+        async with session.get(f"http://localhost:{port}/foo.dat") as resp:
+            assert resp.status == 200
+            await resp.read()
+    await pf.stop()
+    assert pf._bg_task is None
