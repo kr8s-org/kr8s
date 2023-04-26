@@ -28,7 +28,7 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
         "initialDelaySeconds": 0,
         "periodSeconds": 1,
         "timeoutSeconds": 1,
-        "successThreshold": 5,
+        "successThreshold": 2,
     }
     example_pod_spec["metadata"]["labels"]["app"] = example_pod_spec["metadata"]["name"]
     pod = Pod(example_pod_spec)
@@ -267,7 +267,7 @@ async def test_pod_logs(example_pod_spec):
     await pod.delete()
 
 
-async def test_port_forward_context_manager(nginx_service):
+async def test_pod_port_forward_context_manager(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80) as port:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(30)) as session:
@@ -279,15 +279,8 @@ async def test_port_forward_context_manager(nginx_service):
                 assert resp.status == 200
                 await resp.read()
 
-    async with nginx_service.portforward(80) as port:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(30)) as session:
-            async with session.get(f"http://localhost:{port}/") as resp:
-                assert resp.status == 200
-            async with session.get(f"http://localhost:{port}/foo") as resp:
-                assert resp.status == 404
 
-
-async def test_port_forward_start_stop(nginx_service):
+async def test_pod_port_forward_start_stop(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     pf = nginx_pod.portforward(80)
     assert pf._bg_task is None
@@ -303,3 +296,12 @@ async def test_port_forward_start_stop(nginx_service):
             await resp.read()
     await pf.stop()
     assert pf._bg_task is None
+
+
+async def test_service_port_forward_context_manager(nginx_service):
+    async with nginx_service.portforward(80) as port:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(30)) as session:
+            async with session.get(f"http://localhost:{port}/") as resp:
+                assert resp.status == 200
+            async with session.get(f"http://localhost:{port}/foo") as resp:
+                assert resp.status == 404
