@@ -525,6 +525,11 @@ class Service(APIObject):
         pods = await self.api.get("pods", label_selector=pod_selector)
         return [pod for pod in pods if await pod.ready()]
 
+    async def ready(self) -> bool:
+        """Check if the service is ready."""
+        pods = await self.ready_pods()
+        return len(pods) > 0
+
     @asynccontextmanager
     async def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a service."""

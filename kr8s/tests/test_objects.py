@@ -25,9 +25,10 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
     example_pod_spec["spec"]["containers"][0]["ports"] = [{"containerPort": 80}]
     example_pod_spec["spec"]["containers"][0]["readinessProbe"] = {
         "httpGet": {"path": "/", "port": 80},
-        "initialDelaySeconds": 1,
+        "initialDelaySeconds": 0,
         "periodSeconds": 1,
-        "timeoutSeconds": 5,
+        "timeoutSeconds": 1,
+        "successThreshold": 5,
     }
     example_pod_spec["metadata"]["labels"]["app"] = example_pod_spec["metadata"]["name"]
     pod = Pod(example_pod_spec)
@@ -55,6 +56,8 @@ async def nginx_service(example_service_spec, nginx_pod):
     example_service_spec["spec"]["selector"] = nginx_pod.labels
     service = Service(example_service_spec)
     await service.create()
+    while not await service.ready():
+        await asyncio.sleep(0.1)
     yield service
     await service.delete()
 
