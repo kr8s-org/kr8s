@@ -106,15 +106,16 @@ class PortForward:
 
     async def tcp_to_ws(self, reader):
         while True:
-            data = await reader.read(1024 * 1024)
-            if not data:
-                raise ConnectionClosedError("TCP socket closed")
+            if self.websocket and not self.websocket.closed:
+                data = await reader.read(1024 * 1024)
+                if not data:
+                    raise ConnectionClosedError("TCP socket closed")
+                else:
+                    # Send data to channel 0 of the websocket.
+                    # TODO Support multiple channels for multiple ports.
+                    await self.websocket.send_bytes(b"\x00" + data)
             else:
-                # Send data to channel 0 of the websocket.
-                # TODO Support multiple channels for multiple ports.
-                while self.websocket is None or self.websocket.closed:
-                    await asyncio.sleep(0.1)
-                await self.websocket.send_bytes(b"\x00" + data)
+                await asyncio.sleep(0.1)
 
     async def ws_to_tcp(self, writer):
         channels = []

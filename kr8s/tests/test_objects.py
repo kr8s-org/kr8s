@@ -35,7 +35,6 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    await asyncio.sleep(10)
     # TODO replace with pod.exec() once implemented
     k8s_cluster.kubectl(
         "exec",
