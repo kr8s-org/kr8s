@@ -119,7 +119,11 @@ class PortForward:
     async def ws_to_tcp(self, writer):
         channels = []
         while True:
-            if self.websocket and not self.websocket.closed:
+            if (
+                self.websocket
+                and not self.websocket.closed
+                and self.websocket._waiting is None
+            ):
                 message = await self.websocket.receive()
                 if message.type == aiohttp.WSMsgType.CLOSED:
                     await asyncio.sleep(0.1)
