@@ -298,10 +298,10 @@ async def test_pod_port_forward_start_stop(nginx_service):
     assert pf._bg_task is None
 
 
-# async def test_service_port_forward_context_manager(nginx_service):
-#     async with nginx_service.portforward(80) as port:
-#         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(30)) as session:
-#             async with session.get(f"http://localhost:{port}/") as resp:
-#                 assert resp.status == 200
-#             async with session.get(f"http://localhost:{port}/foo") as resp:
-#                 assert resp.status == 404
+async def test_service_port_forward_context_manager(nginx_service):
+    async with nginx_service.portforward(80) as port:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(30)) as session:
+            async with session.get(f"http://localhost:{port}/") as resp:
+                assert resp.status == 200
+            async with session.get(f"http://localhost:{port}/foo") as resp:
+                assert resp.status == 404
