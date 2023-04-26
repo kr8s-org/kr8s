@@ -261,7 +261,7 @@ async def test_pod_logs(example_pod_spec):
 async def test_port_forward_context_manager(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80) as port:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(10)) as session:
             async with session.get(f"http://localhost:{port}/") as resp:
                 assert resp.status == 200
             async with session.get(f"http://localhost:{port}/foo") as resp:
@@ -271,7 +271,7 @@ async def test_port_forward_context_manager(nginx_service):
                 await resp.read()
 
     async with nginx_service.portforward(80) as port:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(10)) as session:
             async with session.get(f"http://localhost:{port}/") as resp:
                 assert resp.status == 200
             async with session.get(f"http://localhost:{port}/foo") as resp:
@@ -284,7 +284,7 @@ async def test_port_forward_start_stop(nginx_service):
     assert pf._bg_task is None
     port = await pf.start()
     assert pf._bg_task is not None
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(10)) as session:
         async with session.get(f"http://localhost:{port}/") as resp:
             assert resp.status == 200
         async with session.get(f"http://localhost:{port}/foo") as resp:
