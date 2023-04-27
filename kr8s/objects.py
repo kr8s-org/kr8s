@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import json
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import aiohttp
 from aiohttp import ClientResponse
@@ -11,6 +11,7 @@ import kr8s
 from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
+from kr8s.portforward import PortForward
 
 
 class APIObject:
@@ -348,7 +349,12 @@ class Pod(APIObject):
             key="type",
             value="status",
         )
-        return "Ready" in conditions and conditions.get("Ready", "False") == "True"
+        return (
+            "Ready" in conditions
+            and "ContainersReady" in conditions
+            and conditions.get("Ready", "False") == "True"
+            and conditions.get("ContainersReady", "False") == "True"
+        )
 
     async def logs(
         self,
@@ -387,6 +393,31 @@ class Pod(APIObject):
             params=params,
         ) as resp:
             return await resp.text()
+
+    def portforward(self, remote_port: int, local_port: int = None) -> int:
+        """Port forward a pod.
+
+        Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
+
+        Example:
+            This can be used as a an async context manager or with explicit start/stop methods.
+
+            Context manager:
+
+            >>> async with pod.portforward(8888) as port:
+            ...     print(f"Forwarding to port {port}")
+            ...     # Do something with port 8888
+
+
+            Explict start/stop:
+
+            >>> pf = pod.portforward(8888)
+            >>> await pf.start()
+            >>> print(f"Forwarding to port {pf.local_port}")
+            >>> # Do something with port 8888
+            >>> await pf.stop()
+        """
+        return PortForward(self, remote_port, local_port)
 
 
 class PodTemplate(APIObject):
@@ -506,6 +537,43 @@ class Service(APIObject):
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> None:
         return await self.proxy_http_request("DELETE", path, port, **kwargs)
+
+    async def ready_pods(self) -> List[Pod]:
+        """Return a list of ready pods for this service."""
+        pod_selector = ",".join([f"{k}={v}" for k, v in self.labels.items()])
+        pods = await self.api.get("pods", label_selector=pod_selector)
+        return [pod for pod in pods if await pod.ready()]
+
+    async def ready(self) -> bool:
+        """Check if the service is ready."""
+        pods = await self.ready_pods()
+        return len(pods) > 0
+
+    def portforward(self, remote_port: int, local_port: int = None) -> int:
+        """Port forward a service.
+
+        Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
+
+        Example:
+            This can be used as a an async context manager or with explicit start/stop methods.
+
+            Context manager:
+
+            >>> async with service.portforward(8888) as port:
+            ...     print(f"Forwarding to port {port}")
+            ...     # Do something with port 8888
+
+
+            Explict start/stop:
+
+            >>> pf = service.portforward(8888)
+            >>> await pf.start()
+            >>> print(f"Forwarding to port {pf.local_port}")
+            >>> # Do something with port 8888
+            >>> await pf.stop()
+
+        """
+        return PortForward(self, remote_port, local_port)
 
 
 ## apps/v1 objects

@@ -9,11 +9,61 @@ import kr8s
 from kr8s.objects import (
     APIObject,
     Deployment,
+    PersistentVolume,
     Pod,
     Service,
     get_class,
     object_from_spec,
 )
+from kr8s.portforward import PortForward
+
+DEFAULT_TIMEOUT = aiohttp.ClientTimeout(30)
+
+
+@pytest.fixture
+async def nginx_pod(k8s_cluster, example_pod_spec):
+    example_pod_spec["metadata"]["name"] = (
+        "nginx-" + example_pod_spec["metadata"]["name"]
+    )
+    example_pod_spec["spec"]["containers"][0]["image"] = "nginx:latest"
+    example_pod_spec["spec"]["containers"][0]["ports"] = [{"containerPort": 80}]
+    example_pod_spec["spec"]["containers"][0]["readinessProbe"] = {
+        "httpGet": {"path": "/", "port": 80},
+        "initialDelaySeconds": 0,
+        "periodSeconds": 1,
+        "timeoutSeconds": 1,
+        "successThreshold": 2,
+    }
+    example_pod_spec["metadata"]["labels"]["app"] = example_pod_spec["metadata"]["name"]
+    pod = Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    # TODO replace with pod.exec() once implemented
+    k8s_cluster.kubectl(
+        "exec",
+        example_pod_spec["metadata"]["name"],
+        "--",
+        "dd",
+        "if=/dev/random",
+        "of=/usr/share/nginx/html/foo.dat",
+        "bs=4M",
+        "count=10",
+    )
+    yield pod
+    await pod.delete()
+
+
+@pytest.fixture
+async def nginx_service(example_service_spec, nginx_pod):
+    example_service_spec["metadata"]["name"] = nginx_pod.name
+    example_service_spec["spec"]["selector"] = nginx_pod.labels
+    service = Service(example_service_spec)
+    await service.create()
+    while not await service.ready():
+        await asyncio.sleep(0.1)  # pragma: no cover
+    yield service
+    await service.delete()
 
 
 async def test_pod_create_and_delete(example_pod_spec):
@@ -219,3 +269,65 @@ async def test_pod_logs(example_pod_spec):
     log = await pod.logs(container="pause")
     assert isinstance(log, str)
     await pod.delete()
+
+
+async def test_pod_port_forward_context_manager(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+    async with nginx_pod.portforward(80) as port:
+        async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
+            async with session.get(f"http://localhost:{port}/") as resp:
+                assert resp.status == 200
+            async with session.get(f"http://localhost:{port}/foo") as resp:
+                assert resp.status == 404
+            async with session.get(f"http://localhost:{port}/foo.dat") as resp:
+                assert resp.status == 200
+                await resp.read()
+
+
+async def test_pod_port_forward_start_stop(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+    pf = nginx_pod.portforward(80)
+    assert pf._bg_task is None
+    port = await pf.start()
+    assert pf._bg_task is not None
+    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
+        async with session.get(f"http://localhost:{port}/") as resp:
+            assert resp.status == 200
+        async with session.get(f"http://localhost:{port}/foo") as resp:
+            assert resp.status == 404
+        async with session.get(f"http://localhost:{port}/foo.dat") as resp:
+            assert resp.status == 200
+            await resp.read()
+    await pf.stop()
+    assert pf._bg_task is None
+
+
+async def test_service_port_forward_context_manager(nginx_service):
+    async with nginx_service.portforward(80) as port:
+        async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
+            async with session.get(f"http://localhost:{port}/") as resp:
+                assert resp.status == 200
+            async with session.get(f"http://localhost:{port}/foo") as resp:
+                assert resp.status == 404
+
+
+async def test_service_port_forward_start_stop(nginx_service):
+    pf = nginx_service.portforward(80)
+    assert pf._bg_task is None
+    port = await pf.start()
+    assert pf._bg_task is not None
+    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
+        async with session.get(f"http://localhost:{port}/") as resp:
+            assert resp.status == 200
+        async with session.get(f"http://localhost:{port}/foo") as resp:
+            assert resp.status == 404
+    await pf.stop()
+    assert pf._bg_task is None
+
+
+async def test_unsupported_port_forward():
+    pv = PersistentVolume({})
+    with pytest.raises(AttributeError):
+        await pv.portforward(80)
+    with pytest.raises(ValueError):
+        await PortForward(pv, 80).start()
