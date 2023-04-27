@@ -1,0 +1,17 @@
+kr8s:
+  - kr8s/**/*
+
+kubectl-ng:
+  - examples/kubectl-ng/**/*
+
+ci:
+  - .github/**/*
+
+tests:
+  - "**/tests/**/*"
+
+documentation:
+  - docs/**/*
+
+branding:
+  - branding/**/*
