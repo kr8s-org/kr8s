@@ -43,6 +43,13 @@ async def test_kubeconfig(k8s_cluster):
     assert "major" in version
 
 
+async def test_reauthenticate(k8s_cluster):
+    kubernetes = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    kubernetes.auth.reauthenticate()
+    version = await kubernetes.version()
+    assert "major" in version
+
+
 async def test_url(kubectl_proxy):
     kubernetes = kr8s.api(url=kubectl_proxy)
     version = await kubernetes.version()
