@@ -111,23 +111,33 @@ class Api(object):
         parts.append(url)
         url = "/".join(parts)
 
-        if websocket:
-            async with self._session.ws_connect(
-                url=url,
-                ssl=self._sslcontext,
-                **kwargs,
-            ) as response:
-                yield response
-        else:
-            async with self._session.request(
-                method=method,
-                url=url,
-                ssl=self._sslcontext,
-                raise_for_status=raise_for_status,
-                **kwargs,
-            ) as response:
-                # TODO catch self.auth error and reauth a couple of times before giving up
-                yield response
+        auth_attempts = 0
+        while True:
+            try:
+                if websocket:
+                    async with self._session.ws_connect(
+                        url=url,
+                        ssl=self._sslcontext,
+                        **kwargs,
+                    ) as response:
+                        yield response
+                else:
+                    async with self._session.request(
+                        method=method,
+                        url=url,
+                        ssl=self._sslcontext,
+                        raise_for_status=raise_for_status,
+                        **kwargs,
+                    ) as response:
+                        yield response
+            except aiohttp.ClientResponseError as e:
+                if e.status in (401, 403) and auth_attempts < 3:
+                    auth_attempts += 1
+                    self.auth.reauthenticate()
+                    continue
+                else:
+                    raise
+            break
 
     @contextlib.asynccontextmanager
     async def _get_kind(

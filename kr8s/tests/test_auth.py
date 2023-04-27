@@ -4,6 +4,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import aiohttp
 import pytest
 import yaml
 
@@ -48,6 +49,14 @@ async def test_reauthenticate(k8s_cluster):
     kubernetes.auth.reauthenticate()
     version = await kubernetes.version()
     assert "major" in version
+
+
+async def test_bad_auth(serviceaccount):
+    (Path(serviceaccount) / "token").write_text("abc123")
+    kubernetes = kr8s.api(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+    serviceaccount = Path(serviceaccount)
+    with pytest.raises(aiohttp.ClientResponseError):
+        await kubernetes.version()
 
 
 async def test_url(kubectl_proxy):
