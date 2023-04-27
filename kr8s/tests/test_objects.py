@@ -6,7 +6,6 @@ import aiohttp
 import pytest
 
 import kr8s
-from kr8s._portforward import PortForward
 from kr8s.objects import (
     APIObject,
     Deployment,
@@ -16,6 +15,7 @@ from kr8s.objects import (
     get_class,
     object_from_spec,
 )
+from kr8s.portforward import PortForward
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(30)
 

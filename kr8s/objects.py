@@ -11,7 +11,7 @@ import kr8s
 from kr8s._api import Api
 from kr8s._data_utils import list_dict_unpack
 from kr8s._exceptions import NotFoundError
-from kr8s._portforward import PortForward
+from kr8s.portforward import PortForward
 
 
 class APIObject:
@@ -395,7 +395,10 @@ class Pod(APIObject):
             return await resp.text()
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
-        """Port forward a pod."""
+        """Port forward a pod.
+
+        Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
+        """
         return PortForward(self, remote_port, local_port)
 
 
@@ -529,7 +532,10 @@ class Service(APIObject):
         return len(pods) > 0
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
-        """Port forward a service."""
+        """Port forward a service.
+
+        Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
+        """
         return PortForward(self, remote_port, local_port)
 
 
