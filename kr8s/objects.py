@@ -398,6 +398,24 @@ class Pod(APIObject):
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
+
+        Example:
+            This can be used as a an async context manager or with explicit start/stop methods.
+
+            Context manager:
+
+            >>> async with pod.portforward(8888) as port:
+            ...     print(f"Forwarding to port {port}")
+            ...     # Do something with port 8888
+
+
+            Explict start/stop:
+
+            >>> pf = pod.portforward(8888)
+            >>> await pf.start()
+            >>> print(f"Forwarding to port {pf.local_port}")
+            >>> # Do something with port 8888
+            >>> await pf.stop()
         """
         return PortForward(self, remote_port, local_port)
 
@@ -535,6 +553,25 @@ class Service(APIObject):
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
+
+        Example:
+            This can be used as a an async context manager or with explicit start/stop methods.
+
+            Context manager:
+
+            >>> async with service.portforward(8888) as port:
+            ...     print(f"Forwarding to port {port}")
+            ...     # Do something with port 8888
+
+
+            Explict start/stop:
+
+            >>> pf = service.portforward(8888)
+            >>> await pf.start()
+            >>> print(f"Forwarding to port {pf.local_port}")
+            >>> # Do something with port 8888
+            >>> await pf.stop()
+
         """
         return PortForward(self, remote_port, local_port)
 

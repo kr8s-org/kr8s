@@ -13,16 +13,18 @@ from ._exceptions import ConnectionClosedError
 class PortForward:
     """Start a tcp server and forward all connections to a Pod port.
 
-    You can either pass a :class:`kr8s.objects.Pod` or any resource with a ready_pods method
+    You can either pass a :class:`kr8s.objects.Pod` or any resource with a ``ready_pods`` method
     such as a :class:`kr8s.objects.Service`.
 
     .. note::
-        The ready_pods method should return a list of Pods that are ready to accept connections.
+        The ``ready_pods`` method should return a list of Pods that are ready to accept connections.
 
     Args:
-        resource (Pod or Resource): The Pod or Resource to forward to.
-        remote_port (int): The port on the Pod to forward to.
-        local_port (int, optional): The local port to listen on. Defaults to 0, which will choose a random port.
+        ``resource`` (Pod or Resource): The Pod or Resource to forward to.
+
+        ``remote_port`` (int): The port on the Pod to forward to.
+
+        ``local_port`` (int, optional): The local port to listen on. Defaults to 0, which will choose a random port.
 
     Example:
         This class can be used as a an async context manager or with explicit start/stop methods.
