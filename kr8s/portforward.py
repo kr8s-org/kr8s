@@ -67,16 +67,16 @@ class PortForward:
         self.connection_attempts = 0
         self._loop = asyncio.get_event_loop()
         self._tasks = []
-        self._run = None
+        self._run_task = None
         self._bg_future = None
         self._bg_task = None
 
     async def __aenter__(self, *args, **kwargs):
-        self._run = self.run()
-        return await self._run.__aenter__(*args, **kwargs)
+        self._run_task = self._run()
+        return await self._run_task.__aenter__(*args, **kwargs)
 
     async def __aexit__(self, *args, **kwargs):
-        return await self._run.__aexit__(*args, **kwargs)
+        return await self._run_task.__aexit__(*args, **kwargs)
 
     async def start(self):
         """Start a background task with the port forward running."""
@@ -100,7 +100,7 @@ class PortForward:
         self._bg_task = None
 
     @asynccontextmanager
-    async def run(self):
+    async def _run(self):
         """Start the port forward and yield the local port."""
         if not self.pod:
             try:
