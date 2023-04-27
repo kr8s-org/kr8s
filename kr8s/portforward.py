@@ -191,7 +191,7 @@ class PortForward:
                         # Keep track of our channels. Could be useful later for listening to multiple ports.
                         channels.append(message.data[0])
                     else:
-                        if message.data[0] % 2 == 1:
+                        if message.data[0] % 2 == 1:  # pragma: no cover
                             # Odd channels are for errors.
                             raise ConnectionClosedError(message.data[1:].decode())
                         writer.write(message.data[1:])

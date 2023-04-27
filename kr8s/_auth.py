@@ -39,9 +39,13 @@ class KubeAuth:
         ).expanduser()
         if url:
             self.server = url
-        if serviceaccount and not self.server:
+        self.reauthenticate()
+
+    def reauthenticate(self):
+        """Reauthenticate with the server."""
+        if self._serviceaccount and not self.server:
             self.load_service_account()
-        if kubeconfig is not False and not self.server:
+        if self._kubeconfig is not False and not self.server:
             self.load_kubeconfig()
         if not self.server:
             raise ValueError("Unable to find valid credentials")
