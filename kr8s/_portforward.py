@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import random
 import socket
 from contextlib import asynccontextmanager
 
@@ -12,13 +13,23 @@ from ._exceptions import ConnectionClosedError
 class PortForward:
     """Start a tcp server and forward all connections to a Pod port."""
 
-    def __init__(self, pod, remote_port, local_port=None) -> None:
+    def __init__(self, resource, remote_port, local_port=None) -> None:
         self.running = True
         self.server = None
         self.websocket = None
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
-        self.pod = pod
+        self._resource = resource
+        from .objects import Pod
+
+        self.pod = None
+        if isinstance(resource, Pod):
+            self.pod = resource
+        else:
+            if not hasattr(resource, "ready_pods"):
+                raise ValueError(
+                    "resource must be a Pod or a resource with a ready_pods method"
+                )
         self.connection_attempts = 0
         self._loop = asyncio.get_event_loop()
         self._tasks = []
@@ -54,6 +65,11 @@ class PortForward:
 
     @asynccontextmanager
     async def run(self):
+        if not self.pod:
+            try:
+                self.pod = random.choice(await self._resource.ready_pods())
+            except IndexError:
+                raise RuntimeError("No ready pods found")
         self.server = await asyncio.start_server(
             self.sync_sockets, port=self.local_port, host="0.0.0.0"
         )

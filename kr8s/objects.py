@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import json
-import random
-from contextlib import asynccontextmanager
 from typing import Any, List, Optional
 
 import aiohttp
@@ -530,14 +528,9 @@ class Service(APIObject):
         pods = await self.ready_pods()
         return len(pods) > 0
 
-    @asynccontextmanager
-    async def portforward(self, remote_port: int, local_port: int = None) -> int:
+    def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a service."""
-        pods = await self.ready_pods()
-        if len(pods) == 0:
-            raise ValueError("No ready pods found for service")
-        async with random.choice(pods).portforward(remote_port, local_port) as port:
-            yield port
+        return PortForward(self, remote_port, local_port)
 
 
 ## apps/v1 objects
