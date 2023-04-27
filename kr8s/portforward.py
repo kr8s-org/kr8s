@@ -79,6 +79,7 @@ class PortForward:
         return await self._run.__aexit__(*args, **kwargs)
 
     async def start(self):
+        """Start a background task with the port forward running."""
         if self._bg_task is not None:
             return
 
@@ -94,18 +95,20 @@ class PortForward:
         return self.local_port
 
     async def stop(self):
+        """Stop the background task."""
         self._bg_future.set_result(None)
         self._bg_task = None
 
     @asynccontextmanager
     async def run(self):
+        """Start the port forward and yield the local port."""
         if not self.pod:
             try:
                 self.pod = random.choice(await self._resource.ready_pods())
             except IndexError:
                 raise RuntimeError("No ready pods found")
         self.server = await asyncio.start_server(
-            self.sync_sockets, port=self.local_port, host="0.0.0.0"
+            self._sync_sockets, port=self.local_port, host="0.0.0.0"
         )
         async with self.server:
             await self.server.start_serving()
@@ -115,7 +118,7 @@ class PortForward:
             self.server.close()
             await self.server.wait_closed()
 
-    async def connect_websocket(self):
+    async def _connect_websocket(self):
         while self.running:
             self.connection_attempts += 1
             try:
@@ -137,13 +140,13 @@ class PortForward:
             except (aiohttp.WSServerHandshakeError, aiohttp.ServerDisconnectedError):
                 await asyncio.sleep(0.1)
 
-    async def sync_sockets(self, reader, writer):
+    async def _sync_sockets(self, reader, writer):
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
             self.tasks = [
-                asyncio.create_task(self.connect_websocket()),
-                asyncio.create_task(self.tcp_to_ws(reader)),
-                asyncio.create_task(self.ws_to_tcp(writer)),
+                asyncio.create_task(self._connect_websocket()),
+                asyncio.create_task(self._tcp_to_ws(reader)),
+                asyncio.create_task(self._ws_to_tcp(writer)),
             ]
             await asyncio.gather(*self.tasks)
         except ConnectionClosedError as e:
@@ -154,7 +157,7 @@ class PortForward:
         finally:
             writer.close()
 
-    async def tcp_to_ws(self, reader):
+    async def _tcp_to_ws(self, reader):
         while True:
             if self.websocket and not self.websocket.closed:
                 data = await reader.read(1024 * 1024)
@@ -169,7 +172,7 @@ class PortForward:
             else:
                 await asyncio.sleep(0.1)
 
-    async def ws_to_tcp(self, writer):
+    async def _ws_to_tcp(self, writer):
         channels = []
         while True:
             if (
