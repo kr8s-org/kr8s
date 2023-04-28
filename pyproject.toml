@@ -37,7 +37,6 @@ python = "^3.8"
 aiohttp = "^3.8.4"
 pyyaml = "^6.0"
 asyncio-atexit = "^1.0.1"
-universalasync = "^0.3.0.0"
 nest-asyncio = "^1.5.6"
 
 
