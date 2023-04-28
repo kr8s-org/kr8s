@@ -906,6 +906,18 @@ testing = ["beautifulsoup4", "coverage[toml]", "pytest (>=7,<8)", "pytest-cov", 
 testing-docutils = ["pygments", "pytest (>=7,<8)", "pytest-param-files (>=0.3.4,<0.4.0)"]
 
 [[package]]
+name = "nest-asyncio"
+version = "1.5.6"
+description = "Patch asyncio to allow nested event loops"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "nest_asyncio-1.5.6-py3-none-any.whl", hash = "sha256:b9a953fb40dceaa587d109609098db21900182b16440652454a146cffb06e8b8"},
+    {file = "nest_asyncio-1.5.6.tar.gz", hash = "sha256:d267cc1ff794403f7df692964d1d2a3fa9418ffea2a3f6859a439ff482fef290"},
+]
+
+[[package]]
 name = "packaging"
 version = "23.1"
 description = "Core utilities for Python packages"
@@ -1506,6 +1518,18 @@ files = [
 ]
 
 [[package]]
+name = "universalasync"
+version = "0.3.0.0"
+description = "A library to help automate the creation of universal python libraries"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "universalasync-0.3.0.0-py3-none-any.whl", hash = "sha256:edd67ea2cfb6e5fc9cead6d3f1ff71bcf537fa06af6c67be23c2d9d9ce1f84c0"},
+    {file = "universalasync-0.3.0.0.tar.gz", hash = "sha256:55f622e5a14d018e36d776e55f4454d1c887603765a895fcb8b89547e70d4d10"},
+]
+
+[[package]]
 name = "urllib3"
 version = "1.26.15"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -1714,4 +1738,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "17da29eb656a2129ac5b97c9afa01db6dae0341bb6cfb00a924eb194ce25c70c"
+content-hash = "35f995190842de0d107977a7ba0d43f102146c1f2bca34d36f95936f8e94dd98"

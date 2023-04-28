@@ -25,6 +25,7 @@ class Api(object):
 
     """
 
+    _asyncio = True
     _instances = weakref.WeakValueDictionary()
 
     def __init__(self, **kwargs) -> None:
@@ -251,25 +252,3 @@ class Api(object):
         from . import __version__
 
         return f"kr8s/{__version__}"
-
-
-def api(url=None, kubeconfig=None, serviceaccount=None, namespace=None) -> Api:
-    """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
-
-    If a kr8s object already exists with the same arguments, it will be returned.
-    """
-
-    def _f(**kwargs):
-        key = frozenset(kwargs.items())
-        if key in Api._instances:
-            return Api._instances[key]
-        if all(k is None for k in kwargs.values()) and list(Api._instances.values()):
-            return list(Api._instances.values())[0]
-        return Api(**kwargs, bypass_factory=True)
-
-    return _f(
-        url=url,
-        kubeconfig=kubeconfig,
-        serviceaccount=serviceaccount,
-        namespace=namespace,
-    )

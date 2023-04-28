@@ -5,6 +5,7 @@ import asyncio
 import pytest
 
 import kr8s
+import kr8s.asyncio
 from kr8s.objects import Pod
 
 
@@ -50,14 +51,26 @@ async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
     assert p3.api is not k2
 
 
-async def test_version():
+def test_version_sync():
     kubernetes = kr8s.api()
+    version = kubernetes.version()
+    assert "major" in version
+
+
+async def test_version_sync_in_async():
+    kubernetes = kr8s.api()
+    version = kubernetes.version()
+    assert "major" in version
+
+
+async def test_version():
+    kubernetes = kr8s.asyncio.api()
     version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_bad_api_version():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     with pytest.raises(ValueError):
         async with kubernetes.call_api("GET", version="foo"):
             pass  # pragma: no cover
@@ -65,7 +78,7 @@ async def test_bad_api_version():
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
 async def test_get_pods(namespace):
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace=namespace)
     assert isinstance(pods, list)
     assert len(pods) > 0
@@ -73,7 +86,7 @@ async def test_get_pods(namespace):
 
 
 async def test_watch_pods(example_pod_spec):
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     pod = Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
@@ -93,13 +106,13 @@ async def test_watch_pods(example_pod_spec):
 
 
 async def test_get_deployments():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     deployments = await kubernetes.get("deployments")
     assert isinstance(deployments, list)
 
 
 async def test_api_resources():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     resources = await kubernetes.api_resources()
 
     names = [r["name"] for r in resources]
