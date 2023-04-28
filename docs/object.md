@@ -6,7 +6,7 @@ Responses from the Client API are usually objects from [](#kr8s.objects) which r
 import kr8s
 
 api = kr8s.api()
-pods = await api.get("pods", namespace=kr8s.ALL)
+pods = api.get("pods", namespace=kr8s.ALL)
 pod = pods[0]
 print(type(pod))
 # <class 'kr8s.objects.Pod'>
@@ -50,27 +50,27 @@ Objects also have helper methods for interacting with Kubernetes resources.
 
 ```python
 # Patch the Pod
-await pod.patch({"metadata": {"labels": {"foo": "bar"}}})
+pod.patch({"metadata": {"labels": {"foo": "bar"}}})
 
 # Check the Pod exists
-await pod.exists()
+pod.exists()
 # True
 
 # Update the object with the latest state from the API
-await pod.refresh()
+pod.refresh()
 
 # Delete the Pod
-await pod.delete()
+pod.delete()
 ```
 
 Some objects also have additional methods that are unique to them.
 
 ```python
 # Get Pod logs
-logs = await pod.logs()
+logs = pod.logs()
 
 # Check if Pod containers are ready
-await pod.ready()
+pod.ready()
 # True
 ```
 
@@ -95,7 +95,7 @@ pod = Pod({
         },
     })
 
-await pod.create()
+pod.create()
 ```
 
 Get a Pod reference by name.
@@ -103,7 +103,7 @@ Get a Pod reference by name.
 ```python
 from kr8s.object import Pod
 
-pod = await Pod.get("my-pod")
+pod = Pod.get("my-pod")
 ```
 
 When creating new objects they will not have a client reference because they are created directly. In this case the object will call the [](#kr8s.api) factory function which will either create a new client if none exists or will grab the first client from the cache if one was created somewhere else in your code.
@@ -192,7 +192,7 @@ class CustomObject(APIObject):
 
 api = kr8s.api()
 
-cos = await api.get("customobjects")  # Will return a list of CustomObject instances
+cos = api.get("customobjects")  # Will return a list of CustomObject instances
 ```
 
 ```{note}

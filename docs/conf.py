@@ -50,7 +50,7 @@ autoapi_options = [
     "show-module-summary",
     "imported-members",
 ]
-autoapi_ignore = ["*tests*", "*conftest*"]
+autoapi_ignore = ["*tests*", "*conftest*", "*asyncio*"]
 # autoapi_python_use_implicit_namespaces = True
 autoapi_keep_files = True
 # autoapi_generate_api_docs = False
