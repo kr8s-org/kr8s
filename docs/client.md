@@ -33,8 +33,8 @@ For situations where there may not be an appropriate method to call or you want 
 
 To make API requests for resources more convenience `call_api` allows building the url via various kwargs.
 
-```{info}
-Note that `call_api` is only available via the asyncio API.
+```{note}
+Note that `call_api` is only available via the [asyncio API](asyncio).
 ```
 
 For example to get all pods you could make the following low-level call.
