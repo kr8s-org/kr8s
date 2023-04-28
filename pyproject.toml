@@ -60,7 +60,7 @@ sphinxcontrib-mermaid = "^0.8.1"
 sphinx-autoapi = "^2.1.0"
 
 [tool.pytest.ini_options]
-addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
+addopts = "-v --keep-cluster --durations=10"
 timeout = 300
 reruns = 5
 reruns_delay = 1
