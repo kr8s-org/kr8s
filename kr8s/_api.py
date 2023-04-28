@@ -142,7 +142,7 @@ class Api(object):
         watch: bool = False,
     ) -> dict:
         """Get a Kubernetes resource."""
-        from .objects import get_class
+        from ._objects import get_class
 
         if not namespace:
             namespace = self.auth.namespace
@@ -176,6 +176,22 @@ class Api(object):
         field_selector: str = None,
     ) -> List[object]:
         """Get a Kubernetes resource."""
+        return await self._get(
+            kind,
+            *names,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+        )
+
+    async def _get(
+        self,
+        kind: str,
+        *names: List[str],
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+    ) -> List[object]:
         async with self._get_kind(
             kind,
             namespace=namespace,
@@ -192,6 +208,24 @@ class Api(object):
             return []
 
     async def watch(
+        self,
+        kind: str,
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+        since: str = None,
+    ):
+        """Watch a Kubernetes resource."""
+        async for t, object in self._watch(
+            kind,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            since=since,
+        ):
+            yield t, object
+
+    async def _watch(
         self,
         kind: str,
         namespace: str = None,

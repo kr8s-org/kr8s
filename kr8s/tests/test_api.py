@@ -6,7 +6,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
-from kr8s.objects import Pod
+from kr8s.asyncio.objects import Pod
 
 
 async def test_factory_bypass():

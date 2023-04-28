@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from functools import partial
 
-from ._api import Api as _AsyncApi  # noqa
+from ._api import ALL  # noqa
+from ._api import Api as _AsyncApi
 from ._asyncio import sync
 from ._exceptions import NotFoundError  # noqa
 from .asyncio import api as _api  # noqa

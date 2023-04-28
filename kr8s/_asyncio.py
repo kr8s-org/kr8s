@@ -1,11 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, MrNaif2018, Dask Developers, NVIDIA
 # SPDX-License-Identifier: MIT License
-# Based on https://github.com/bitcartcc/universalasync
+# SPDX-License-URL: https://github.com/bitcartcc/universalasync/blob/d3979113316431a24f0260804442d29a38e414a2/LICENSE
+# Forked from https://github.com/bitcartcc/universalasync/tree/d3979113316431a24f0260804442d29a38e414a2
 import asyncio
 import functools
 import inspect
-import types
-from typing import Any, AsyncGenerator, Callable, Generator, Tuple, cast
+from typing import Any, AsyncGenerator, Callable, Generator, Tuple
 
 import nest_asyncio
 
@@ -76,9 +76,6 @@ def async_to_sync_wraps(function: Callable) -> Callable:
     Returns:
         Callable: modified function
     """
-    is_property = inspect.isdatadescriptor(function)
-    if is_property:
-        function = cast(types.MethodDescriptorType, function).__get__
 
     @functools.wraps(function)
     def async_to_sync_wrap(*args: Any, **kwargs: Any) -> Any:
@@ -88,8 +85,6 @@ def async_to_sync_wraps(function: Callable) -> Callable:
         return run_sync_ctx(coroutine, loop)
 
     result = async_to_sync_wrap
-    if is_property:
-        result = cast(Callable, property(cast(Callable, result)))
     return result
 
 
@@ -109,10 +104,8 @@ def sync(source: object) -> object:
         method = getattr(source, name)
 
         if not name.startswith("_"):
-            if (
-                inspect.iscoroutinefunction(method)
-                or inspect.isasyncgenfunction(method)
-                or inspect.isdatadescriptor(method)
+            if inspect.iscoroutinefunction(method) or inspect.isasyncgenfunction(
+                method
             ):
                 function = getattr(source, name)
                 setattr(source, name, async_to_sync_wraps(function))

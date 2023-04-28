@@ -51,6 +51,13 @@ async def test_reauthenticate(k8s_cluster):
     assert "major" in version
 
 
+def test_reauthenticate_sync(k8s_cluster):
+    kubernetes = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    kubernetes.auth.reauthenticate()
+    version = kubernetes.version()
+    assert "major" in version
+
+
 async def test_bad_auth(serviceaccount):
     (Path(serviceaccount) / "token").write_text("abc123")
     kubernetes = kr8s.asyncio.api(
