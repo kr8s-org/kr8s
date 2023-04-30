@@ -15,6 +15,7 @@ import pytest
 import yaml
 from pytest_kind.cluster import KindCluster
 
+from kr8s._api import Api
 from kr8s._testutils import set_env
 
 HERE = Path(__file__).parent.resolve()
@@ -180,3 +181,9 @@ def serviceaccount(k8s_cluster):
     k8s_cluster.kubectl(
         "delete", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
     )
+
+
+@pytest.fixture(autouse=True)
+def ensure_new_api_between_tests():
+    yield
+    Api._instances.clear()

@@ -7,7 +7,7 @@ import kr8s
 
 api = kr8s.api()
 
-version = await api.version()
+version = api.version()
 print(version)
 ```
 
@@ -21,7 +21,7 @@ The client API is inspired by `kubectl` rather than the Kubernetes API directly 
 import kr8s
 
 api = kr8s.api()
-pods = await api.get("pods", namespace=kr8s.ALL)
+pods = api.get("pods", namespace=kr8s.ALL)
 
 for pod in pods:
     print(pod.name)
@@ -33,12 +33,16 @@ For situations where there may not be an appropriate method to call or you want 
 
 To make API requests for resources more convenience `call_api` allows building the url via various kwargs.
 
+```{note}
+Note that `call_api` is only available via the [asyncio API](asyncio).
+```
+
 For example to get all pods you could make the following low-level call.
 
 ```python
-import kr8s
+import kr8s.asyncio
 
-api = kr8s.api()
+api = kr8s.asyncio.api()
 async with api.call_api("GET", url="pods", namespace="") as r:
     pods_response = await r.json()
 
@@ -87,7 +91,7 @@ api2 = kr8s.api()
 ```python
 from kr8s.objects import Pod
 
-pod = await Pod.get("some-pod")
+pod = Pod.get("some-pod")
 # pod.api is a pointer to api despite not being passed a reference due to caching
 ```
 
@@ -107,7 +111,7 @@ api2 = kr8s.Api(bypass_factory=True)
 ```python
 from kr8s.objects import Pod
 
-pod = await Pod.get("some-pod", api=api2)
+pod = Pod.get("some-pod", api=api2)
 # be sure to pass a reference around as caching will no longer work
 ```
 

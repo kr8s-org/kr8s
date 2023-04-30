@@ -25,6 +25,7 @@ class Api(object):
 
     """
 
+    _asyncio = True
     _instances = weakref.WeakValueDictionary()
 
     def __init__(self, **kwargs) -> None:
@@ -141,7 +142,7 @@ class Api(object):
         watch: bool = False,
     ) -> dict:
         """Get a Kubernetes resource."""
-        from .objects import get_class
+        from ._objects import get_class
 
         if not namespace:
             namespace = self.auth.namespace
@@ -175,6 +176,22 @@ class Api(object):
         field_selector: str = None,
     ) -> List[object]:
         """Get a Kubernetes resource."""
+        return await self._get(
+            kind,
+            *names,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+        )
+
+    async def _get(
+        self,
+        kind: str,
+        *names: List[str],
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+    ) -> List[object]:
         async with self._get_kind(
             kind,
             namespace=namespace,
@@ -191,6 +208,24 @@ class Api(object):
             return []
 
     async def watch(
+        self,
+        kind: str,
+        namespace: str = None,
+        label_selector: str = None,
+        field_selector: str = None,
+        since: str = None,
+    ):
+        """Watch a Kubernetes resource."""
+        async for t, object in self._watch(
+            kind,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            since=since,
+        ):
+            yield t, object
+
+    async def _watch(
         self,
         kind: str,
         namespace: str = None,
@@ -251,25 +286,3 @@ class Api(object):
         from . import __version__
 
         return f"kr8s/{__version__}"
-
-
-def api(url=None, kubeconfig=None, serviceaccount=None, namespace=None) -> Api:
-    """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
-
-    If a kr8s object already exists with the same arguments, it will be returned.
-    """
-
-    def _f(**kwargs):
-        key = frozenset(kwargs.items())
-        if key in Api._instances:
-            return Api._instances[key]
-        if all(k is None for k in kwargs.values()) and list(Api._instances.values()):
-            return list(Api._instances.values())[0]
-        return Api(**kwargs, bypass_factory=True)
-
-    return _f(
-        url=url,
-        kubeconfig=kubeconfig,
-        serviceaccount=serviceaccount,
-        namespace=namespace,
-    )

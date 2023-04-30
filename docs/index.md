@@ -25,7 +25,7 @@ $ pip install kr8s
 import kr8s
 
 api = kr8s.api()
-pods = await api.get("pods")
+pods = api.get("pods")
 ```
 
 ### Object API
@@ -44,7 +44,7 @@ pod = Pod({
         },
     })
 
-await pod.create()
+pod.create()
 ```
 
 
@@ -62,6 +62,7 @@ installation
 authentication
 client
 object
+asyncio
 ```
 
 ```{toctree}

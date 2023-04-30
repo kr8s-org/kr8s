@@ -1,21 +1,22 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import time
 
 import aiohttp
 import pytest
 
 import kr8s
-from kr8s.objects import (
+from kr8s._objects import get_class, object_from_spec
+from kr8s.asyncio.objects import (
     APIObject,
     Deployment,
     PersistentVolume,
     Pod,
     Service,
-    get_class,
-    object_from_spec,
 )
-from kr8s.portforward import PortForward
+from kr8s.asyncio.portforward import PortForward
+from kr8s.objects import Pod as SyncPod
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(30)
 
@@ -80,8 +81,22 @@ async def test_pod_create_and_delete(example_pod_spec):
     assert not await pod.exists()
 
 
+def test_pod_create_and_delete_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    with pytest.raises(NotImplementedError):
+        pod.replicas
+    assert pod.exists()
+    while not pod.ready():
+        time.sleep(0.1)
+    pod.delete()
+    while pod.exists():
+        time.sleep(0.1)
+    assert not pod.exists()
+
+
 async def test_list_and_ensure():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace=kr8s.ALL)
     assert len(pods) > 0
     for pod in pods:
@@ -146,7 +161,7 @@ async def test_selectors(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
 
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace=kr8s.ALL, label_selector="abc=123def")
     assert len(pods) == 1
 
@@ -173,6 +188,16 @@ async def test_pod_watch(example_pod_spec):
     await pod.delete()
 
 
+def test_pod_watch_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    for event, obj in pod.watch():
+        assert event in ("ADDED", "MODIFIED", "DELETED")
+        assert obj.name == pod.name
+        break
+    pod.delete()
+
+
 async def test_patch_pod(example_pod_spec):
     pod = Pod(example_pod_spec)
     await pod.create()
@@ -183,7 +208,7 @@ async def test_patch_pod(example_pod_spec):
 
 
 async def test_all_v1_objects_represented():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     objects = await kubernetes.api_resources()
     supported_apis = (
         "v1",
@@ -243,7 +268,7 @@ async def test_deployment_scale(example_deployment_spec):
 
 
 async def test_node():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     nodes = await kubernetes.get("nodes")
     assert len(nodes) > 0
     for node in nodes:
@@ -254,7 +279,7 @@ async def test_node():
 
 
 async def test_service_proxy():
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     [service] = await kubernetes.get("services", "kubernetes")
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
@@ -282,6 +307,17 @@ async def test_pod_port_forward_context_manager(nginx_service):
             async with session.get(f"http://localhost:{port}/foo.dat") as resp:
                 assert resp.status == 200
                 await resp.read()
+
+
+@pytest.mark.skip(reason="For manual testing only")
+async def test_pod_port_forward_context_manager_manual(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+    pf = nginx_pod.portforward(80, 8184)
+    async with pf:
+        done = False
+        while not done:
+            # Put a breakpoint here and set done = True when you're finished.
+            await asyncio.sleep(1)
 
 
 async def test_pod_port_forward_start_stop(nginx_service):

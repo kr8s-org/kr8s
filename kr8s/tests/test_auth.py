@@ -39,28 +39,37 @@ async def kubeconfig_with_exec(k8s_cluster):
 
 
 async def test_kubeconfig(k8s_cluster):
-    kubernetes = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    kubernetes = kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_reauthenticate(k8s_cluster):
-    kubernetes = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    kubernetes = kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     kubernetes.auth.reauthenticate()
     version = await kubernetes.version()
     assert "major" in version
 
 
+def test_reauthenticate_sync(k8s_cluster):
+    kubernetes = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    kubernetes.auth.reauthenticate()
+    version = kubernetes.version()
+    assert "major" in version
+
+
 async def test_bad_auth(serviceaccount):
     (Path(serviceaccount) / "token").write_text("abc123")
-    kubernetes = kr8s.api(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+    kubernetes = kr8s.asyncio.api(
+        serviceaccount=serviceaccount, kubeconfig="/no/file/here"
+    )
     serviceaccount = Path(serviceaccount)
     with pytest.raises(aiohttp.ClientResponseError):
         await kubernetes.version()
 
 
 async def test_url(kubectl_proxy):
-    kubernetes = kr8s.api(url=kubectl_proxy)
+    kubernetes = kr8s.asyncio.api(url=kubectl_proxy)
     version = await kubernetes.version()
     assert "major" in version
 
@@ -71,7 +80,9 @@ async def test_no_config():
 
 
 async def test_service_account(serviceaccount):
-    kubernetes = kr8s.api(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+    kubernetes = kr8s.asyncio.api(
+        serviceaccount=serviceaccount, kubeconfig="/no/file/here"
+    )
     await kubernetes.version()
 
     serviceaccount = Path(serviceaccount)
@@ -83,6 +94,6 @@ async def test_service_account(serviceaccount):
 
 
 async def test_exec(kubeconfig_with_exec):
-    kubernetes = kr8s.api(kubeconfig=kubeconfig_with_exec)
+    kubernetes = kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
     version = await kubernetes.version()
     assert "major" in version
