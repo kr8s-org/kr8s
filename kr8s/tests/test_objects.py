@@ -188,7 +188,7 @@ async def test_pod_watch(example_pod_spec):
     await pod.delete()
 
 
-async def test_pod_watch_sync(example_pod_spec):
+def test_pod_watch_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()
     for event, obj in pod.watch():
