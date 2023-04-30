@@ -7,9 +7,9 @@ import functools
 import inspect
 from typing import Any, AsyncGenerator, Callable, Generator, Tuple
 
-# import nest_asyncio
+import nest_asyncio
 
-# nest_asyncio.apply()
+nest_asyncio.apply()
 
 
 def _get_event_loop() -> asyncio.AbstractEventLoop:
