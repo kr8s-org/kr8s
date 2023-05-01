@@ -57,6 +57,7 @@ def test_version_sync():
     assert "major" in version
 
 
+@pytest.mark.xfail(reason="Cannot run nested event loops", raises=RuntimeError)
 async def test_version_sync_in_async():
     kubernetes = kr8s.api()
     version = kubernetes.version()
