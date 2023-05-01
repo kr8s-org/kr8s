@@ -906,18 +906,6 @@ testing = ["beautifulsoup4", "coverage[toml]", "pytest (>=7,<8)", "pytest-cov", 
 testing-docutils = ["pygments", "pytest (>=7,<8)", "pytest-param-files (>=0.3.4,<0.4.0)"]
 
 [[package]]
-name = "nest-asyncio"
-version = "1.5.6"
-description = "Patch asyncio to allow nested event loops"
-category = "main"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "nest_asyncio-1.5.6-py3-none-any.whl", hash = "sha256:b9a953fb40dceaa587d109609098db21900182b16440652454a146cffb06e8b8"},
-    {file = "nest_asyncio-1.5.6.tar.gz", hash = "sha256:d267cc1ff794403f7df692964d1d2a3fa9418ffea2a3f6859a439ff482fef290"},
-]
-
-[[package]]
 name = "packaging"
 version = "23.1"
 description = "Core utilities for Python packages"
@@ -1726,4 +1714,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "bb8e1dd36d3b060bcd412571a976efc1c9adb41d48dc2937460d2f093989623a"
+content-hash = "17da29eb656a2129ac5b97c9afa01db6dae0341bb6cfb00a924eb194ce25c70c"
