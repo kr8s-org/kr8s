@@ -1,16 +1,14 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
-from datetime import datetime
 from typing import List
 
+import rich.table
 import typer
 from rich import box
 from rich.console import Console
-from rich.table import Table
 
 import kr8s
-
-from ._formatters import time_delta_to_string
+from kr8s.asyncio.objects import Table
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -77,74 +75,47 @@ async def get(
 
     Use "kubectl-ng api-resources" for a complete list of supported resources.
     """
-    resources = resources[1:]
-    kubernetes = kr8s.api()
+    kubernetes = kr8s.asyncio.api()
     if all_namespaces:
         namespace = kr8s.ALL
-    if "pods" in resources or "pod" in resources:
-        pods = await kubernetes.get(
-            "pods",
+    api_resources = await kubernetes.api_resources()
+    for kind in resources:
+        for api_resource in api_resources:
+            if (
+                kind == api_resource["name"]
+                or kind == api_resource["singularName"]
+                or ("shortNames" in api_resource and kind in api_resource["shortNames"])
+            ):
+                kind = api_resource["name"]
+                break
+        response = await kubernetes.get(
+            kind,
             namespace=namespace,
             label_selector=label_selector,
             field_selector=field_selector,
+            as_object=Table,
         )
 
-        if not pods:
+        if not response.rows:
             console.print(f"No resources found in {namespace} namespace.")
             return
 
-        table = Table(box=box.SIMPLE)
-        table.add_column("Name", style="cyan", no_wrap=True)
-        table.add_column("Ready")
-        table.add_column("Status")
-        table.add_column("Restarts")
-        table.add_column("Age")
-        if show_labels:
-            table.add_column("Labels")
-        for column in label_columns:
-            table.add_column(column)
+        table = rich.table.Table(box=box.SIMPLE)
+        table.add_column("Namespace", style="magenta", no_wrap=True)
 
-        for pod in pods:
-            name = f"pod/{pod.name}" if show_kind else pod.name
-            n_containers = len(pod.raw["status"]["containerStatuses"])
-            n_ready_containers = len(
-                [s for s in pod.raw["status"]["containerStatuses"] if s["ready"]]
-            )
-            ready_style = (
-                "[orange3]" if n_ready_containers < n_containers else "[green]"
-            )
-            start_time = datetime.strptime(
-                pod.raw["metadata"]["creationTimestamp"], TIMESTAMP_FORMAT
-            )
-            restarts = str(pod.raw["status"]["containerStatuses"][0]["restartCount"])
-            last_restart = datetime.strptime(
-                list(pod.raw["status"]["containerStatuses"][0]["state"].values())[0][
-                    "startedAt"
-                ],
-                TIMESTAMP_FORMAT,
-            )
-            labels = (
-                [
-                    ",".join(
-                        [
-                            f"{key}={value}"
-                            for key, value in pod.raw["metadata"]["labels"].items()
-                        ]
-                    )
-                ]
-                if show_labels
-                else []
-            )
-            column_labels = [
-                pod.raw["metadata"]["labels"].get(label, "") for label in label_columns
+        for column in response.column_definitions:
+            if column["priority"] == 0:
+                kwargs = {}
+                if column["name"] == "Name":
+                    kwargs = {"style": "cyan", "no_wrap": True}
+                table.add_column(column["name"], **kwargs)
+
+        for row in response.rows:
+            r = [
+                str(row)
+                for row, column in zip(row["cells"], response.column_definitions)
+                if column["priority"] == 0
             ]
-            table.add_row(
-                name,
-                f"{ready_style}{n_ready_containers}/{n_containers}",
-                pod.raw["status"]["phase"],
-                f"{restarts} ({time_delta_to_string(datetime.now() - last_restart, 1, ' ago')})",
-                time_delta_to_string(datetime.now() - start_time, 2),
-                *labels,
-                *column_labels,
-            )
+            table.add_row(row["object"]["metadata"]["namespace"], *r)
+
         console.print(table)
