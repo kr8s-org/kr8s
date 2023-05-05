@@ -6,7 +6,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
-from kr8s.asyncio.objects import Pod
+from kr8s.asyncio.objects import Pod, Table
 
 
 async def test_factory_bypass():
@@ -84,6 +84,13 @@ async def test_get_pods(namespace):
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
+
+
+async def test_get_pods_as_table():
+    kubernetes = kr8s.asyncio.api()
+    pods = await kubernetes.get("pods", namespace="kube-system", as_object=Table)
+    assert isinstance(pods, Table)
+    assert len(pods.rows) > 0
 
 
 async def test_watch_pods(example_pod_spec):

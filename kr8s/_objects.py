@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import json
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 from aiohttp import ClientResponse
@@ -826,6 +826,30 @@ class CustomResourceDefinition(APIObject):
     plural = "customresourcedefinitions"
     singular = "customresourcedefinition"
     namespaced = False
+
+
+## meta.k8s.io/v1 objects
+
+
+class Table(APIObject):
+    """A Kubernetes Table."""
+
+    version = "meta.k8s.io/v1"
+    endpoint = "tables"
+    kind = "Table"
+    plural = "tables"
+    singular = "table"
+    namespaced = False
+
+    @property
+    def rows(self) -> List[Dict]:
+        """Table rows."""
+        return self._raw["rows"]
+
+    @property
+    def column_definitions(self) -> List[Dict]:
+        """Table column definitions."""
+        return self._raw["columnDefinitions"]
 
 
 def get_class(kind, version=None, _asyncio=True):

@@ -34,4 +34,5 @@ from kr8s._objects import (  # noqa
     Service,
     ServiceAccount,
     StatefulSet,
+    Table,
 )

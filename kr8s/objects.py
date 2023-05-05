@@ -105,6 +105,9 @@ from ._objects import (
     StatefulSet as _StatefulSet,
 )
 from ._objects import (
+    Table as _Table,
+)
+from ._objects import (
     object_from_spec,  # noqa
 )
 
@@ -316,4 +319,10 @@ class Role(_Role):
 @sync
 class CustomResourceDefinition(_CustomResourceDefinition):
     __doc__ = _CustomResourceDefinition.__doc__
+    _asyncio = False
+
+
+@sync
+class Table(_Table):
+    __doc__ = _Table.__doc__
     _asyncio = False

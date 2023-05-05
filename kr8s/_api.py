@@ -140,6 +140,7 @@ class Api(object):
         field_selector: str = None,
         params: dict = None,
         watch: bool = False,
+        **kwargs,
     ) -> dict:
         """Get a Kubernetes resource."""
         from ._objects import get_class
@@ -164,6 +165,7 @@ class Api(object):
             version=obj_cls.version,
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
+            **kwargs,
         ) as response:
             yield obj_cls, response
 
@@ -174,6 +176,8 @@ class Api(object):
         namespace: str = None,
         label_selector: str = None,
         field_selector: str = None,
+        as_object: object = None,
+        **kwargs,
     ) -> List[object]:
         """Get a Kubernetes resource."""
         return await self._get(
@@ -182,6 +186,8 @@ class Api(object):
             namespace=namespace,
             label_selector=label_selector,
             field_selector=field_selector,
+            as_object=as_object,
+            **kwargs,
         )
 
     async def _get(
@@ -191,21 +197,38 @@ class Api(object):
         namespace: str = None,
         label_selector: str = None,
         field_selector: str = None,
+        as_object: object = None,
+        **kwargs,
     ) -> List[object]:
+        headers = {}
+        if as_object:
+            group, version = as_object.version.split("/")
+            headers[
+                "Accept"
+            ] = f"application/json;as={as_object.kind};v={version};g={group}"
         async with self._get_kind(
             kind,
             namespace=namespace,
             label_selector=label_selector,
             field_selector=field_selector,
+            headers=headers or None,
+            **kwargs,
         ) as (obj_cls, response):
             resourcelist = await response.json()
-            if "items" in resourcelist:
-                return [
-                    obj_cls(item, api=self)
-                    for item in resourcelist["items"]
-                    if not names or item["metadata"]["name"] in names
-                ]
-            return []
+            if (
+                as_object
+                and "kind" in resourcelist
+                and resourcelist["kind"] == as_object.kind
+            ):
+                return as_object(resourcelist, api=self)
+            else:
+                if "items" in resourcelist:
+                    return [
+                        obj_cls(item, api=self)
+                        for item in resourcelist["items"]
+                        if not names or item["metadata"]["name"] in names
+                    ]
+                return []
 
     async def watch(
         self,
