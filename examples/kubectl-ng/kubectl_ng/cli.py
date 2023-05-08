@@ -7,6 +7,7 @@ import typer
 
 from ._api_resources import api_resources
 from ._get import get
+from ._version import version
 
 
 def _typer_async(f):
@@ -24,8 +25,9 @@ def register(app, func):
 
 
 app = typer.Typer()
-register(app, get)
 register(app, api_resources)
+register(app, get)
+register(app, version)
 
 
 def go():
