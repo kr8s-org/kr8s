@@ -71,4 +71,4 @@ async def version(
 
     else:
         console.print("error: --output must be 'yaml' or 'json'")
-        raise typer.Exit()
+        raise typer.Exit(code=1)

@@ -26,3 +26,8 @@ def test_version_json():
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert "clientVersion" in data
+
+
+def test_version_invalid_output():
+    result = runner.invoke(app, ["version", "-o", "foo"])
+    assert result.exit_code == 1
