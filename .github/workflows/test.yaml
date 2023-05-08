@@ -49,7 +49,7 @@ jobs:
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-        run: poetry run pytest kr8s
+        run: poetry run pytest kr8s examples/kubectl-ng
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
       - name: Debug k8s resources
