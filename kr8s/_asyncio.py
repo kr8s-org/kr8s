@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Jupyter Development Team., MrNaif2018, Dask Developers, NVIDIA
 # SPDX-License-Identifier: MIT License, BSD 3-Clause License
 #
-# This file is a fork of universalasync (commit d397911) and jupyter-core (commit 98b9a1a).
+# This file contains a fork of universalasync (commit d397911) and jupyter-core (commit 98b9a1a).
 # Both projects attempt to solve the same problem: how to run nested asyncio tasks.
 # Neither solution quite fit in here, so we forked them and combined them.
 #
@@ -152,3 +152,20 @@ def sync(source: object) -> object:
             setattr(source, "__exit__", run_sync(method))
 
     return source
+
+
+async def check_output(*args, **kwargs):
+    """Run a command and return its output."""
+    p = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        **kwargs,
+    )
+    stdout_data, stderr_data = await p.communicate()
+    if p.returncode == 0:
+        return stdout_data.decode()
+    else:
+        raise RuntimeError(
+            f"Process exited with non-zero code {p.returncode}:\n{stderr_data.decode()}"
+        )

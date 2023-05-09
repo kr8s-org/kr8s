@@ -132,7 +132,7 @@ class Api(object):
             except aiohttp.ClientResponseError as e:
                 if e.status in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
-                    self.auth.reauthenticate()
+                    await self.auth.reauthenticate()
                     continue
                 else:
                     raise
