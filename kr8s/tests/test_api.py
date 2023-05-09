@@ -18,35 +18,35 @@ async def test_factory_bypass():
 
 
 async def test_api_factory(serviceaccount):
-    k1 = kr8s.api()
-    k2 = kr8s.api()
+    k1 = await kr8s.asyncio.api()
+    k2 = await kr8s.asyncio.api()
     assert k1 is k2
 
-    k3 = kr8s.api(serviceaccount=serviceaccount)
-    k4 = kr8s.api(serviceaccount=serviceaccount)
+    k3 = await kr8s.asyncio.api(serviceaccount=serviceaccount)
+    k4 = await kr8s.asyncio.api(serviceaccount=serviceaccount)
     assert k1 is not k3
     assert k3 is k4
 
-    p = Pod({})
+    p = await Pod({})
     assert p.api is k1
     assert p.api is not k3
 
 
 async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
-    k1 = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
-    k2 = kr8s.api(serviceaccount=serviceaccount)
-    k3 = kr8s.api()
+    k1 = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    k2 = await kr8s.asyncio.api(serviceaccount=serviceaccount)
+    k3 = await kr8s.asyncio.api()
     assert k1 is not k2
     assert k3 is k1
     assert k3 is not k2
 
-    p = Pod({})
+    p = await Pod({})
     assert p.api is k1
 
-    p2 = Pod({}, api=k2)
+    p2 = await Pod({}, api=k2)
     assert p2.api is k2
 
-    p3 = Pod({}, api=k3)
+    p3 = await Pod({}, api=k3)
     assert p3.api is k3
     assert p3.api is not k2
 
@@ -64,13 +64,13 @@ async def test_version_sync_in_async():
 
 
 async def test_version():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     version = await kubernetes.version()
     assert "major" in version
 
 
 async def test_bad_api_version():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     with pytest.raises(ValueError):
         async with kubernetes.call_api("GET", version="foo"):
             pass  # pragma: no cover
@@ -78,7 +78,7 @@ async def test_bad_api_version():
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
 async def test_get_pods(namespace):
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace=namespace)
     assert isinstance(pods, list)
     assert len(pods) > 0
@@ -86,15 +86,15 @@ async def test_get_pods(namespace):
 
 
 async def test_get_pods_as_table():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace="kube-system", as_object=Table)
     assert isinstance(pods, Table)
     assert len(pods.rows) > 0
 
 
 async def test_watch_pods(example_pod_spec):
-    kubernetes = kr8s.asyncio.api()
-    pod = Pod(example_pod_spec)
+    kubernetes = await kr8s.asyncio.api()
+    pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
@@ -113,13 +113,13 @@ async def test_watch_pods(example_pod_spec):
 
 
 async def test_get_deployments():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     deployments = await kubernetes.get("deployments")
     assert isinstance(deployments, list)
 
 
 async def test_api_resources():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     resources = await kubernetes.api_resources()
 
     names = [r["name"] for r in resources]

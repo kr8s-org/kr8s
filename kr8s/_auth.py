@@ -39,18 +39,24 @@ class KubeAuth:
         ).expanduser()
         if url:
             self.server = url
-        self.reauthenticate()
 
-    def reauthenticate(self):
+    def __await__(self):
+        async def f():
+            await self.reauthenticate()
+            return self
+
+        return f().__await__()
+
+    async def reauthenticate(self):
         """Reauthenticate with the server."""
         if self._serviceaccount and not self.server:
-            self.load_service_account()
+            self._load_service_account()
         if self._kubeconfig is not False and not self.server:
-            self.load_kubeconfig()
+            self._load_kubeconfig()
         if not self.server:
             raise ValueError("Unable to find valid credentials")
 
-    def load_kubeconfig(self):
+    def _load_kubeconfig(self):
         """Load kubernetes auth from kubeconfig."""
         if not self._kubeconfig.is_file():
             return
@@ -125,7 +131,7 @@ class KubeAuth:
             self.namespace = self._context.get("namespace", "default")
         # TODO: Handle auth-provider oidc auth
 
-    def load_service_account(self):
+    def _load_service_account(self):
         """Load credentials from service account."""
         if not self._serviceaccount.is_dir():
             return

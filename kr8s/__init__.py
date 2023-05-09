@@ -4,7 +4,8 @@ from functools import partial
 
 from ._api import ALL  # noqa
 from ._api import Api as _AsyncApi
-from ._asyncio import sync as _sync
+from ._asyncio import run_sync as _run_sync
+from ._asyncio import sync as _sync  # noqa
 from ._exceptions import NotFoundError  # noqa
 from .asyncio import api as _api  # noqa
 
@@ -16,4 +17,4 @@ class Api(_AsyncApi):
     __doc__ = _AsyncApi.__doc__
 
 
-api = partial(_api, _asyncio=False)
+api = _run_sync(partial(_api, _asyncio=False))

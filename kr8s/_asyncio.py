@@ -15,6 +15,7 @@ import asyncio
 import atexit
 import inspect
 import threading
+from functools import wraps
 from typing import (
     Any,
     AsyncGenerator,
@@ -81,6 +82,7 @@ def run_sync(coro: Callable[..., Awaitable[T]]) -> Callable[..., T]:
         Whatever the coroutine-function returns.
     """
 
+    @wraps(coro)
     def wrapped(*args, **kwargs):
         name = threading.current_thread().name
         inner = coro(*args, **kwargs)

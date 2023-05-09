@@ -36,7 +36,7 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
         "successThreshold": 2,
     }
     example_pod_spec["metadata"]["labels"]["app"] = example_pod_spec["metadata"]["name"]
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
@@ -59,7 +59,7 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
 async def nginx_service(example_service_spec, nginx_pod):
     example_service_spec["metadata"]["name"] = nginx_pod.name
     example_service_spec["spec"]["selector"] = nginx_pod.labels
-    service = Service(example_service_spec)
+    service = await Service(example_service_spec)
     await service.create()
     while not await service.ready():
         await asyncio.sleep(0.1)  # pragma: no cover
@@ -68,7 +68,7 @@ async def nginx_service(example_service_spec, nginx_pod):
 
 
 async def test_pod_create_and_delete(example_pod_spec):
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     with pytest.raises(NotImplementedError):
         pod.replicas
@@ -96,7 +96,7 @@ def test_pod_create_and_delete_sync(example_pod_spec):
 
 
 async def test_list_and_ensure():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace=kr8s.ALL)
     assert len(pods) > 0
     for pod in pods:
@@ -105,7 +105,7 @@ async def test_list_and_ensure():
 
 
 async def test_nonexistant():
-    pod = Pod(
+    pod = await Pod(
         {
             "apiVersion": "v1",
             "kind": "Pod",
@@ -121,7 +121,7 @@ async def test_nonexistant():
 
 
 async def test_pod_metadata(example_pod_spec):
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     assert "name" in pod.metadata
     assert "hello" in pod.labels
@@ -136,7 +136,7 @@ async def test_pod_metadata(example_pod_spec):
 async def test_pod_missing_labels_annotations(example_pod_spec):
     del example_pod_spec["metadata"]["labels"]
     del example_pod_spec["metadata"]["annotations"]
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     assert not pod.labels
     assert not pod.annotations
@@ -144,7 +144,7 @@ async def test_pod_missing_labels_annotations(example_pod_spec):
 
 
 async def test_pod_get(example_pod_spec):
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     pod2 = await Pod.get(pod.name, namespace=pod.namespace)
     assert pod2.name == pod.name
@@ -158,10 +158,10 @@ async def test_pod_get(example_pod_spec):
 
 async def test_selectors(example_pod_spec):
     example_pod_spec["metadata"]["labels"]["abc"] = "123def"
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
 
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     pods = await kubernetes.get("pods", namespace=kr8s.ALL, label_selector="abc=123def")
     assert len(pods) == 1
 
@@ -179,7 +179,7 @@ async def test_selectors(example_pod_spec):
 
 
 async def test_pod_watch(example_pod_spec):
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     async for event, obj in pod.watch():
         assert event in ("ADDED", "MODIFIED", "DELETED")
@@ -199,7 +199,7 @@ def test_pod_watch_sync(example_pod_spec):
 
 
 async def test_patch_pod(example_pod_spec):
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     assert "patched" not in pod.labels
     await pod.patch({"metadata": {"labels": {"patched": "true"}}})
@@ -208,7 +208,7 @@ async def test_patch_pod(example_pod_spec):
 
 
 async def test_all_v1_objects_represented():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     objects = await kubernetes.api_resources()
     supported_apis = (
         "v1",
@@ -255,7 +255,7 @@ async def test_subclass_registration():
 
 
 async def test_deployment_scale(example_deployment_spec):
-    deployment = Deployment(example_deployment_spec)
+    deployment = await Deployment(example_deployment_spec)
     await deployment.create()
     assert deployment.replicas == 1
     await deployment.scale(2)
@@ -268,7 +268,7 @@ async def test_deployment_scale(example_deployment_spec):
 
 
 async def test_node():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     nodes = await kubernetes.get("nodes")
     assert len(nodes) > 0
     for node in nodes:
@@ -279,7 +279,7 @@ async def test_node():
 
 
 async def test_service_proxy():
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     [service] = await kubernetes.get("services", "kubernetes")
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
@@ -287,7 +287,7 @@ async def test_service_proxy():
 
 
 async def test_pod_logs(example_pod_spec):
-    pod = Pod(example_pod_spec)
+    pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
@@ -362,7 +362,7 @@ async def test_service_port_forward_start_stop(nginx_service):
 
 
 async def test_unsupported_port_forward():
-    pv = PersistentVolume({})
+    pv = await PersistentVolume({})
     with pytest.raises(AttributeError):
         await pv.portforward(80)
     with pytest.raises(ValueError):
