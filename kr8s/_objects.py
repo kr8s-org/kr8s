@@ -28,7 +28,17 @@ class APIObject:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
         self._raw = resource
-        self.api = api or (kr8s.asyncio.api() if self._asyncio else kr8s.api())
+        self.api = api
+        if self.api is None and not self._asyncio:
+            self.api = kr8s.api()
+
+    def __await__(self):
+        async def f():
+            if self.api is None:
+                self.api = await kr8s.asyncio.api()
+            return self
+
+        return f().__await__()
 
     def __repr__(self):
         """Return a string representation of the Kubernetes resource."""
@@ -105,7 +115,12 @@ class APIObject:
     ) -> "APIObject":
         """Get a Kubernetes resource by name."""
 
-        api = api or (kr8s.asyncio.api() if cls._asyncio else kr8s.api())
+        if api is None:
+            if cls._asyncio:
+                api = await kr8s.asyncio.api()
+            else:
+                api = kr8s.api()
+
         try:
             resources = await api._get(
                 cls.endpoint, name, namespace=namespace, **kwargs

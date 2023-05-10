@@ -41,7 +41,7 @@ async def version(
         "pythonVersion": sys.version,
     }
     if not client:
-        api = kr8s.asyncio.api()
+        api = await kr8s.asyncio.api()
         versions["serverVersion"] = await api.version()
 
     if output == "":

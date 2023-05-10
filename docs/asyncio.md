@@ -14,7 +14,7 @@ For users that want it the `asyncio` API is also available via `kr8s.asyncio`.
 ```python
 import kr8s.asyncio
 
-api = kr8s.asyncio.api()
+api = await kr8s.asyncio.api()
 pods = await api.get("pods")
 ```
 
@@ -23,7 +23,7 @@ Submodules including `kr8s.objects` and `kr8s.portforward` also have `asyncio` e
 ```python
 from kr8s.asyncio.object import Pod
 
-pod = Pod({
+pod = await Pod({
         "apiVersion": "v1",
         "kind": "Pod",
         "metadata": {

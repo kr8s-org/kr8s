@@ -75,7 +75,7 @@ async def get(
 
     Use "kubectl-ng api-resources" for a complete list of supported resources.
     """
-    kubernetes = kr8s.asyncio.api()
+    kubernetes = await kr8s.asyncio.api()
     if all_namespaces:
         namespace = kr8s.ALL
     api_resources = await kubernetes.api_resources()

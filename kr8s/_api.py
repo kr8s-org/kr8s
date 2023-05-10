@@ -48,6 +48,13 @@ class Api(object):
         )
         Api._instances[frozenset(kwargs.items())] = self
 
+    def __await__(self):
+        async def f():
+            await self.auth
+            return self
+
+        return f().__await__()
+
     async def _create_session(self):
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
         self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -125,11 +132,15 @@ class Api(object):
             except aiohttp.ClientResponseError as e:
                 if e.status in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
-                    self.auth.reauthenticate()
+                    await self.auth.reauthenticate()
                     continue
                 else:
                     raise
             break
+
+    async def reauthenticate(self):
+        """Reauthenticate the API."""
+        await self.auth.reauthenticate()
 
     @contextlib.asynccontextmanager
     async def _get_kind(
