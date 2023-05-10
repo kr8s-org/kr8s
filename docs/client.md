@@ -42,7 +42,7 @@ For example to get all pods you could make the following low-level call.
 ```python
 import kr8s.asyncio
 
-api = kr8s.asyncio.api()
+api = await kr8s.asyncio.api()
 async with api.call_api("GET", url="pods", namespace="") as r:
     pods_response = await r.json()
 
@@ -53,9 +53,9 @@ for pod in pods_response["items"]:
 You can also just set the `base` kwarg with an empty `version` if you want to build the URL yourself.
 
 ```python
-import kr8s
+import kr8s.asyncio
 
-api = kr8s.api()
+api = await kr8s.asyncio.api()
 async with api.call_api("GET", base="/version", version="") as r:
     version = await r.json()
 print(version)
