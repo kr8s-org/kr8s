@@ -4,7 +4,7 @@ import contextlib
 import json
 import ssl
 import weakref
-from typing import List
+from typing import List, Tuple
 
 import aiohttp
 import asyncio_atexit
@@ -55,7 +55,7 @@ class Api(object):
 
         return f().__await__()
 
-    async def _create_session(self):
+    async def _create_session(self) -> None:
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
         self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         if self.auth.client_key_file:
@@ -138,7 +138,7 @@ class Api(object):
                     raise
             break
 
-    async def reauthenticate(self):
+    async def reauthenticate(self) -> None:
         """Reauthenticate the API."""
         await self.auth.reauthenticate()
 
@@ -266,7 +266,7 @@ class Api(object):
         label_selector: str = None,
         field_selector: str = None,
         since: str = None,
-    ):
+    ) -> Tuple[str, object]:
         """Watch a Kubernetes resource."""
         async with self._get_kind(
             kind,
@@ -316,7 +316,7 @@ class Api(object):
         return resources
 
     @property
-    def __version__(self):
+    def __version__(self) -> str:
         from . import __version__
 
         return f"kr8s/{__version__}"

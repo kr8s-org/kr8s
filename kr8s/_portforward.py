@@ -1,13 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+from __future__ import annotations
+
 import asyncio
 import random
 import socket
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, BinaryIO
 
 import aiohttp
 
 from ._exceptions import ConnectionClosedError
+
+if TYPE_CHECKING:
+    from .objects import APIObject
 
 
 class PortForward:
@@ -47,7 +53,9 @@ class PortForward:
 
     """
 
-    def __init__(self, resource, remote_port, local_port=None) -> None:
+    def __init__(
+        self, resource: APIObject, remote_port: int, local_port: int = None
+    ) -> None:
         self.running = True
         self.server = None
         self.websocket = None
@@ -78,7 +86,7 @@ class PortForward:
     async def __aexit__(self, *args, **kwargs):
         return await self._run_task.__aexit__(*args, **kwargs)
 
-    async def start(self):
+    async def start(self) -> int:
         """Start a background task with the port forward running."""
         if self._bg_task is not None:
             return
@@ -94,13 +102,13 @@ class PortForward:
             await asyncio.sleep(0.1)
         return self.local_port
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the background task."""
         self._bg_future.set_result(None)
         self._bg_task = None
 
     @asynccontextmanager
-    async def _run(self):
+    async def _run(self) -> int:
         """Start the port forward and yield the local port."""
         if not self.pod:
             try:
@@ -118,7 +126,7 @@ class PortForward:
             self.server.close()
             await self.server.wait_closed()
 
-    async def _connect_websocket(self):
+    async def _connect_websocket(self) -> None:
         while self.running:
             self.connection_attempts += 1
             try:
@@ -140,7 +148,7 @@ class PortForward:
             except (aiohttp.WSServerHandshakeError, aiohttp.ServerDisconnectedError):
                 await asyncio.sleep(0.1)
 
-    async def _sync_sockets(self, reader, writer):
+    async def _sync_sockets(self, reader: BinaryIO, writer: BinaryIO) -> None:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
             self.tasks = [
@@ -157,7 +165,7 @@ class PortForward:
         finally:
             writer.close()
 
-    async def _tcp_to_ws(self, reader):
+    async def _tcp_to_ws(self, reader: BinaryIO) -> None:
         while True:
             if self.websocket and not self.websocket.closed:
                 data = await reader.read(1024 * 1024)
@@ -172,7 +180,7 @@ class PortForward:
             else:
                 await asyncio.sleep(0.1)
 
-    async def _ws_to_tcp(self, writer):
+    async def _ws_to_tcp(self, writer: BinaryIO) -> None:
         channels = []
         while True:
             if (
