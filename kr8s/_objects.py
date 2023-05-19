@@ -121,17 +121,14 @@ class APIObject:
             else:
                 api = kr8s.api()
 
-        try:
-            resources = await api._get(
-                cls.endpoint, name, namespace=namespace, **kwargs
-            )
-            [resource] = resources
-        except ValueError:
+        resources = await api._get(cls.endpoint, name, namespace=namespace, **kwargs)
+        if len(resources) == 0:
+            raise NotFoundError(f"Could not find {cls.kind} {name}.")
+        if len(resources) > 1:
             raise ValueError(
                 f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
             )
-
-        return resource
+        return resources[0]
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""

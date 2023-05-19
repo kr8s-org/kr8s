@@ -156,6 +156,11 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+async def test_missing_pod():
+    with pytest.raises(kr8s.NotFoundError):
+        await Pod.get("nonexistant", namespace="default")
+
+
 async def test_selectors(example_pod_spec):
     example_pod_spec["metadata"]["labels"]["abc"] = "123def"
     pod = await Pod(example_pod_spec)
@@ -209,7 +214,7 @@ async def test_patch_pod(example_pod_spec):
 
 async def test_all_v1_objects_represented():
     kubernetes = await kr8s.asyncio.api()
-    objects = await kubernetes.api_resources()
+    k8s_objects = await kubernetes.api_resources()
     supported_apis = (
         "v1",
         "apps/v1",
@@ -222,7 +227,7 @@ async def test_all_v1_objects_represented():
     )
     # for supported_api in supported_apis:
     #     assert supported_api in [obj["version"] for obj in objects]
-    objects = [obj for obj in objects if obj["version"] in supported_apis]
+    objects = [obj for obj in k8s_objects if obj["version"] in supported_apis]
     for obj in objects:
         assert get_class(obj["kind"], obj["version"])
 
