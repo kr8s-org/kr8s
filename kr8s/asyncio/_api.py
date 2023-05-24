@@ -1,8 +1,3 @@
-from asyncio import Lock
-
-_CREATION_LOCK = Lock()
-
-
 async def api(
     url=None, kubeconfig=None, serviceaccount=None, namespace=None, _asyncio=True
 ):
@@ -22,15 +17,14 @@ async def api(
     async def _f(**kwargs):
         key = frozenset(kwargs.items())
         if key in _cls._instances:
-            return _cls._instances[key]
+            return await _cls._instances[key]
         if all(k is None for k in kwargs.values()) and list(_cls._instances.values()):
-            return list(_cls._instances.values())[0]
+            return await list(_cls._instances.values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
-    async with _CREATION_LOCK:
-        return await _f(
-            url=url,
-            kubeconfig=kubeconfig,
-            serviceaccount=serviceaccount,
-            namespace=namespace,
-        )
+    return await _f(
+        url=url,
+        kubeconfig=kubeconfig,
+        serviceaccount=serviceaccount,
+        namespace=namespace,
+    )
