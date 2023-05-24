@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+from __future__ import annotations
+
 import asyncio
 import json
 import time
@@ -116,9 +118,9 @@ class APIObject:
         name: str,
         namespace: str = None,
         api: Api = None,
-        timeout: int = 30,
+        timeout: int = 2,
         **kwargs,
-    ) -> "APIObject":
+    ) -> APIObject:
         """Get a Kubernetes resource by name."""
 
         if api is None:
