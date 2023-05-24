@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 
 import aiohttp
 from aiohttp import ClientResponse
@@ -57,7 +57,7 @@ class APIObject:
         return self._raw
 
     @raw.setter
-    def raw(self, value):
+    def raw(self, value: Any) -> None:
         self._raw = value
 
     @property
@@ -211,7 +211,7 @@ class APIObject:
         """Patch this object in Kubernetes."""
         return await self._patch(patch, subresource=subresource)
 
-    async def _patch(self, patch, *, subresource=None) -> None:
+    async def _patch(self, patch: Dict, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if subresource:
@@ -226,7 +226,7 @@ class APIObject:
         ) as resp:
             self.raw = await resp.json()
 
-    async def scale(self, replicas=None):
+    async def scale(self, replicas: int = None) -> None:
         """Scale this object in Kubernetes."""
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
@@ -346,10 +346,10 @@ class Node(APIObject):
             return self.raw["spec"]["unschedulable"]
         return False
 
-    async def cordon(self):
+    async def cordon(self) -> None:
         await self._patch({"spec": {"unschedulable": True}})
 
-    async def uncordon(self):
+    async def uncordon(self) -> None:
         await self._patch({"spec": {"unschedulable": False}})
 
 
@@ -385,7 +385,7 @@ class Pod(APIObject):
     singular = "pod"
     namespaced = True
 
-    async def ready(self):
+    async def ready(self) -> bool:
         """Check if the pod is ready."""
         await self._refresh()
         conditions = list_dict_unpack(
@@ -410,7 +410,7 @@ class Pod(APIObject):
         timestamps=False,
         tail_lines=None,
         limit_bytes=None,
-    ):
+    ) -> str:
         params = {}
         if container is not None:
             params["container"] = container
@@ -879,7 +879,7 @@ class Table(APIObject):
         return self._raw["columnDefinitions"]
 
 
-def get_class(kind, version=None, _asyncio=True):
+def get_class(kind: str, version: str = None, _asyncio: bool = True) -> Type[APIObject]:
     for cls in APIObject.__subclasses__():
         if (
             hasattr(cls, "kind")
