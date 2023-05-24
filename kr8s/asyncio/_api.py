@@ -1,13 +1,19 @@
+from kr8s._api import Api as _AsyncApi
+
+
 async def api(
-    url=None, kubeconfig=None, serviceaccount=None, namespace=None, _asyncio=True
-):
+    url: str = None,
+    kubeconfig: str = None,
+    serviceaccount: str = None,
+    namespace: str = None,
+    _asyncio: bool = True,
+) -> _AsyncApi:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments, it will be returned.
     """
 
     from kr8s import Api as _SyncApi
-    from kr8s._api import Api as _AsyncApi
 
     if _asyncio:
         _cls = _AsyncApi
