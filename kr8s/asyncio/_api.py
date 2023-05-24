@@ -17,9 +17,9 @@ async def api(
     async def _f(**kwargs):
         key = frozenset(kwargs.items())
         if key in _cls._instances:
-            return _cls._instances[key]
+            return await _cls._instances[key]
         if all(k is None for k in kwargs.values()) and list(_cls._instances.values()):
-            return list(_cls._instances.values())[0]
+            return await list(_cls._instances.values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
     return await _f(
