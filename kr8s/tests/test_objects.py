@@ -173,6 +173,7 @@ async def test_pod_get_timeout(example_pod_spec):
 
     pods = await asyncio.gather(create_pod(), get_pod())
     assert pods[0].name == pods[1].name
+    await pods[0].delete()
 
 
 async def test_missing_pod():
