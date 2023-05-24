@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import json
 import sys
+from typing import List, Optional
 
 import typer
 import yaml
 from rich.console import Console
 from rich.syntax import Syntax
-from typing import List, Optional
 from typing_extensions import Annotated
 
 import kr8s
