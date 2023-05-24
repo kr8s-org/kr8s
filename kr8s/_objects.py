@@ -235,7 +235,6 @@ class APIObject:
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
         await self._exists(ensure=True)
-        # TODO support dot notation in self.scalable_spec to support nested fields
         await self._patch({"spec": dot_to_nested_dict(self.scalable_spec, replicas)})
         while self.replicas != replicas:
             await self._refresh()
