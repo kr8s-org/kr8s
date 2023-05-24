@@ -1,3 +1,8 @@
+from asyncio import Lock
+
+LOCK = Lock()
+
+
 async def api(
     url=None, kubeconfig=None, serviceaccount=None, namespace=None, _asyncio=True
 ):
@@ -22,9 +27,10 @@ async def api(
             return list(_cls._instances.values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
-    return await _f(
-        url=url,
-        kubeconfig=kubeconfig,
-        serviceaccount=serviceaccount,
-        namespace=namespace,
-    )
+    async with LOCK:
+        return await _f(
+            url=url,
+            kubeconfig=kubeconfig,
+            serviceaccount=serviceaccount,
+            namespace=namespace,
+        )

@@ -69,6 +69,16 @@ async def test_version():
     assert "major" in version
 
 
+async def test_concurrent_api_creation():
+    async def get_api():
+        api = await kr8s.asyncio.api()
+        await api.version()
+        return api
+
+    apis = await asyncio.gather(*[get_api() for _ in range(10)])
+    assert len(set(apis)) == 1
+
+
 async def test_bad_api_version():
     kubernetes = await kr8s.asyncio.api()
     with pytest.raises(ValueError):
