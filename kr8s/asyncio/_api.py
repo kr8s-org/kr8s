@@ -1,6 +1,6 @@
 from asyncio import Lock
 
-LOCK = Lock()
+_CREATION_LOCK = Lock()
 
 
 async def api(
@@ -27,7 +27,7 @@ async def api(
             return list(_cls._instances.values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
-    async with LOCK:
+    async with _CREATION_LOCK:
         return await _f(
             url=url,
             kubeconfig=kubeconfig,
