@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from typing import Any, Dict, List, Optional, Type
 
 import aiohttp
@@ -113,7 +114,12 @@ class APIObject:
 
     @classmethod
     async def get(
-        cls, name: str, namespace: str = None, api: Api = None, **kwargs
+        cls,
+        name: str,
+        namespace: str = None,
+        api: Api = None,
+        timeout: int = 2,
+        **kwargs,
     ) -> APIObject:
         """Get a Kubernetes resource by name."""
 
@@ -122,15 +128,22 @@ class APIObject:
                 api = await kr8s.asyncio.api()
             else:
                 api = kr8s.api()
-
-        resources = await api._get(cls.endpoint, name, namespace=namespace, **kwargs)
-        if len(resources) == 0:
-            raise NotFoundError(f"Could not find {cls.kind} {name}.")
-        if len(resources) > 1:
-            raise ValueError(
-                f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
+        start = time.time()
+        backoff = 0.1
+        while start + timeout > time.time():
+            resources = await api._get(
+                cls.endpoint, name, namespace=namespace, **kwargs
             )
-        return resources[0]
+            if len(resources) == 0:
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 1)
+                continue
+            if len(resources) > 1:
+                raise ValueError(
+                    f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
+                )
+            return resources[0]
+        raise NotFoundError(f"Could not find {cls.kind} {name}.")
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""

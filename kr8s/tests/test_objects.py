@@ -156,6 +156,26 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+async def test_pod_get_timeout(example_pod_spec):
+    async def create_pod():
+        await asyncio.sleep(0.1)
+        pod = await Pod(example_pod_spec)
+        await pod.create()
+        return pod
+
+    async def get_pod():
+        pod = await Pod.get(
+            example_pod_spec["metadata"]["name"],
+            namespace=example_pod_spec["metadata"]["namespace"],
+            timeout=1,
+        )
+        return pod
+
+    pods = await asyncio.gather(create_pod(), get_pod())
+    assert pods[0].name == pods[1].name
+    await pods[0].delete()
+
+
 async def test_missing_pod():
     with pytest.raises(kr8s.NotFoundError):
         await Pod.get("nonexistant", namespace="default")
