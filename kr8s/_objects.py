@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import json
-from typing import Any, Dict, List, Optional
 import time
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 from aiohttp import ClientResponse
