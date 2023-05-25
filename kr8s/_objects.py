@@ -13,7 +13,7 @@ from aiohttp import ClientResponse
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import list_dict_unpack
+from kr8s._data_utils import dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
@@ -109,7 +109,11 @@ class APIObject:
     def replicas(self) -> int:
         """Replicas of the Kubernetes resource."""
         if self.scalable:
-            return self.raw["spec"][self.scalable_spec]
+            keys = self.scalable_spec.split(".")
+            spec = self.raw["spec"]
+            for key in keys:
+                spec = spec[key]
+            return spec
         raise NotImplementedError(f"{self.kind} is not scalable")
 
     @classmethod
@@ -231,8 +235,7 @@ class APIObject:
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
         await self._exists(ensure=True)
-        # TODO support dot notation in self.scalable_spec to support nested fields
-        await self._patch({"spec": {self.scalable_spec: replicas}})
+        await self._patch({"spec": dot_to_nested_dict(self.scalable_spec, replicas)})
         while self.replicas != replicas:
             await self._refresh()
             await asyncio.sleep(0.1)
