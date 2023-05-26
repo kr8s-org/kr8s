@@ -31,6 +31,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         if: github.repository == 'kr8s-org/kr8s'
         with:
+          base: main
           commit-message: "Update Kubernetes versions"
           title: "Update Kubernetes versions"
           reviewers: "jacobtomlinson"
