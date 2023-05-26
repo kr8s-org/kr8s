@@ -14,9 +14,6 @@ on:
 
 jobs:
   update-kubernetes:
-    permissions:
-      contents: write
-      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,6 +35,7 @@ jobs:
           commit-message: "Update Kubernetes versions"
           title: "Update Kubernetes versions"
           reviewers: "jacobtomlinson"
+          token: "${{ secrets.BOT_TOKEN }}"
           labels: "automerge"
           branch: "upgrade-k8s-version"
           body: |
