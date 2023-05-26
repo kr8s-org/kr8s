@@ -61,9 +61,9 @@ sphinx-autoapi = "^2.1.0"
 
 [tool.pytest.ini_options]
 addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
-timeout = 300
+timeout = 30
 xfail_strict = true
-reruns = 5
+reruns = 1
 reruns_delay = 1
 asyncio_mode = "auto"
 
