@@ -1,0 +1,35 @@
+name: "Update Kubernetes"
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/update-kubernetes.yaml"
+      - "ci/update-kubernetes.py"
+  push:
+    paths:
+      - ".github/workflows/update-kubernetes.yaml"
+      - "ci/update-kubernetes.py"
+  schedule:
+    - cron:  '30 2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  update-kubernetes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Update Kubernetes
+        run: ./ci/update-kubernetes.py
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        if: github.repository == 'kr8s-org/kr8s'
+        with:
+          commit-message: "Update Kubernetes versions"
+          title: "Update Kubernetes versions"
+          reviewers: "jacobtomlinson"
+          labels: "automerge"
+          branch: "upgrade-k8s-version"
+          body: |
+            A new Kubernetes version has been detected.
+
+            Updated CI and README badges.
