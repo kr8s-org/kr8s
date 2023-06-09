@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 import aiohttp
 import jsonpath
 from aiohttp import ClientResponse
+from async_timeout import timeout as async_timeout
 
 import kr8s
 import kr8s.asyncio
@@ -272,14 +273,15 @@ class APIObject:
                 raise ValueError(f"Unknown condition type {condition}")
         return True
 
-    async def wait(self, conditions: list):
+    async def wait(self, conditions: list, timeout: int = None):
         """Wait for conditions to be met."""
-        await self._refresh()
-        if await self._test_conditions(conditions):
-            return
-        async for _ in self.watch():
+        with async_timeout(timeout):
+            await self._refresh()
             if await self._test_conditions(conditions):
                 return
+            async for _ in self.watch():
+                if await self._test_conditions(conditions):
+                    return
 
 
 ## v1 objects

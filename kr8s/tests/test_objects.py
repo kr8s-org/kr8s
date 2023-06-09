@@ -99,6 +99,8 @@ async def test_pod_wait_ready(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
     await pod.wait("condition=Ready")
+    with pytest.raises(asyncio.TimeoutError):
+        await pod.wait("jsonpath='{.status.phase}'=Foo", timeout=0.1)
     await pod.wait("condition=Ready=true")
     await pod.wait("condition=Ready=True")
     await pod.wait("jsonpath='{.status.phase}'=Running")

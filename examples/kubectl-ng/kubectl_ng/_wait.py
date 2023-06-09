@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
-from typing import List
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -10,9 +10,6 @@ import kr8s
 from kr8s.asyncio.objects import APIObject, object_from_name_type
 
 console = Console()
-
-# Examples
-# TODO kubectl delete pod/busybox1 && kubectl wait --for=delete pod/busybox1 --timeout=60s
 
 # Options
 # TODO --all
@@ -26,7 +23,6 @@ console = Console()
 # TODO -l, --selector
 # TODO --show-managed-fields
 # TODO --template
-# TODO --timeout
 
 
 async def wait(
@@ -53,11 +49,17 @@ async def wait(
         "(e.g. -l key1=value1,key2=value2). "
         "Matching objects must satisfy all of the specified label constraints.",
     ),
-    namespace: str = typer.Option(
+    namespace: Optional[str] = typer.Option(
         None,
         "-n",
         "--namespace",
         help="If present, the namespace scope for this CLI request",
+    ),
+    timeout: Optional[str] = typer.Option(
+        None,
+        "--timeout",
+        help="The length of time to wait before giving up.  Zero means check once and don't "
+        "wait, negative means wait for a week.",
     ),
 ):
     """Wait for a specific condition on one or many resources.
@@ -94,6 +96,11 @@ async def wait(
         kubectl delete pod/busybox1
         kubectl wait --for=delete pod/busybox1 --timeout=60s
     """
+    if timeout and "s" not in timeout:
+        # TODO support more units
+        console.print("error: --timeout must be a duration in seconds")
+        raise typer.Exit(code=1)
+    timeout = int(timeout[:-1]) if timeout else None
     if filename:
         console.print("error: --filename is not supported yet")
         raise typer.Exit(code=1)
@@ -106,7 +113,13 @@ async def wait(
         raise typer.Exit(code=1)
 
     async def wait_for(o: APIObject, conditions: List[str]):
-        await o.wait(conditions=conditions)
+        try:
+            await o.wait(conditions=conditions, timeout=timeout)
+        except asyncio.TimeoutError:
+            console.print(
+                f"error: timed out waiting for the condition on {o.singular}/{o.name}"
+            )
+            raise typer.Exit(code=1)
         console.print(f"{o.singular}/{o.name} condition met")
 
     await asyncio.gather(*[wait_for(o, conditions=conditions) for o in objects])
