@@ -7,16 +7,17 @@ import aiohttp
 import pytest
 
 import kr8s
-from kr8s._objects import get_class, object_from_spec
 from kr8s.asyncio.objects import (
     APIObject,
     Deployment,
     PersistentVolume,
     Pod,
     Service,
+    object_from_name_type,
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
+from kr8s.objects import get_class, object_from_spec
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(30)
 
@@ -79,6 +80,33 @@ async def test_pod_create_and_delete(example_pod_spec):
     while await pod.exists():
         await asyncio.sleep(0.1)
     assert not await pod.exists()
+
+
+async def test_pod_object_from_name_type(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    assert await pod.exists()
+    pod2 = await object_from_name_type(f"pod/{pod.name}", namespace=pod.namespace)
+    pod3 = await object_from_name_type(f"pod.v1/{pod.name}", namespace=pod.namespace)
+    assert pod2.name == pod.name
+    assert type(pod2) == type(pod)
+    assert pod3.name == pod.name
+    assert type(pod3) == type(pod)
+    await pod.delete()
+
+
+async def test_pod_wait_ready(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.wait("condition=Ready")
+    await pod.wait("condition=Ready=true")
+    await pod.wait("condition=Ready=True")
+    await pod.wait("jsonpath='{.status.phase}'=Running")
+    with pytest.raises(ValueError):
+        await pod.wait("foo=NotARealCondition")
+    await pod.delete()
+    await pod.wait("condition=Ready=False")
+    await pod.wait("delete")
 
 
 def test_pod_create_and_delete_sync(example_pod_spec):
