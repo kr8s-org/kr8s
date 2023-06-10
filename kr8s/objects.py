@@ -1,4 +1,4 @@
-from ._asyncio import sync
+from ._asyncio import run_sync, sync
 from ._objects import (
     APIObject as _APIObject,
 )
@@ -107,9 +107,11 @@ from ._objects import (
 from ._objects import (
     Table as _Table,
 )
-from ._objects import (
-    object_from_spec,  # noqa
+from ._objects import (  # noqa
+    get_class,
+    object_from_spec,
 )
+from ._objects import object_from_name_type as _object_from_name_type
 
 
 @sync
@@ -326,3 +328,6 @@ class CustomResourceDefinition(_CustomResourceDefinition):
 class Table(_Table):
     __doc__ = _Table.__doc__
     _asyncio = False
+
+
+object_from_name_type = run_sync(_object_from_name_type)

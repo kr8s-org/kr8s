@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 import aiohttp
+import jsonpath
 from aiohttp import ClientResponse
+from async_timeout import timeout as async_timeout
 
 import kr8s
 import kr8s.asyncio
@@ -17,6 +20,8 @@ from kr8s._data_utils import dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
+
+JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
 
 
 class APIObject:
@@ -251,6 +256,50 @@ class APIObject:
         ):
             self.raw = obj.raw
             yield event, self
+
+    async def _test_conditions(self, conditions: Union[List[str], str]) -> bool:
+        """Test if conditions are met."""
+        if isinstance(conditions, str):
+            conditions = [conditions]
+        for condition in conditions:
+            if condition.startswith("condition"):
+                condition = "=".join(condition.split("=")[1:])
+                if "=" in condition:
+                    field, value = condition.split("=")
+                    value = str(value)
+                else:
+                    field = condition
+                    value = str(True)
+                if value == "true" or value == "false":
+                    value = value.title()
+                status_conditions = list_dict_unpack(
+                    self.status.get("conditions", []), "type", "status"
+                )
+                if status_conditions.get(field, None) != value:
+                    return False
+            elif condition == "delete":
+                if await self._exists():
+                    return False
+            elif condition.startswith("jsonpath"):
+                matches = re.search(JSONPATH_CONDITION_EXPRESSION, condition)
+                expression = matches.group("expression")
+                condition = matches.group("condition")
+                [value] = jsonpath.findall(expression, self._raw)
+                if value != condition:
+                    return False
+            else:
+                raise ValueError(f"Unknown condition type {condition}")
+        return True
+
+    async def wait(self, conditions: list, timeout: int = None):
+        """Wait for conditions to be met."""
+        with async_timeout(timeout):
+            await self._refresh()
+            if await self._test_conditions(conditions):
+                return
+            async for _ in self.watch():
+                if await self._test_conditions(conditions):
+                    return
 
 
 ## v1 objects
@@ -908,3 +957,30 @@ def object_from_spec(spec: dict, api: Api = None) -> APIObject:
     """
     cls = get_class(spec["kind"], spec["apiVersion"])
     return cls(spec, api=api)
+
+
+async def object_from_name_type(
+    name: str, namespace: str = None, api: Api = None
+) -> APIObject:
+    """Create an APIObject from a Kubernetes resource name.
+
+    Args:
+        name: A Kubernetes resource name.
+
+    Returns:
+        A corresponding APIObject subclass instance.
+
+    Raises:
+        ValueError: If the resource kind or API version is not supported.
+    """
+    if "/" not in name:
+        raise ValueError(f"Invalid name: {name}. Expecting format of 'resource/name'.")
+    resource_type, name = name.split("/")
+    if "." in resource_type:
+        kind = resource_type.split(".")[0]
+        version = ".".join(resource_type.split(".")[1:])
+    else:
+        kind = resource_type
+        version = None
+    cls = get_class(kind, version)
+    return await cls.get(name, namespace=namespace, api=api)

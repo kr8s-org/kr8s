@@ -1093,6 +1093,18 @@ files = [
 pytest = ">=5.0.0"
 
 [[package]]
+name = "python-jsonpath"
+version = "0.7.1"
+description = "Another JSONPath implementation for Python."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "python_jsonpath-0.7.1-py3-none-any.whl", hash = "sha256:12d2ec1d38547e495d7746fc185abc9f462369f9a7b2c1c66de92242e84eb362"},
+    {file = "python_jsonpath-0.7.1.tar.gz", hash = "sha256:5099d88e55d71314eac5d8b7acc528cb47d53783ba9685940da8fb63a7674b54"},
+]
+
+[[package]]
 name = "pytz"
 version = "2023.3"
 description = "World timezone definitions, modern and historical"
@@ -1727,4 +1739,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "e16131be38bb3a1e41a2409a21853cd77cbf018484b17a400e2cd4e4e57a5a58"
+content-hash = "d9835b968fe215ec6dfd29ee54bb101fa1a528520a8adcab46c01e52a0f67c3e"

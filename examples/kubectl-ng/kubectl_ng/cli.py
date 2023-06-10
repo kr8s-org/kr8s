@@ -8,6 +8,7 @@ import typer
 from ._api_resources import api_resources
 from ._get import get
 from ._version import version
+from ._wait import wait
 
 
 def _typer_async(f):
@@ -28,6 +29,7 @@ app = typer.Typer()
 register(app, api_resources)
 register(app, get)
 register(app, version)
+register(app, wait)
 
 
 def go():
