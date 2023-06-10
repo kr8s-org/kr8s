@@ -11,7 +11,7 @@ from kr8s.asyncio.objects import APIObject, object_from_name_type
 
 console = Console()
 
-# Options
+# Missing Options
 # TODO --allow-missing-template-keys
 # TODO -f, --filename
 # TODO --local
