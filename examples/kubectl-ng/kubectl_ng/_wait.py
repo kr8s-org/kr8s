@@ -12,25 +12,33 @@ from kr8s.asyncio.objects import APIObject, object_from_name_type
 console = Console()
 
 # Options
-# TODO --all
-# TODO -A, --all-namespaces
 # TODO --allow-missing-template-keys
-# TODO --field-selector
 # TODO -f, --filename
 # TODO --local
 # TODO -o, --output
 # TODO -R, --recursive
-# TODO -l, --selector
 # TODO --show-managed-fields
 # TODO --template
 
 
 async def wait(
     resources: List[str] = typer.Argument(..., help="TYPE[.VERSION][.GROUP]"),
+    all_namespaces: bool = typer.Option(
+        False,
+        "-A",
+        "--all-namespaces",
+        help="If present, list the requested object(s) across all namespaces. "
+        "Namespace in current context is ignored even if specified with --namespace.",
+    ),
     filename: str = typer.Option(
         "",
         "--filename",
         help="Filename, directory, or URL to files identifying the resource to wait on",
+    ),
+    all: bool = typer.Option(
+        False,
+        "--all",
+        help="Select all resources in the namespace of the specified resource types",
     ),
     conditions: List[str] = typer.Option(
         [],
@@ -41,13 +49,19 @@ async def wait(
         "The default condition-value is true.  Condition values are compared after Unicode simple case folding, "
         "which is a more general form of case-insensitivity.",
     ),
-    label_selector: str = typer.Option(
-        "",
+    label_selector: Optional[str] = typer.Option(
+        None,
         "-l",
         "--selector",
         help="Selector (label query) to filter on, supports '=', '==', and '!='. "
         "(e.g. -l key1=value1,key2=value2). "
         "Matching objects must satisfy all of the specified label constraints.",
+    ),
+    field_selector: Optional[str] = typer.Option(
+        None,
+        "--field-selector",
+        help="Selector (field query) to filter on, supports '=', '==', and '!='. "
+        "The server only supports a limited number of field queries per type.",
     ),
     namespace: Optional[str] = typer.Option(
         None,
@@ -96,6 +110,9 @@ async def wait(
         kubectl delete pod/busybox1
         kubectl wait --for=delete pod/busybox1 --timeout=60s
     """
+    api = await kr8s.asyncio.api()
+    if all_namespaces:
+        namespace = kr8s.ALL
     if timeout and "s" not in timeout:
         # TODO support more units
         console.print("error: --timeout must be a duration in seconds")
@@ -104,13 +121,22 @@ async def wait(
     if filename:
         console.print("error: --filename is not supported yet")
         raise typer.Exit(code=1)
-    try:
-        objects = await asyncio.gather(
-            *[object_from_name_type(r, namespace=namespace) for r in resources]
+    if not all:
+        try:
+            objects = await asyncio.gather(
+                *[object_from_name_type(r, namespace=namespace) for r in resources]
+            )
+        except kr8s.NotFoundError as e:
+            console.print("Error from server (NotFound): " + str(e))
+            raise typer.Exit(code=1)
+    else:
+        assert len(resources) == 1
+        objects = await api.get(
+            resources[0],
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
         )
-    except kr8s.NotFoundError as e:
-        console.print("Error from server (NotFound): " + str(e))
-        raise typer.Exit(code=1)
 
     async def wait_for(o: APIObject, conditions: List[str]):
         try:
