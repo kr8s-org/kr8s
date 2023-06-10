@@ -1,9 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+from __future__ import annotations
+
 import asyncio
 import json
 import re
-from typing import Any, Dict, List, Optional, Union
+import time
+from typing import Any, Dict, List, Optional, Type, Union
 
 import aiohttp
 import jsonpath
@@ -13,7 +16,7 @@ from async_timeout import timeout as async_timeout
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import list_dict_unpack
+from kr8s._data_utils import dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
@@ -59,7 +62,7 @@ class APIObject:
         return self._raw
 
     @raw.setter
-    def raw(self, value):
+    def raw(self, value: Any) -> None:
         self._raw = value
 
     @property
@@ -111,13 +114,22 @@ class APIObject:
     def replicas(self) -> int:
         """Replicas of the Kubernetes resource."""
         if self.scalable:
-            return self.raw["spec"][self.scalable_spec]
+            keys = self.scalable_spec.split(".")
+            spec = self.raw["spec"]
+            for key in keys:
+                spec = spec[key]
+            return spec
         raise NotImplementedError(f"{self.kind} is not scalable")
 
     @classmethod
     async def get(
-        cls, name: str, namespace: str = None, api: Api = None, **kwargs
-    ) -> "APIObject":
+        cls,
+        name: str,
+        namespace: str = None,
+        api: Api = None,
+        timeout: int = 2,
+        **kwargs,
+    ) -> APIObject:
         """Get a Kubernetes resource by name."""
 
         if api is None:
@@ -125,15 +137,22 @@ class APIObject:
                 api = await kr8s.asyncio.api()
             else:
                 api = kr8s.api()
-
-        resources = await api._get(cls.endpoint, name, namespace=namespace, **kwargs)
-        if len(resources) == 0:
-            raise NotFoundError(f"Could not find {cls.kind} {name}.")
-        if len(resources) > 1:
-            raise ValueError(
-                f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
+        start = time.time()
+        backoff = 0.1
+        while start + timeout > time.time():
+            resources = await api._get(
+                cls.endpoint, name, namespace=namespace, **kwargs
             )
-        return resources[0]
+            if len(resources) == 0:
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 1)
+                continue
+            if len(resources) > 1:
+                raise ValueError(
+                    f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
+                )
+            return resources[0]
+        raise NotFoundError(f"Could not find {cls.kind} {name}.")
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
@@ -201,7 +220,7 @@ class APIObject:
         """Patch this object in Kubernetes."""
         return await self._patch(patch, subresource=subresource)
 
-    async def _patch(self, patch, *, subresource=None) -> None:
+    async def _patch(self, patch: Dict, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if subresource:
@@ -216,13 +235,12 @@ class APIObject:
         ) as resp:
             self.raw = await resp.json()
 
-    async def scale(self, replicas=None):
+    async def scale(self, replicas: int = None) -> None:
         """Scale this object in Kubernetes."""
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
         await self._exists(ensure=True)
-        # TODO support dot notation in self.scalable_spec to support nested fields
-        await self._patch({"spec": {self.scalable_spec: replicas}})
+        await self._patch({"spec": dot_to_nested_dict(self.scalable_spec, replicas)})
         while self.replicas != replicas:
             await self._refresh()
             await asyncio.sleep(0.1)
@@ -380,10 +398,10 @@ class Node(APIObject):
             return self.raw["spec"]["unschedulable"]
         return False
 
-    async def cordon(self):
+    async def cordon(self) -> None:
         await self._patch({"spec": {"unschedulable": True}})
 
-    async def uncordon(self):
+    async def uncordon(self) -> None:
         await self._patch({"spec": {"unschedulable": False}})
 
 
@@ -419,7 +437,7 @@ class Pod(APIObject):
     singular = "pod"
     namespaced = True
 
-    async def ready(self):
+    async def ready(self) -> bool:
         """Check if the pod is ready."""
         await self._refresh()
         conditions = list_dict_unpack(
@@ -444,7 +462,7 @@ class Pod(APIObject):
         timestamps=False,
         tail_lines=None,
         limit_bytes=None,
-    ):
+    ) -> str:
         params = {}
         if container is not None:
             params["container"] = container
@@ -913,7 +931,7 @@ class Table(APIObject):
         return self._raw["columnDefinitions"]
 
 
-def get_class(kind, version=None, _asyncio=True):
+def get_class(kind: str, version: str = None, _asyncio: bool = True) -> Type[APIObject]:
     for cls in APIObject.__subclasses__():
         if (
             hasattr(cls, "kind")

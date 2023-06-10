@@ -39,11 +39,11 @@ class _TaskRunner:
         self.__lock = threading.Lock()
         atexit.register(self._close)
 
-    def _close(self):
+    def _close(self) -> None:
         if self.__io_loop:
             self.__io_loop.stop()
 
-    def _runner(self):
+    def _runner(self) -> None:
         loop = self.__io_loop
         assert loop is not None  # noqa
         try:
@@ -51,7 +51,7 @@ class _TaskRunner:
         finally:
             loop.close()
 
-    def run(self, coro):
+    def run(self, coro: Awaitable[T]) -> T:
         """Synchronously run a coroutine on a background thread."""
         with self.__lock:
             name = f"{threading.current_thread().name} - runner"
@@ -154,7 +154,7 @@ def sync(source: object) -> object:
     return source
 
 
-async def check_output(*args, **kwargs):
+async def check_output(*args, **kwargs) -> str:
     """Run a command and return its output."""
     p = await asyncio.create_subprocess_exec(
         *args,
