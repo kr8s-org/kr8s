@@ -9,21 +9,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Publish kr8s
-        uses: JRubics/poetry-publish@v1.17
+        uses: JRubics/poetry-publish@v1.16
         with:
           pypi_token: ${{ secrets.PYPI_TOKEN_KR8S }}
           poetry_version: ==1.4.0
-          python_version: 3.11
           plugins: "poetry-dynamic-versioning-plugin"
   publish-kubectl-ng:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Publish kubectl-ng
-        uses: JRubics/poetry-publish@v1.17
+        uses: JRubics/poetry-publish@v1.16
         with:
           pypi_token: ${{ secrets.PYPI_TOKEN_KUBECTL_NG }}
           poetry_version: ==1.4.0
-          python_version: 3.11
           plugins: "poetry-dynamic-versioning-plugin"
           package_directory: "examples/kubectl-ng"
