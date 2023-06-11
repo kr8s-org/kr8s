@@ -208,13 +208,18 @@ class APIObject:
 
     async def _refresh(self) -> None:
         """Refresh this object from Kubernetes."""
-        async with self.api.call_api(
-            "GET",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}",
-            namespace=self.namespace,
-        ) as resp:
-            self.raw = await resp.json()
+        try:
+            async with self.api.call_api(
+                "GET",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}",
+                namespace=self.namespace,
+            ) as resp:
+                self.raw = await resp.json()
+        except aiohttp.ClientResponseError as e:
+            if e.status == 404:
+                raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
 
     async def patch(self, patch, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
@@ -245,7 +250,7 @@ class APIObject:
             await self._refresh()
             await asyncio.sleep(0.1)
 
-    async def watch(self):
+    async def _watch(self):
         """Watch this object in Kubernetes."""
         since = self.metadata.get("resourceVersion")
         async for event, obj in self.api._watch(
@@ -257,10 +262,13 @@ class APIObject:
             self.raw = obj.raw
             yield event, self
 
-    async def _test_conditions(self, conditions: Union[List[str], str]) -> bool:
+    async def watch(self):
+        """Watch this object in Kubernetes."""
+        async for event, obj in self._watch():
+            yield event, obj
+
+    async def _test_conditions(self, conditions: list) -> bool:
         """Test if conditions are met."""
-        if isinstance(conditions, str):
-            conditions = [conditions]
         for condition in conditions:
             if condition.startswith("condition"):
                 condition = "=".join(condition.split("=")[1:])
@@ -291,13 +299,20 @@ class APIObject:
                 raise ValueError(f"Unknown condition type {condition}")
         return True
 
-    async def wait(self, conditions: list, timeout: int = None):
+    async def wait(self, conditions: Union[List[str], str], timeout: int = None):
         """Wait for conditions to be met."""
+        if isinstance(conditions, str):
+            conditions = [conditions]
+
         with async_timeout(timeout):
-            await self._refresh()
+            try:
+                await self._refresh()
+            except NotFoundError:
+                if set(conditions) == {"delete"}:
+                    return
             if await self._test_conditions(conditions):
                 return
-            async for _ in self.watch():
+            async for _ in self._watch():
                 if await self._test_conditions(conditions):
                     return
 
