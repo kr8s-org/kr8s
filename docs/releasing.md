@@ -1,15 +1,12 @@
 # Releasing
 
-To publish a new release of `kr8s` first make a new git tag. Release follow SemVer and have a `v` prefix.
+To publish a new release of `kr8s` first make a new git tag. Release follow SemVer and have a `v` prefix. Then push the tag to the upstream `kr8s-org/kr8s` repo.
 
 ```console
 $ git tag v0.0.0
 
-```
-
-Then publish to PyPI with `poetry`.
-
-```console
-$ poetry publish --build
+$ git push upstream main --tags
 
 ```
+
+This will trigger a [release GitHub Action](https://github.com/kr8s-org/kr8s/blob/main/.github/workflows/release.yaml) which will build and publish to PyPI.
