@@ -36,4 +36,5 @@ from kr8s._objects import (  # noqa
     StatefulSet,
     Table,
     object_from_name_type,
+    objects_from_files,
 )

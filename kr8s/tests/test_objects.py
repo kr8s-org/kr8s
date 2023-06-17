@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import pathlib
 import time
 
 import aiohttp
@@ -10,16 +11,19 @@ import kr8s
 from kr8s.asyncio.objects import (
     APIObject,
     Deployment,
+    Ingress,
     PersistentVolume,
     Pod,
     Service,
     object_from_name_type,
+    objects_from_files,
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import get_class, object_from_spec
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(30)
+CURRENT_DIR = pathlib.Path(__file__).parent
 
 
 @pytest.fixture
@@ -453,3 +457,46 @@ async def test_scalable_dot_notation():
 
     foo = await Foo({"metadata": {"name": "foo"}, "spec": {"nested": {"replicas": 1}}})
     assert foo.replicas == 1
+
+
+async def test_object_from_file():
+    api = await kr8s.asyncio.api()
+    objects = await objects_from_files(
+        CURRENT_DIR / "resources" / "simple" / "nginx_pod.yaml", api=api
+    )
+    assert len(objects) == 1
+    assert isinstance(objects[0], Pod)
+    assert objects[0].kind == "Pod"
+    assert objects[0].name == "nginx"
+    assert len(objects[0].spec["containers"]) == 1
+
+
+async def test_objects_from_file():
+    objects = await objects_from_files(
+        CURRENT_DIR / "resources" / "simple" / "nginx_pod_service.yaml"
+    )
+    assert len(objects) == 2
+    assert isinstance(objects[0], Pod)
+    assert isinstance(objects[1], Service)
+
+
+async def test_objects_from_files():
+    simple_dir = CURRENT_DIR / "resources" / "simple"
+    objects = await objects_from_files(simple_dir)
+    assert len(objects) > 1
+
+
+async def test_objects_from_files_nested():
+    simple_dir = CURRENT_DIR / "resources" / "simple"
+
+    objects = await objects_from_files(simple_dir)
+    assert not any(isinstance(o, Ingress) for o in objects)
+
+    objects = await objects_from_files(simple_dir, recursive=True)
+    assert any(isinstance(o, Ingress) for o in objects)
+
+
+async def test_custom_object_from_file():
+    simple_dir = CURRENT_DIR / "resources" / "custom" / "evc.yaml"
+    objects = await objects_from_files(simple_dir)
+    assert len(objects) == 1
