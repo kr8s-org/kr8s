@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import pathlib
 import re
 import time
 from typing import Any, Dict, List, Optional, Type, Union
 
 import aiohttp
 import jsonpath
+import yaml
 from aiohttp import ClientResponse
 from async_timeout import timeout as async_timeout
 
@@ -958,7 +960,40 @@ def get_class(kind: str, version: str = None, _asyncio: bool = True) -> Type[API
     raise KeyError(f"No object registered for {version}/{kind}")
 
 
-def object_from_spec(spec: dict, api: Api = None) -> APIObject:
+def new_class(
+    kind: str, version: str = None, asyncio: bool = True, namespaced=True
+) -> Type[APIObject]:
+    """Create a new APIObject subclass.
+
+    Args:
+        kind: The Kubernetes resource kind.
+        version: The Kubernetes API version.
+        asyncio: Whether to use asyncio or not.
+        namespaced: Whether the resource is namespaced or not.
+
+    Returns:
+        A new APIObject subclass.
+    """
+    if version is None:
+        version = "v1"
+    return type(
+        kind,
+        (APIObject,),
+        {
+            "kind": kind,
+            "version": version,
+            "_asyncio": asyncio,
+            "endpoint": kind.lower() + "s",
+            "plural": kind.lower() + "s",
+            "singular": kind.lower(),
+            "namespaced": namespaced,
+        },
+    )
+
+
+def object_from_spec(
+    spec: dict, api: Api = None, allow_unknown_type: bool = False
+) -> APIObject:
     """Create an APIObject from a Kubernetes resource spec.
 
     Args:
@@ -970,7 +1005,13 @@ def object_from_spec(spec: dict, api: Api = None) -> APIObject:
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    cls = get_class(spec["kind"], spec["apiVersion"])
+    try:
+        cls = get_class(spec["kind"], spec["apiVersion"])
+    except KeyError:
+        if allow_unknown_type:
+            cls = new_class(spec["kind"], spec["apiVersion"])
+        else:
+            raise
     return cls(spec, api=api)
 
 
@@ -999,3 +1040,36 @@ async def object_from_name_type(
         version = None
     cls = get_class(kind, version)
     return await cls.get(name, namespace=namespace, api=api)
+
+
+async def objects_from_files(
+    path: Union[str, pathlib.Path], api: Api = None, recursive: bool = False
+) -> List[APIObject]:
+    """Create APIObjects from Kubernetes resource files.
+
+    Args:
+        path: A path to a Kubernetes resource file or directory of resource files.
+        api: An optional API instance to use.
+        recursive: Whether to recursively search for resource files in subdirectories.
+
+    Returns:
+        A list of APIObject subclass instances.
+
+    Raises:
+        ValueError: If the resource kind or API version is not supported.
+    """
+    path = pathlib.Path(path)
+    if path.is_dir():
+        pattern = "**/*.yaml" if recursive else "*.yaml"
+        files = [f for f in path.glob(pattern) if f.is_file()]
+    else:
+        files = [path]
+    objects = []
+    for file in files:
+        with open(file, "r") as f:
+            for doc in yaml.safe_load_all(f):
+                if doc is not None:
+                    objects.append(
+                        object_from_spec(doc, api=api, allow_unknown_type=True)
+                    )
+    return objects

@@ -107,11 +107,9 @@ from ._objects import (
 from ._objects import (
     Table as _Table,
 )
-from ._objects import (  # noqa
-    get_class,
-    object_from_spec,
-)
+from ._objects import get_class, new_class, object_from_spec  # noqa
 from ._objects import object_from_name_type as _object_from_name_type
+from ._objects import objects_from_files as _objects_from_files
 
 
 @sync
@@ -331,3 +329,4 @@ class Table(_Table):
 
 
 object_from_name_type = run_sync(_object_from_name_type)
+objects_from_files = run_sync(_objects_from_files)
