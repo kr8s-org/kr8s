@@ -176,7 +176,7 @@ class APIObject:
             raise NotFoundError(f"Object {self.name} does not exist")
         return False
 
-    async def create(self) -> None:
+    async def _create(self) -> None:
         """Create this object in Kubernetes."""
         async with self.api.call_api(
             "POST",
@@ -186,6 +186,18 @@ class APIObject:
             data=json.dumps(self.raw),
         ) as resp:
             self.raw = await resp.json()
+
+    async def create(self) -> None:
+        """Create this object in Kubernetes."""
+        await self._create()
+
+    async def apply(self) -> None:
+        """Apply this object to Kubernetes."""
+        if await self.exists():
+            # await self._patch(self.raw)
+            await self.patch({"spec": self.spec, "metadata": self.metadata})
+        else:
+            await self._create()
 
     async def delete(self, propagation_policy: str = None) -> None:
         """Delete this object from Kubernetes."""

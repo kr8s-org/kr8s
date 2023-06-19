@@ -183,6 +183,20 @@ async def test_pod_metadata(example_pod_spec):
     await pod.delete()
 
 
+async def test_pod_apply(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.apply()
+    assert "name" in pod.metadata
+    assert "hello" in pod.labels
+    assert "foo" not in pod.labels
+
+    pod.raw["metadata"]["labels"]["foo"] = "bar"
+    await pod.apply()
+    assert "foo" in pod.labels
+
+    await pod.delete()
+
+
 async def test_pod_missing_labels_annotations(example_pod_spec):
     del example_pod_spec["metadata"]["labels"]
     del example_pod_spec["metadata"]["annotations"]
