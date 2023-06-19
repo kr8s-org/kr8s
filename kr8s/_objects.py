@@ -194,8 +194,10 @@ class APIObject:
     async def apply(self) -> None:
         """Apply this object to Kubernetes."""
         if await self.exists():
-            # await self._patch(self.raw)
-            await self.patch({"spec": self.spec, "metadata": self.metadata})
+            metadata = {
+                k: v for k, v in self.metadata.items() if k in ["labels", "annotations"]
+            }
+            await self.patch({"spec": self.spec, "metadata": metadata})
         else:
             await self._create()
 

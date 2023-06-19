@@ -192,6 +192,7 @@ async def test_pod_apply(example_pod_spec):
 
     pod.raw["metadata"]["labels"]["foo"] = "bar"
     await pod.apply()
+    await pod.refresh()
     assert "foo" in pod.labels
 
     await pod.delete()
