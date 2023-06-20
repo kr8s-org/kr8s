@@ -10,15 +10,53 @@
 [![PyPI - Wheel](https://img.shields.io/pypi/wheel/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
 
-> **Warning**
-> This is beta software and might not be ready for prime time.
+A simple, extensible Python client library for Kubernetes that feels familiar for folks who already know how to use `kubectl`.
 
-A Kubernetes API for Python
+## Highlights
 
-### History
+- API inspired by `kubectl` to reduce developer learning curve.
+- [Sensible defaults](https://docs.kr8s.org/en/latest/authentication.html) to reduce boiler plate.
+- No swagger generated code, human readable code only.
+- Supports both [async/await](https://docs.kr8s.org/en/latest/asyncio.html) and sync APIs.
+- [Client caching](https://docs.kr8s.org/en/latest/client.html#client-caching) to reduce passing API objects around.
+- Batteries included by providing useful utilities and methods inspired by `kubectl`.
 
-This project was originally spun out from [dask-kubernetes](https://github.com/dask/dask-kubernetes) which provides utilities for deploying [Dask](https://www.dask.org/) clusters on Kubernetes.
+## Quickstart
 
-The `dask-kubernetes` project used a mix of [kubernetes](https://github.com/kubernetes-client/python), [kubernetes-asyncio](https://github.com/tomplus/kubernetes_asyncio) and [pykube-ng](https://codeberg.org/hjacobs/pykube-ng) (and some subprocess calls to [kubectl](https://kubernetes.io/docs/reference/kubectl/)) to interact with the Kubernetes API. It also contained a whole load of glue code to work around missing features and get everything working together.
+### Installation
 
-To improve maintenance and code reuse `kr8s` was born to extract the Kubernetes library code in `dask-kubernetes` and replace it with something simpler and more complete. Thank you to everyone who contributed to `dask-kubernetes` and we hope you contribute to `kr8s` too.
+```console
+$ pip install kr8s
+```
+
+### Client API
+
+```python
+import kr8s
+
+api = kr8s.api()
+pods = api.get("pods")
+```
+
+See the [Client API docs](https://docs.kr8s.org/en/latest/client.html) for more examples.
+
+### Object API
+
+```python
+from kr8s.objects import Pod
+
+pod = Pod({
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": "my-pod",
+        },
+        "spec": {
+            "containers": [{"name": "pause", "image": "gcr.io/google_containers/pause",}]
+        },
+    })
+
+pod.create()
+```
+
+See the [Object API docs](https://docs.kr8s.org/en/latest/object.html) for more examples.
