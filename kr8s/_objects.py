@@ -197,7 +197,8 @@ class APIObject:
             metadata = {
                 k: v for k, v in self.metadata.items() if k in ["labels", "annotations"]
             }
-            await self.patch({"spec": self.spec, "metadata": metadata})
+            # TODO compare the remote spec and local spec and only patch the difference
+            await self._patch({"spec": self.spec, "metadata": metadata})
         else:
             await self._create()
 
