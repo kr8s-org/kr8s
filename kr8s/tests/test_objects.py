@@ -337,7 +337,7 @@ async def test_deployment_scale(example_deployment_spec):
     assert deployment.replicas == 2
     while not await deployment.ready():
         await asyncio.sleep(0.1)
-    pods = await deployment.ready_pods()
+    pods = await deployment.pods()
     assert len(pods) == 2
     await deployment.scale(1)
     assert deployment.replicas == 1

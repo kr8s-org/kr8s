@@ -659,11 +659,11 @@ class Service(APIObject):
         return await self._proxy_http_request("DELETE", path, port, **kwargs)
 
     async def ready_pods(self) -> List[Pod]:
-        """Return a list of ready pods for this service."""
+        """Return a list of ready Pods for this Service."""
         return await self._ready_pods()
 
     async def _ready_pods(self) -> List[Pod]:
-        """Return a list of ready pods for this service."""
+        """Return a list of ready Pods for this Service."""
         pod_selector = ",".join([f"{k}={v}" for k, v in self.spec["selector"].items()])
         pods = await self.api._get("pods", label_selector=pod_selector)
         return [pod for pod in pods if await pod.ready()]
@@ -738,17 +738,17 @@ class Deployment(APIObject):
     namespaced = True
     scalable = True
 
-    async def ready_pods(self) -> List[Pod]:
-        """Return a list of ready pods for this service."""
-        return await self._ready_pods()
+    async def pods(self) -> List[Pod]:
+        """Return a list of Pods for this Deployment."""
+        return await self._pods()
 
-    async def _ready_pods(self) -> List[Pod]:
-        """Return a list of ready pods for this service."""
+    async def _pods(self) -> List[Pod]:
+        """Return a list of Pods for this Deployment."""
         pod_selector = ",".join(
             [f"{k}={v}" for k, v in self.spec["selector"]["matchLabels"].items()]
         )
         pods = await self.api._get("pods", label_selector=pod_selector)
-        return [pod for pod in pods if await pod.ready()]
+        return pods
 
     async def ready(self):
         """Check if the deployment is ready."""
