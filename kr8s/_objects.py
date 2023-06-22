@@ -198,7 +198,7 @@ class APIObject:
                 k: v for k, v in self.metadata.items() if k in ["labels", "annotations"]
             }
             # TODO compare the remote spec and local spec and only patch the difference
-            await self._patch({"spec": self.spec, "metadata": metadata})
+            await self._patch({"spec": self.spec, "metadata": metadata}, force=True)
         else:
             await self._create()
 
@@ -242,7 +242,7 @@ class APIObject:
         """Patch this object in Kubernetes."""
         return await self._patch(patch, subresource=subresource)
 
-    async def _patch(self, patch: Dict, *, subresource=None) -> None:
+    async def _patch(self, patch: Dict, *, subresource=None, **kwargs) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if subresource:
@@ -254,6 +254,7 @@ class APIObject:
             namespace=self.namespace,
             data=json.dumps(patch),
             headers={"Content-Type": "application/merge-patch+json"},
+            **kwargs,
         ) as resp:
             self.raw = await resp.json()
 

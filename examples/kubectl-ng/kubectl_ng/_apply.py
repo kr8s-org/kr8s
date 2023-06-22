@@ -39,7 +39,6 @@ async def apply(
             console.print(f"[green]{obj.singular}/{obj.name} applied[/green]")
         except Exception as e:
             console.print(f"[red]{obj.singular}/{obj.name} failed[/red]: {e}")
-            breakpoint()
             successful = False
             continue
     if not successful:
