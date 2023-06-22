@@ -664,7 +664,7 @@ class Service(APIObject):
 
     async def _ready_pods(self) -> List[Pod]:
         """Return a list of ready pods for this service."""
-        pod_selector = ",".join([f"{k}={v}" for k, v in self.labels.items()])
+        pod_selector = ",".join([f"{k}={v}" for k, v in self.spec["selector"].items()])
         pods = await self.api._get("pods", label_selector=pod_selector)
         return [pod for pod in pods if await pod.ready()]
 
@@ -737,6 +737,18 @@ class Deployment(APIObject):
     singular = "deployment"
     namespaced = True
     scalable = True
+
+    async def ready_pods(self) -> List[Pod]:
+        """Return a list of ready pods for this service."""
+        return await self._ready_pods()
+
+    async def _ready_pods(self) -> List[Pod]:
+        """Return a list of ready pods for this service."""
+        pod_selector = ",".join(
+            [f"{k}={v}" for k, v in self.spec["selector"]["matchLabels"].items()]
+        )
+        pods = await self.api._get("pods", label_selector=pod_selector)
+        return [pod for pod in pods if await pod.ready()]
 
     async def ready(self):
         """Check if the deployment is ready."""
