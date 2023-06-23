@@ -665,7 +665,9 @@ class Service(APIObject):
     async def _ready_pods(self) -> List[Pod]:
         """Return a list of ready Pods for this Service."""
         pods = await self.api._get(
-            "pods", label_selector=dict_to_selector(self.spec["selector"])
+            "pods",
+            label_selector=dict_to_selector(self.spec["selector"]),
+            namespace=self.namespace,
         )
         return [pod for pod in pods if await pod.ready()]
 
@@ -744,6 +746,7 @@ class Deployment(APIObject):
         pods = await self.api._get(
             "pods",
             label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
+            namespace=self.namespace,
         )
         return pods
 
