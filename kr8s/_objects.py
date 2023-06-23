@@ -18,7 +18,7 @@ from async_timeout import timeout as async_timeout
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import dot_to_nested_dict, list_dict_unpack
+from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
@@ -664,8 +664,9 @@ class Service(APIObject):
 
     async def _ready_pods(self) -> List[Pod]:
         """Return a list of ready Pods for this Service."""
-        pod_selector = ",".join([f"{k}={v}" for k, v in self.spec["selector"].items()])
-        pods = await self.api._get("pods", label_selector=pod_selector)
+        pods = await self.api._get(
+            "pods", label_selector=dict_to_selector(self.spec["selector"])
+        )
         return [pod for pod in pods if await pod.ready()]
 
     async def ready(self) -> bool:
@@ -740,10 +741,10 @@ class Deployment(APIObject):
 
     async def pods(self) -> List[Pod]:
         """Return a list of Pods for this Deployment."""
-        pod_selector = ",".join(
-            [f"{k}={v}" for k, v in self.spec["selector"]["matchLabels"].items()]
+        pods = await self.api._get(
+            "pods",
+            label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
         )
-        pods = await self.api._get("pods", label_selector=pod_selector)
         return pods
 
     async def ready(self):
