@@ -740,10 +740,6 @@ class Deployment(APIObject):
 
     async def pods(self) -> List[Pod]:
         """Return a list of Pods for this Deployment."""
-        return await self._pods()
-
-    async def _pods(self) -> List[Pod]:
-        """Return a list of Pods for this Deployment."""
         pod_selector = ",".join(
             [f"{k}={v}" for k, v in self.spec["selector"]["matchLabels"].items()]
         )
