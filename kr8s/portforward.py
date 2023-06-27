@@ -1,4 +1,4 @@
-from ._asyncio import sync
+from ._io import sync
 from ._portforward import PortForward as _PortForward
 
 

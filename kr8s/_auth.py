@@ -7,7 +7,7 @@ import os
 import anyio
 import yaml
 
-from ._asyncio import NamedTemporaryFile, check_output
+from ._io import NamedTemporaryFile, check_output
 
 
 class KubeAuth:
