@@ -4,9 +4,9 @@ from functools import partial
 
 from ._api import ALL  # noqa
 from ._api import Api as _AsyncApi
-from ._asyncio import run_sync as _run_sync
-from ._asyncio import sync as _sync  # noqa
 from ._exceptions import NotFoundError  # noqa
+from ._io import run_sync as _run_sync
+from ._io import sync as _sync  # noqa
 from .asyncio import api as _api  # noqa
 
 __version__ = "0.0.0"
