@@ -180,9 +180,10 @@ async def NamedTemporaryFile(
     *args, delete: bool = True, **kwargs
 ) -> AsyncGenerator[anyio.Path, None]:
     """Create a temporary file that is deleted when the context exits."""
+    kwargs.update(delete=False)
 
     def f() -> tempfile.NamedTemporaryFile:
-        return tempfile.NamedTemporaryFile(*args, **(kwargs | {"delete": False}))
+        return tempfile.NamedTemporaryFile(*args, **kwargs)
 
     tmp = await anyio.to_thread.run_sync(f)
     fh = anyio.Path(tmp.name)
