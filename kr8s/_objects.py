@@ -10,10 +10,10 @@ import time
 from typing import Any, Dict, List, Optional, Type, Union
 
 import aiohttp
+import anyio
 import jsonpath
 import yaml
 from aiohttp import ClientResponse
-from async_timeout import timeout as async_timeout
 
 import kr8s
 import kr8s.asyncio
@@ -306,7 +306,7 @@ class APIObject:
         if isinstance(conditions, str):
             conditions = [conditions]
 
-        with async_timeout(timeout):
+        with anyio.fail_after(timeout):
             try:
                 await self._refresh()
             except NotFoundError:
