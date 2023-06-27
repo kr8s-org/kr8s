@@ -4,11 +4,10 @@ import base64
 import json
 import os
 
-import aiofiles
-import aiofiles.os
+import anyio
 import yaml
 
-from ._asyncio import check_output
+from ._asyncio import NamedTemporaryFile, check_output
 
 
 class KubeAuth:
@@ -32,8 +31,8 @@ class KubeAuth:
         self._context = None
         self._cluster = None
         self._user = None
-        self._serviceaccount = serviceaccount
-        self._kubeconfig = os.path.expanduser(
+        self._serviceaccount = anyio.Path(serviceaccount) if serviceaccount else None
+        self._kubeconfig = anyio.Path(
             kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
         )
         if url:
@@ -57,10 +56,10 @@ class KubeAuth:
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
-        if not await aiofiles.os.path.isfile(self._kubeconfig):
+        self._kubeconfig = await self._kubeconfig.expanduser()
+        if not await self._kubeconfig.exists():
             return
-        async with aiofiles.open(self._kubeconfig, mode="r") as f:
-            config = yaml.safe_load(await f.read())
+        config = yaml.safe_load(await self._kubeconfig.read_bytes())
         if "current-context" in config:
             [self._context] = [
                 c["context"]
@@ -105,24 +104,23 @@ class KubeAuth:
                 raise KeyError(f"Did not find credentials in {command} output.")
 
         if "client-key-data" in self._user:
-            async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as key_file:
-                await key_file.write(base64.b64decode(self._user["client-key-data"]))
-                await key_file.flush()
-                self.client_key_file = key_file.name
+            async with NamedTemporaryFile(delete=False) as key_file:
+                await key_file.write_bytes(
+                    base64.b64decode(self._user["client-key-data"])
+                )
+                self.client_key_file = str(key_file)
         if "client-certificate-data" in self._user:
-            async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as cert_file:
-                await cert_file.write(
+            async with NamedTemporaryFile(delete=False) as cert_file:
+                await cert_file.write_bytes(
                     base64.b64decode(self._user["client-certificate-data"])
                 )
-                await cert_file.flush()
-                self.client_cert_file = cert_file.name
+                self.client_cert_file = str(cert_file)
         if "certificate-authority-data" in self._cluster:
-            async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as ca_file:
-                await ca_file.write(
+            async with NamedTemporaryFile(delete=False) as ca_file:
+                await ca_file.write_bytes(
                     base64.b64decode(self._cluster["certificate-authority-data"])
                 )
-                await ca_file.flush()
-                self.server_ca_file = ca_file.name
+                self.server_ca_file = str(ca_file)
         if "token" in self._user:
             self.token = self._user["token"]
         if "username" in self._user:
@@ -135,18 +133,13 @@ class KubeAuth:
 
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
-        if not await aiofiles.os.path.isdir(self._serviceaccount):
+        self._serviceaccount = await self._serviceaccount.expanduser()
+        if not await self._serviceaccount.is_dir():
             return
         host = os.environ["KUBERNETES_SERVICE_HOST"]
         port = os.environ["KUBERNETES_SERVICE_PORT"]
         self.server = f"https://{host}:{port}"
-        async with aiofiles.open(
-            os.path.join(self._serviceaccount, "token"), mode="r"
-        ) as f:
-            self.token = await f.read()
-        self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
+        self.token = await (self._serviceaccount / "token").read_text()
+        self.server_ca_file = str(self._serviceaccount / "ca.crt")
         if self.namespace is None:
-            async with aiofiles.open(
-                os.path.join(self._serviceaccount, "namespace"), mode="r"
-            ) as f:
-                self.namespace = await f.read()
+            self.namespace = await (self._serviceaccount / "namespace").read_text()

@@ -14,7 +14,9 @@
 import asyncio
 import atexit
 import inspect
+import tempfile
 import threading
+from contextlib import asynccontextmanager
 from functools import wraps
 from typing import (
     Any,
@@ -26,6 +28,8 @@ from typing import (
     Tuple,
     TypeVar,
 )
+
+import anyio
 
 T = TypeVar("T")
 
@@ -169,3 +173,19 @@ async def check_output(*args, **kwargs) -> str:
         raise RuntimeError(
             f"Process exited with non-zero code {p.returncode}:\n{stderr_data.decode()}"
         )
+
+
+@asynccontextmanager
+async def NamedTemporaryFile(
+    *args, delete: bool = True, **kwargs
+) -> AsyncGenerator[anyio.Path, None]:
+    """Create a temporary file that is deleted when the context exits."""
+
+    def f() -> tempfile.NamedTemporaryFile:
+        return tempfile.NamedTemporaryFile(*args, **(kwargs | {"delete": False}))
+
+    tmp = await anyio.to_thread.run_sync(f)
+    fh = anyio.Path(tmp.name)
+    yield fh
+    if delete:
+        await fh.unlink()
