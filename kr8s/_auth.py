@@ -17,7 +17,7 @@ class KubeAuth:
         self,
         kubeconfig=None,
         url=None,
-        serviceaccount="/var/run/secrets/kubernetes.io/serviceaccount",
+        serviceaccount=None,
         namespace=None,
     ) -> None:
         self.server = None
@@ -31,7 +31,11 @@ class KubeAuth:
         self._context = None
         self._cluster = None
         self._user = None
-        self._serviceaccount = anyio.Path(serviceaccount) if serviceaccount else None
+        self._serviceaccount = anyio.Path(
+            serviceaccount
+            if serviceaccount
+            else "/var/run/secrets/kubernetes.io/serviceaccount"
+        )
         self._kubeconfig = anyio.Path(
             kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
         )
