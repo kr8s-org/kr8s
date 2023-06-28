@@ -36,9 +36,8 @@ class KubeAuth:
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        self._kubeconfig = anyio.Path(
-            kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
-        )
+        self._kubeconfig = kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+
         if url:
             self.server = url
 
@@ -60,10 +59,11 @@ class KubeAuth:
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
-        self._kubeconfig = await self._kubeconfig.expanduser()
-        if not await self._kubeconfig.exists():
+        self._kubeconfig = os.path.expanduser(self._kubeconfig)
+        if not os.path.exists(self._kubeconfig):
             return
-        config = yaml.safe_load(await self._kubeconfig.read_bytes())
+        async with await anyio.open_file(self._kubeconfig) as f:
+            config = yaml.safe_load(await f.read())
         if "current-context" in config:
             [self._context] = [
                 c["context"]
