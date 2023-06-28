@@ -44,6 +44,14 @@ async def test_kubeconfig(k8s_cluster):
     assert "major" in version
 
 
+async def test_default_service_account(k8s_cluster):
+    kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    assert (
+        str(kubernetes.auth._serviceaccount)
+        == "/var/run/secrets/kubernetes.io/serviceaccount"
+    )
+
+
 async def test_reauthenticate(k8s_cluster):
     kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     await kubernetes.reauthenticate()
