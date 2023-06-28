@@ -138,16 +138,18 @@ class KubeAuth:
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
         self._serviceaccount = os.path.expanduser(self._serviceaccount)
-        if not await os.path.isdir(self._serviceaccount):
+        if not os.path.isdir(self._serviceaccount):
             return
         host = os.environ["KUBERNETES_SERVICE_HOST"]
         port = os.environ["KUBERNETES_SERVICE_PORT"]
         self.server = f"https://{host}:{port}"
-        async with anyio.open_file(os.path.join(self._serviceaccount, "token")) as f:
+        async with await anyio.open_file(
+            os.path.join(self._serviceaccount, "token")
+        ) as f:
             self.token = await f.read()
         self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
         if self.namespace is None:
-            async with anyio.open_file(
+            async with await anyio.open_file(
                 os.path.join(self._serviceaccount, "namespace")
             ) as f:
                 self.namespace = await f.read()
