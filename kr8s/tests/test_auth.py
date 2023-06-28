@@ -44,7 +44,6 @@ async def test_kubeconfig(k8s_cluster):
     assert "major" in version
 
 
-@pytest.mark.skip(reason="seems to be causing CI to hang")
 async def test_default_service_account(k8s_cluster):
     kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     assert (

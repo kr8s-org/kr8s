@@ -36,8 +36,6 @@ class KubeAuth:
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        if self._serviceaccount:
-            self._serviceaccount = anyio.Path(self._serviceaccount)
         self._kubeconfig = anyio.Path(
             kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
         )
@@ -139,13 +137,17 @@ class KubeAuth:
 
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
-        self._serviceaccount = await self._serviceaccount.expanduser()
-        if not await self._serviceaccount.is_dir():
+        self._serviceaccount = os.path.expanduser(self._serviceaccount)
+        if not await os.path.isdir(self._serviceaccount):
             return
         host = os.environ["KUBERNETES_SERVICE_HOST"]
         port = os.environ["KUBERNETES_SERVICE_PORT"]
         self.server = f"https://{host}:{port}"
-        self.token = await (self._serviceaccount / "token").read_text()
-        self.server_ca_file = str(self._serviceaccount / "ca.crt")
+        async with anyio.open_file(os.path.join(self._serviceaccount, "token")) as f:
+            self.token = await f.read()
+        self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
         if self.namespace is None:
-            self.namespace = await (self._serviceaccount / "namespace").read_text()
+            async with anyio.open_file(
+                os.path.join(self._serviceaccount, "namespace")
+            ) as f:
+                self.namespace = await f.read()
