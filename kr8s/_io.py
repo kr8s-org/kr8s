@@ -1,75 +1,26 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Jupyter Development Team., MrNaif2018, Dask Developers, NVIDIA
 # SPDX-License-Identifier: MIT License, BSD 3-Clause License
 #
-# This file contains a fork of universalasync (commit d397911) and jupyter-core (commit 98b9a1a).
-# Both projects attempt to solve the same problem: how to run nested asyncio tasks.
+# This file was originally based on universalasync (commit d397911) and jupyter-core (commit 98b9a1a).
+# Both projects attempt to solve the same problem: how to run nested async tasks.
 # Neither solution quite fit in here, so we forked them and combined them.
 #
 # universalasync License: https://github.com/bitcartcc/universalasync/blob/d397911/LICENSE
 # jupyter-core License: https://github.com/jupyter/jupyter_core/blob/98b9a1a/COPYING.md
 #
-# This implementation uses the _TaskRunner from jupyter-core, but with a modified version of the wraps
-# decorator from universalasync.
+# This implementation now uses anyio to simplify dispatching to a loop in a thread using either
+# asyncio or trio.
 
 import asyncio
-import atexit
 import inspect
 import tempfile
-import threading
 from contextlib import asynccontextmanager
-from functools import wraps
-from typing import (
-    Any,
-    AsyncGenerator,
-    Awaitable,
-    Callable,
-    Generator,
-    Optional,
-    Tuple,
-    TypeVar,
-)
+from functools import partial, wraps
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, Tuple, TypeVar
 
 import anyio
 
 T = TypeVar("T")
-
-
-class _TaskRunner:
-    """A task runner that runs an asyncio event loop on a background thread."""
-
-    def __init__(self):
-        self.__io_loop: Optional[asyncio.AbstractEventLoop] = None
-        self.__runner_thread: Optional[threading.Thread] = None
-        self.__lock = threading.Lock()
-        atexit.register(self._close)
-
-    def _close(self) -> None:
-        if self.__io_loop:
-            self.__io_loop.stop()
-
-    def _runner(self) -> None:
-        loop = self.__io_loop
-        assert loop is not None  # noqa
-        try:
-            loop.run_forever()
-        finally:
-            loop.close()
-
-    def run(self, coro: Awaitable[T]) -> T:
-        """Synchronously run a coroutine on a background thread."""
-        with self.__lock:
-            name = f"{threading.current_thread().name} - runner"
-            if self.__io_loop is None:
-                self.__io_loop = asyncio.new_event_loop()
-                self.__runner_thread = threading.Thread(
-                    target=self._runner, daemon=True, name=name
-                )
-                self.__runner_thread.start()
-        fut = asyncio.run_coroutine_threadsafe(coro, self.__io_loop)
-        return fut.result(None)
-
-
-_runner_map = {}
 
 
 def run_sync(coro: Callable[..., Awaitable[T]]) -> Callable[..., T]:
@@ -88,30 +39,21 @@ def run_sync(coro: Callable[..., Awaitable[T]]) -> Callable[..., T]:
 
     @wraps(coro)
     def wrapped(*args, **kwargs):
-        name = threading.current_thread().name
-        inner = coro(*args, **kwargs)
-        try:
-            # If a loop is currently running use a task runner to
-            # run in a new loop in a separate thread.
-            asyncio.get_running_loop()
-            if name not in _runner_map:
-                _runner_map[name] = _TaskRunner()
-            handler = _runner_map[name].run
-        except RuntimeError:
-            # Otherwise just run in a new loop.
-            handler = asyncio.run
-
-        if inspect.isawaitable(inner):
-            return handler(inner)
-        if inspect.isasyncgen(inner):
-            return iter_over_async(inner, lambda inner: handler(inner))
+        with anyio.from_thread.start_blocking_portal() as portal:
+            if inspect.iscoroutinefunction(coro):
+                return portal.call(partial(coro, *args, **kwargs))
+            if inspect.isasyncgenfunction(coro):
+                return iter_over_async(partial(coro, *args, **kwargs))
+            raise TypeError(
+                f"Expected coroutine function, got {coro.__class__.__name__}"
+            )
 
     wrapped.__doc__ = coro.__doc__
     return wrapped
 
 
-def iter_over_async(agen: AsyncGenerator, run_func: Callable) -> Generator:
-    ait = agen.__aiter__()
+def iter_over_async(agen: AsyncGenerator) -> Generator:
+    ait = agen().__aiter__()
 
     async def get_next() -> Tuple[bool, Any]:
         try:
@@ -120,11 +62,12 @@ def iter_over_async(agen: AsyncGenerator, run_func: Callable) -> Generator:
         except StopAsyncIteration:
             return True, None
 
-    while True:
-        done, obj = run_func(get_next())
-        if done:
-            break
-        yield obj
+    with anyio.from_thread.start_blocking_portal() as portal:
+        while True:
+            done, obj = portal.call(get_next)
+            if done:
+                break
+            yield obj
 
 
 def sync(source: object) -> object:
