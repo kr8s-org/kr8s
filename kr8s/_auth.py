@@ -33,7 +33,7 @@ class KubeAuth:
         self._user = None
         self._serviceaccount = anyio.Path(
             serviceaccount
-            if serviceaccount
+            if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
         self._kubeconfig = anyio.Path(
