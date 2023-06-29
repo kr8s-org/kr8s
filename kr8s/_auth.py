@@ -17,7 +17,7 @@ class KubeAuth:
         self,
         kubeconfig=None,
         url=None,
-        serviceaccount="/var/run/secrets/kubernetes.io/serviceaccount",
+        serviceaccount=None,
         namespace=None,
     ) -> None:
         self.server = None
@@ -31,10 +31,13 @@ class KubeAuth:
         self._context = None
         self._cluster = None
         self._user = None
-        self._serviceaccount = anyio.Path(serviceaccount) if serviceaccount else None
-        self._kubeconfig = anyio.Path(
-            kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+        self._serviceaccount = (
+            serviceaccount
+            if serviceaccount is not None
+            else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
+        self._kubeconfig = kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+
         if url:
             self.server = url
 
@@ -56,10 +59,11 @@ class KubeAuth:
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
-        self._kubeconfig = await self._kubeconfig.expanduser()
-        if not await self._kubeconfig.exists():
+        self._kubeconfig = os.path.expanduser(self._kubeconfig)
+        if not os.path.exists(self._kubeconfig):
             return
-        config = yaml.safe_load(await self._kubeconfig.read_bytes())
+        async with await anyio.open_file(self._kubeconfig) as f:
+            config = yaml.safe_load(await f.read())
         if "current-context" in config:
             [self._context] = [
                 c["context"]
@@ -133,13 +137,19 @@ class KubeAuth:
 
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
-        self._serviceaccount = await self._serviceaccount.expanduser()
-        if not await self._serviceaccount.is_dir():
+        self._serviceaccount = os.path.expanduser(self._serviceaccount)
+        if not os.path.isdir(self._serviceaccount):
             return
         host = os.environ["KUBERNETES_SERVICE_HOST"]
         port = os.environ["KUBERNETES_SERVICE_PORT"]
         self.server = f"https://{host}:{port}"
-        self.token = await (self._serviceaccount / "token").read_text()
-        self.server_ca_file = str(self._serviceaccount / "ca.crt")
+        async with await anyio.open_file(
+            os.path.join(self._serviceaccount, "token")
+        ) as f:
+            self.token = await f.read()
+        self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
         if self.namespace is None:
-            self.namespace = await (self._serviceaccount / "namespace").read_text()
+            async with await anyio.open_file(
+                os.path.join(self._serviceaccount, "namespace")
+            ) as f:
+                self.namespace = await f.read()
