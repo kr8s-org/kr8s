@@ -34,10 +34,17 @@ class APIObject:
     scalable_spec = "replicas"
     _asyncio = True
 
-    def __init__(self, resource: dict, api: Api = None) -> None:
+    def __init__(self, resource: dict, namespace: str = None, api: Api = None) -> None:
         """Initialize an APIObject."""
         # TODO support passing pykube or kubernetes objects in addition to dicts
-        self._raw = resource
+        if isinstance(resource, str):
+            self._raw = {"metadata": {"name": resource}}
+        elif isinstance(resource, dict):
+            self._raw = resource
+        else:
+            raise ValueError("resource must be a dict or a string")
+        if namespace is not None:
+            self._raw["metadata"]["namespace"] = namespace
         self.api = api
         if self.api is None and not self._asyncio:
             self.api = kr8s.api()
