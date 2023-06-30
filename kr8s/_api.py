@@ -320,3 +320,12 @@ class Api(object):
         from . import __version__
 
         return f"kr8s/{__version__}"
+
+    @property
+    def namespace(self) -> str:
+        """Get the default namespace."""
+        return self.auth.namespace
+
+    @namespace.setter
+    def namespace(self, value):
+        self.auth.namespace = value
