@@ -157,7 +157,7 @@ class Api(object):
         from ._objects import get_class
 
         if not namespace:
-            namespace = self.auth.namespace
+            namespace = self.namespace
         if namespace is ALL:
             namespace = ""
         if params is None:
