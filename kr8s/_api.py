@@ -157,7 +157,7 @@ class Api(object):
         from ._objects import get_class
 
         if not namespace:
-            namespace = self.auth.namespace
+            namespace = self.namespace
         if namespace is ALL:
             namespace = ""
         if params is None:
@@ -320,3 +320,12 @@ class Api(object):
         from . import __version__
 
         return f"kr8s/{__version__}"
+
+    @property
+    def namespace(self) -> str:
+        """Get the default namespace."""
+        return self.auth.namespace
+
+    @namespace.setter
+    def namespace(self, value):
+        self.auth.namespace = value

@@ -76,9 +76,7 @@ class APIObject:
     def namespace(self) -> str:
         """Namespace of the Kubernetes resource."""
         if self.namespaced:
-            return self.raw.get("metadata", {}).get(
-                "namespace", self.api.auth.namespace
-            )
+            return self.raw.get("metadata", {}).get("namespace", self.api.namespace)
         return None
 
     @property

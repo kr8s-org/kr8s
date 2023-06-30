@@ -150,3 +150,11 @@ async def test_api_resources():
     assert deployment["version"] == "apps/v1"
     assert "get" in deployment["verbs"]
     assert "deploy" in deployment["shortNames"]
+
+
+async def test_ns(ns):
+    api = await kr8s.asyncio.api()
+    assert ns == api.namespace
+
+    api.namespace = "foo"
+    assert api.namespace == "foo"
