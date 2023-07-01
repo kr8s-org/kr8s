@@ -283,7 +283,10 @@ async def test_get_with_label_selector(example_pod_spec):
     await pod.label({"test": "test_get_with_label_selector"})
 
     pod2 = await Pod.get(label_selector=pod.labels)
-    pod == pod2
+    assert pod == pod2
+
+    pod3 = await Pod.get(field_selector={"metadata.name": pod.name})
+    assert pod == pod3
 
     await pod.delete()
 

@@ -65,6 +65,17 @@ class APIObject:
         """Return a string representation of the Kubernetes resource."""
         return self.name
 
+    def __eq__(self, other):
+        if self.version != other.version:
+            return False
+        if self.kind != other.kind:
+            return False
+        if self.name != other.name:
+            return False
+        if self.namespaced and self.namespace != other.namespace:
+            return False
+        return True
+
     @property
     def raw(self) -> str:
         """Raw object returned from the Kubernetes API."""
