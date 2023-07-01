@@ -517,3 +517,9 @@ async def test_custom_object_from_file():
     simple_dir = CURRENT_DIR / "resources" / "custom" / "evc.yaml"
     objects = await objects_from_files(simple_dir)
     assert len(objects) == 1
+
+
+async def test_pod_to_dict(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    assert dict(pod) == example_pod_spec
+    assert dict(pod) == pod.raw

@@ -323,6 +323,14 @@ class APIObject:
                 if await self._test_conditions(conditions):
                     return
 
+    def keys(self) -> list:
+        """Return the keys of this object."""
+        return self.raw.keys()
+
+    def __getitem__(self, key: str) -> Any:
+        """Get an item from this object."""
+        return self.raw[key]
+
 
 ## v1 objects
 
