@@ -347,12 +347,20 @@ class APIObject:
                 if await self._test_conditions(conditions):
                     return
 
-    async def annotate(self, annotations: dict) -> None:
+    async def annotate(self, annotations: dict = None, **kwargs) -> None:
         """Annotate this object in Kubernetes."""
+        if annotations is None:
+            annotations = kwargs
+        if not annotations:
+            raise ValueError("No annotations provided")
         await self._patch({"metadata": {"annotations": annotations}})
 
-    async def label(self, labels: dict) -> None:
+    async def label(self, labels: dict = None, **kwargs) -> None:
         """Label this object in Kubernetes."""
+        if labels is None:
+            labels = kwargs
+        if not labels:
+            raise ValueError("No labels provided")
         await self._patch({"metadata": {"labels": labels}})
 
     def keys(self) -> list:

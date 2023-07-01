@@ -280,7 +280,7 @@ async def test_field_selector(example_pod_spec):
 async def test_get_with_label_selector(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
-    await pod.label({"test": "test_get_with_label_selector"})
+    await pod.label(test="test_get_with_label_selector")
 
     pod2 = await Pod.get(label_selector=pod.labels)
     assert pod == pod2
