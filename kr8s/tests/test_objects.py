@@ -287,6 +287,22 @@ async def test_pod_watch(example_pod_spec):
     await pod.delete()
 
 
+async def test_pod_annotate(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.annotate({"foo": "bar"})
+    assert "foo" in pod.annotations
+    await pod.delete()
+
+
+async def test_pod_label(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.label({"foo": "bar"})
+    assert "foo" in pod.labels
+    await pod.delete()
+
+
 def test_pod_watch_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()

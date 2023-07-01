@@ -323,6 +323,14 @@ class APIObject:
                 if await self._test_conditions(conditions):
                     return
 
+    async def annotate(self, annotations: dict) -> None:
+        """Annotate this object in Kubernetes."""
+        await self._patch({"metadata": {"annotations": annotations}})
+
+    async def label(self, labels: dict) -> None:
+        """Label this object in Kubernetes."""
+        await self._patch({"metadata": {"labels": labels}})
+
     def keys(self) -> list:
         """Return the keys of this object."""
         return self.raw.keys()
