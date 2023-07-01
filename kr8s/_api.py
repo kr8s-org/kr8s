@@ -4,12 +4,13 @@ import contextlib
 import json
 import ssl
 import weakref
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import aiohttp
 import asyncio_atexit
 
 from ._auth import KubeAuth
+from ._data_utils import dict_to_selector
 
 ALL = "all"
 
@@ -147,8 +148,8 @@ class Api(object):
         self,
         kind: str,
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         params: dict = None,
         watch: bool = False,
         **kwargs,
@@ -163,8 +164,12 @@ class Api(object):
         if params is None:
             params = {}
         if label_selector:
+            if isinstance(label_selector, dict):
+                label_selector = dict_to_selector(label_selector)
             params["labelSelector"] = label_selector
         if field_selector:
+            if isinstance(field_selector, dict):
+                field_selector = dict_to_selector(field_selector)
             params["fieldSelector"] = field_selector
         if watch:
             params["watch"] = "true" if watch else "false"
@@ -185,8 +190,8 @@ class Api(object):
         kind: str,
         *names: List[str],
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         as_object: object = None,
         **kwargs,
     ) -> List[object]:
@@ -206,8 +211,8 @@ class Api(object):
         kind: str,
         *names: List[str],
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         as_object: object = None,
         **kwargs,
     ) -> List[object]:
@@ -245,8 +250,8 @@ class Api(object):
         self,
         kind: str,
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         since: str = None,
     ):
         """Watch a Kubernetes resource."""
@@ -263,8 +268,8 @@ class Api(object):
         self,
         kind: str,
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         since: str = None,
     ) -> Tuple[str, object]:
         """Watch a Kubernetes resource."""

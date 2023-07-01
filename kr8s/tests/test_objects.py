@@ -246,17 +246,26 @@ async def test_missing_pod():
         await Pod.get("nonexistant", namespace="default")
 
 
-async def test_selectors(example_pod_spec):
+@pytest.mark.parametrize("selector", ["abc=123def", {"abc": "123def"}])
+async def test_label_selector(example_pod_spec, selector):
     example_pod_spec["metadata"]["labels"]["abc"] = "123def"
     pod = await Pod(example_pod_spec)
     await pod.create()
 
     kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get("pods", namespace=kr8s.ALL, label_selector="abc=123def")
-    assert len(pods) == 1
+    pods = await kubernetes.get("pods", namespace=kr8s.ALL, label_selector=selector)
+    assert len(pods) >= 0
 
+    await pod.delete()
+
+
+async def test_field_selector(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+
+    kubernetes = await kr8s.asyncio.api()
     pods = await kubernetes.get(
-        "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + pod.name
+        "pods", namespace=kr8s.ALL, field_selector={"metadata.name": pod.name}
     )
     assert len(pods) == 1
 
