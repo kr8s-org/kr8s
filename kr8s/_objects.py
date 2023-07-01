@@ -131,13 +131,15 @@ class APIObject:
     @classmethod
     async def get(
         cls,
-        name: str,
+        name: str = None,
         namespace: str = None,
         api: Api = None,
+        label_selector: Union[str, Dict[str, str]] = None,
+        field_selector: Union[str, Dict[str, str]] = None,
         timeout: int = 2,
         **kwargs,
     ) -> APIObject:
-        """Get a Kubernetes resource by name."""
+        """Get a Kubernetes resource by name or via selectors."""
 
         if api is None:
             if cls._asyncio:
@@ -147,9 +149,20 @@ class APIObject:
         start = time.time()
         backoff = 0.1
         while start + timeout > time.time():
-            resources = await api._get(
-                cls.endpoint, name, namespace=namespace, **kwargs
-            )
+            if name:
+                resources = await api._get(
+                    cls.endpoint, name, namespace=namespace, **kwargs
+                )
+            elif label_selector or field_selector:
+                resources = await api._get(
+                    cls.endpoint,
+                    namespace=namespace,
+                    label_selector=label_selector,
+                    field_selector=field_selector,
+                    **kwargs,
+                )
+            else:
+                raise ValueError("Must specify name or selector")
             if len(resources) == 0:
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 1)
