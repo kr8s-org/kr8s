@@ -119,17 +119,17 @@ def k8s_cluster(request) -> KindCluster:
         kind_cluster.delete()
 
 
-@pytest.fixture(scope="session")
-def ns(k8s_cluster) -> str:
-    # Ideally we want to generate a random namespace for each test or suite, but
-    # this can make teardown very slow. So we just use the default namespace for now.
+@pytest.fixture(scope="session", autouse=True)
+def run_id():
+    return uuid.uuid4().hex[:4]
 
-    yield "default"
 
-    # name = "kr8s-pytest-" + uuid.uuid4().hex[:4]
-    # k8s_cluster.kubectl("create", "namespace", name)
-    # yield name
-    # k8s_cluster.kubectl("delete", "namespace", name)
+@pytest.fixture(autouse=True)
+def ns(k8s_cluster, run_id) -> str:
+    name = f"kr8s-pytest-{run_id}-{uuid.uuid4().hex[:4]}"
+    k8s_cluster.kubectl("create", "namespace", name)
+    yield name
+    k8s_cluster.kubectl("delete", "namespace", name, "--wait=false")
 
 
 @pytest.fixture

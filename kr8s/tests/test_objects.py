@@ -27,7 +27,7 @@ CURRENT_DIR = pathlib.Path(__file__).parent
 
 
 @pytest.fixture
-async def nginx_pod(k8s_cluster, example_pod_spec):
+async def nginx_pod(k8s_cluster, example_pod_spec, ns):
     example_pod_spec["metadata"]["name"] = (
         "nginx-" + example_pod_spec["metadata"]["name"]
     )
@@ -49,6 +49,8 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
     k8s_cluster.kubectl(
         "exec",
         example_pod_spec["metadata"]["name"],
+        "-n",
+        ns,
         "--",
         "dd",
         "if=/dev/random",
@@ -170,13 +172,13 @@ async def test_nonexistant():
         await pod.exists(ensure=True)
 
 
-async def test_pod_metadata(example_pod_spec):
+async def test_pod_metadata(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()
     assert "name" in pod.metadata
     assert "hello" in pod.labels
     assert "foo" in pod.annotations
-    assert "default" == pod.namespace
+    assert ns == pod.namespace
     assert "example-" in pod.name
     assert "containers" in pod.spec
     assert "phase" in pod.status
@@ -277,15 +279,15 @@ async def test_field_selector(example_pod_spec):
     await pod.delete()
 
 
-async def test_get_with_label_selector(example_pod_spec):
+async def test_get_with_label_selector(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()
     await pod.label(test="test_get_with_label_selector")
 
-    pod2 = await Pod.get(label_selector=pod.labels)
+    pod2 = await Pod.get(label_selector=pod.labels, namespace=ns)
     assert pod == pod2
 
-    pod3 = await Pod.get(field_selector={"metadata.name": pod.name})
+    pod3 = await Pod.get(field_selector={"metadata.name": pod.name}, namespace=ns)
     assert pod == pod3
 
     await pod.delete()

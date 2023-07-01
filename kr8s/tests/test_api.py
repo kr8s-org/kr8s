@@ -102,13 +102,13 @@ async def test_get_pods_as_table():
     assert len(pods.rows) > 0
 
 
-async def test_watch_pods(example_pod_spec):
+async def test_watch_pods(example_pod_spec, ns):
     kubernetes = await kr8s.asyncio.api()
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    async for event, obj in kubernetes.watch("pods"):
+    async for event, obj in kubernetes.watch("pods", namespace=ns):
         assert event in ["ADDED", "MODIFIED", "DELETED"]
         assert isinstance(obj, Pod)
         if obj.name == pod.name:
@@ -153,7 +153,7 @@ async def test_api_resources():
 
 
 async def test_ns(ns):
-    api = await kr8s.asyncio.api()
+    api = await kr8s.asyncio.api(namespace=ns)
     assert ns == api.namespace
 
     api.namespace = "foo"
