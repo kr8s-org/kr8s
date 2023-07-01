@@ -65,6 +65,17 @@ class APIObject:
         """Return a string representation of the Kubernetes resource."""
         return self.name
 
+    def __eq__(self, other):
+        if self.version != other.version:
+            return False
+        if self.kind != other.kind:
+            return False
+        if self.name != other.name:
+            return False
+        if self.namespaced and self.namespace != other.namespace:
+            return False
+        return True
+
     @property
     def raw(self) -> str:
         """Raw object returned from the Kubernetes API."""
@@ -131,13 +142,15 @@ class APIObject:
     @classmethod
     async def get(
         cls,
-        name: str,
+        name: str = None,
         namespace: str = None,
         api: Api = None,
+        label_selector: Union[str, Dict[str, str]] = None,
+        field_selector: Union[str, Dict[str, str]] = None,
         timeout: int = 2,
         **kwargs,
     ) -> APIObject:
-        """Get a Kubernetes resource by name."""
+        """Get a Kubernetes resource by name or via selectors."""
 
         if api is None:
             if cls._asyncio:
@@ -147,9 +160,20 @@ class APIObject:
         start = time.time()
         backoff = 0.1
         while start + timeout > time.time():
-            resources = await api._get(
-                cls.endpoint, name, namespace=namespace, **kwargs
-            )
+            if name:
+                resources = await api._get(
+                    cls.endpoint, name, namespace=namespace, **kwargs
+                )
+            elif label_selector or field_selector:
+                resources = await api._get(
+                    cls.endpoint,
+                    namespace=namespace,
+                    label_selector=label_selector,
+                    field_selector=field_selector,
+                    **kwargs,
+                )
+            else:
+                raise ValueError("Must specify name or selector")
             if len(resources) == 0:
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 1)
@@ -322,6 +346,22 @@ class APIObject:
             async for _ in self._watch():
                 if await self._test_conditions(conditions):
                     return
+
+    async def annotate(self, annotations: dict = None, **kwargs) -> None:
+        """Annotate this object in Kubernetes."""
+        if annotations is None:
+            annotations = kwargs
+        if not annotations:
+            raise ValueError("No annotations provided")
+        await self._patch({"metadata": {"annotations": annotations}})
+
+    async def label(self, labels: dict = None, **kwargs) -> None:
+        """Label this object in Kubernetes."""
+        if labels is None:
+            labels = kwargs
+        if not labels:
+            raise ValueError("No labels provided")
+        await self._patch({"metadata": {"labels": labels}})
 
     def keys(self) -> list:
         """Return the keys of this object."""

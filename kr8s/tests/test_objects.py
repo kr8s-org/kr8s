@@ -277,6 +277,20 @@ async def test_field_selector(example_pod_spec):
     await pod.delete()
 
 
+async def test_get_with_label_selector(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.label(test="test_get_with_label_selector")
+
+    pod2 = await Pod.get(label_selector=pod.labels)
+    assert pod == pod2
+
+    pod3 = await Pod.get(field_selector={"metadata.name": pod.name})
+    assert pod == pod3
+
+    await pod.delete()
+
+
 async def test_pod_watch(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
@@ -284,6 +298,22 @@ async def test_pod_watch(example_pod_spec):
         assert event in ("ADDED", "MODIFIED", "DELETED")
         assert obj.name == pod.name
         break
+    await pod.delete()
+
+
+async def test_pod_annotate(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.annotate({"foo": "bar"})
+    assert "foo" in pod.annotations
+    await pod.delete()
+
+
+async def test_pod_label(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.label({"foo": "bar"})
+    assert "foo" in pod.labels
     await pod.delete()
 
 
