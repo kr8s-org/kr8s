@@ -507,3 +507,4 @@ async def test_custom_object_from_file():
 async def test_pod_to_dict(example_pod_spec):
     pod = Pod(example_pod_spec)
     assert dict(pod) == example_pod_spec
+    assert dict(pod) == pod.raw
