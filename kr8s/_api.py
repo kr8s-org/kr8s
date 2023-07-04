@@ -103,10 +103,10 @@ class Api(object):
         userauth = None
         if self.auth.username and self.auth.password:
             userauth = httpx.BasicAuth(self.auth.username, self.auth.password)
-        if self._session:
-            await self._session.aclose()
-            self._session = None
-        self._session = httpx.AsyncClient(
+        if self._httpx_session:
+            await self._httpx_session.aclose()
+            self._httpx_session = None
+        self._httpx_session = httpx.AsyncClient(
             base_url=self.auth.server,
             headers=headers,
             auth=userauth,
@@ -122,10 +122,11 @@ class Api(object):
         namespace: str = None,
         url: str = "",
         raise_for_status: bool = True,
+        stream: bool = False,
         **kwargs,
     ) -> httpx.Response:
         """Make a Kubernetes API request."""
-        if not self._httpx_session or self._httpx_session.closed:
+        if not self._httpx_session or self._httpx_session.is_closed:
             await self._create_httpx_session()
 
         if not base:
@@ -148,10 +149,16 @@ class Api(object):
         auth_attempts = 0
         while True:
             try:
-                response = await self._session.request(**kwargs)
-                if raise_for_status:
-                    response.raise_for_status()
-                yield response
+                if stream:
+                    async with self._httpx_session.stream(**kwargs) as response:
+                        if raise_for_status:
+                            response.raise_for_status()
+                        yield response
+                else:
+                    response = await self._httpx_session.request(**kwargs)
+                    if raise_for_status:
+                        response.raise_for_status()
+                    yield response
             except httpx.HTTPStatusError as e:
                 if e.response.status_code in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
@@ -253,9 +260,10 @@ class Api(object):
             params["fieldSelector"] = field_selector
         if watch:
             params["watch"] = "true" if watch else "false"
+            kwargs["stream"] = True
         params = params or None
         obj_cls = get_class(kind)
-        async with self.call_api(
+        async with self.call_api_httpx(
             method="GET",
             url=kind,
             version=obj_cls.version,
@@ -310,7 +318,7 @@ class Api(object):
             headers=headers or None,
             **kwargs,
         ) as (obj_cls, response):
-            resourcelist = await response.json()
+            resourcelist = response.json()
             if (
                 as_object
                 and "kind" in resourcelist
@@ -361,7 +369,7 @@ class Api(object):
             params={"resourceVersion": since} if since else None,
             watch=True,
         ) as (obj_cls, response):
-            async for line in response.content:
+            async for line in response.aiter_lines():
                 event = json.loads(line)
                 yield event["type"], obj_cls(event["object"], api=self)
 
