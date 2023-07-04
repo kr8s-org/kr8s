@@ -190,7 +190,7 @@ class APIObject:
 
     async def _exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
-        async with self.api.call_api_httpx(
+        async with self.api.call_api(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}",
@@ -206,7 +206,7 @@ class APIObject:
 
     async def create(self) -> None:
         """Create this object in Kubernetes."""
-        async with self.api.call_api_httpx(
+        async with self.api.call_api(
             "POST",
             version=self.version,
             url=self.endpoint,
@@ -221,7 +221,7 @@ class APIObject:
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
         try:
-            async with self.api.call_api_httpx(
+            async with self.api.call_api(
                 "DELETE",
                 version=self.version,
                 url=f"{self.endpoint}/{self.name}",
@@ -241,7 +241,7 @@ class APIObject:
     async def _refresh(self) -> None:
         """Refresh this object from Kubernetes."""
         try:
-            async with self.api.call_api_httpx(
+            async with self.api.call_api(
                 "GET",
                 version=self.version,
                 url=f"{self.endpoint}/{self.name}",
@@ -262,7 +262,7 @@ class APIObject:
         url = f"{self.endpoint}/{self.name}"
         if subresource:
             url = f"{url}/{subresource}"
-        async with self.api.call_api_httpx(
+        async with self.api.call_api(
             "PATCH",
             version=self.version,
             url=url,
@@ -552,7 +552,7 @@ class Pod(APIObject):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
 
-        async with self.api.call_api_httpx(
+        async with self.api.call_api(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}/log",
@@ -683,7 +683,7 @@ class Service(APIObject):
     ) -> httpx.Response:
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
-        async with self.api.call_api_httpx(
+        async with self.api.call_api(
             method,
             version=self.version,
             url=f"{self.endpoint}/{self.name}:{port}/proxy/{path}",

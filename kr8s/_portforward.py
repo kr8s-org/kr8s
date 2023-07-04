@@ -25,6 +25,9 @@ class PortForward:
     .. note::
         The ``ready_pods`` method should return a list of Pods that are ready to accept connections.
 
+    .. warning:
+        Currently Port Forwards only work when using ``asyncio`` and not ``trio``.
+
     Args:
         ``resource`` (Pod or Resource): The Pod or Resource to forward to.
 
@@ -130,11 +133,10 @@ class PortForward:
         while self.running:
             self.connection_attempts += 1
             try:
-                async with self.pod.api.call_api(
+                async with self.pod.api.open_websocket(
                     version=self.pod.version,
                     url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
                     namespace=self.pod.namespace,
-                    websocket=True,
                     params={
                         "name": self.pod.name,
                         "namespace": self.pod.namespace,
