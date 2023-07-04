@@ -67,9 +67,6 @@ class Api(object):
         if self.auth.server_ca_file:
             self._sslcontext.load_verify_locations(cafile=self.auth.server_ca_file)
 
-    async def _create_aiohttp_session(self) -> None:
-        pass
-
     async def _create_session(self) -> None:
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
         self.load_ssl_context()
