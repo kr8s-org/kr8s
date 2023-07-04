@@ -376,14 +376,16 @@ class Api(object):
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
-        async with self.call_api(method="GET", version="", base="/api") as response:
-            core_api_list = await response.json()
+        async with self.call_api_httpx(
+            method="GET", version="", base="/api"
+        ) as response:
+            core_api_list = response.json()
 
         for version in core_api_list["versions"]:
-            async with self.call_api(
+            async with self.call_api_httpx(
                 method="GET", version="", base="/api", url=version
             ) as response:
-                resource = await response.json()
+                resource = response.json()
             resources.extend(
                 [
                     {"version": version, **r}
@@ -391,14 +393,16 @@ class Api(object):
                     if "/" not in r["name"]
                 ]
             )
-        async with self.call_api(method="GET", version="", base="/apis") as response:
-            api_list = await response.json()
+        async with self.call_api_httpx(
+            method="GET", version="", base="/apis"
+        ) as response:
+            api_list = response.json()
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
             version = api["versions"][0]["groupVersion"]
-            async with self.call_api(
+            async with self.call_api_httpx(
                 method="GET", version="", base="/apis", url=version
             ) as response:
-                resource = await response.json()
+                resource = response.json()
             resources.extend(
                 [
                     {"version": version, **r}
