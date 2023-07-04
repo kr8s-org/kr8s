@@ -203,21 +203,6 @@ files = [
 ]
 
 [[package]]
-name = "asyncio-atexit"
-version = "1.0.1"
-description = "Like atexit, but for asyncio"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "asyncio-atexit-1.0.1.tar.gz", hash = "sha256:1d0c71544b8ee2c484d322844ee72c0875dde6f250c0ed5b6993592ab9f7d436"},
-    {file = "asyncio_atexit-1.0.1-py3-none-any.whl", hash = "sha256:d93d5f7d5633a534abd521ce2896ed0fbe8de170bb1e65ec871d1c20eac9d376"},
-]
-
-[package.extras]
-test = ["pytest", "uvloop"]
-
-[[package]]
 name = "attrs"
 version = "23.1.0"
 description = "Classes Without Boilerplate"
@@ -1969,4 +1954,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "0c59a596a4e01aa9776f2cb9bce2dcdcb1d4b02df260104c074d73ac72fdd675"
+content-hash = "404fc5a06b9e3e3b9edc44da3516ecd89dcee886eea9972bd614e901da2bcd2b"
