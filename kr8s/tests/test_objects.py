@@ -5,6 +5,7 @@ import pathlib
 import time
 
 import aiohttp
+import httpx
 import pytest
 
 import kr8s
@@ -22,7 +23,7 @@ from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import get_class, object_from_spec
 
-DEFAULT_TIMEOUT = aiohttp.ClientTimeout(30)
+DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
 
 
@@ -432,14 +433,14 @@ async def test_pod_logs(example_pod_spec):
 async def test_pod_port_forward_context_manager(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80) as port:
-        async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
-            async with session.get(f"http://localhost:{port}/") as resp:
-                assert resp.status == 200
-            async with session.get(f"http://localhost:{port}/foo") as resp:
-                assert resp.status == 404
-            async with session.get(f"http://localhost:{port}/foo.dat") as resp:
-                assert resp.status == 200
-                await resp.read()
+        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+            resp = await session.get(f"http://localhost:{port}/")
+            assert resp.status_code == 200
+            resp = await session.get(f"http://localhost:{port}/foo")
+            assert resp.status_code == 404
+            resp = await session.get(f"http://localhost:{port}/foo.dat")
+            assert resp.status_code == 200
+            resp.read()
 
 
 @pytest.mark.skip(reason="For manual testing only")
@@ -459,25 +460,25 @@ async def test_pod_port_forward_start_stop(nginx_service):
     assert pf._bg_task is None
     port = await pf.start()
     assert pf._bg_task is not None
-    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
-        async with session.get(f"http://localhost:{port}/") as resp:
-            assert resp.status == 200
-        async with session.get(f"http://localhost:{port}/foo") as resp:
-            assert resp.status == 404
-        async with session.get(f"http://localhost:{port}/foo.dat") as resp:
-            assert resp.status == 200
-            await resp.read()
+    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        resp = await session.get(f"http://localhost:{port}/")
+        assert resp.status_code == 200
+        resp = await session.get(f"http://localhost:{port}/foo")
+        assert resp.status_code == 404
+        resp = await session.get(f"http://localhost:{port}/foo.dat")
+        assert resp.status_code == 200
+        resp.read()
     await pf.stop()
     assert pf._bg_task is None
 
 
 async def test_service_port_forward_context_manager(nginx_service):
     async with nginx_service.portforward(80) as port:
-        async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
-            async with session.get(f"http://localhost:{port}/") as resp:
-                assert resp.status == 200
-            async with session.get(f"http://localhost:{port}/foo") as resp:
-                assert resp.status == 404
+        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+            resp = await session.get(f"http://localhost:{port}/")
+            assert resp.status_code == 200
+            resp = await session.get(f"http://localhost:{port}/foo")
+            assert resp.status_code == 404
 
 
 async def test_service_port_forward_start_stop(nginx_service):
@@ -485,11 +486,13 @@ async def test_service_port_forward_start_stop(nginx_service):
     assert pf._bg_task is None
     port = await pf.start()
     assert pf._bg_task is not None
-    async with aiohttp.ClientSession(timeout=DEFAULT_TIMEOUT) as session:
-        async with session.get(f"http://localhost:{port}/") as resp:
-            assert resp.status == 200
-        async with session.get(f"http://localhost:{port}/foo") as resp:
-            assert resp.status == 404
+
+    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        resp = await session.get(f"http://localhost:{port}/")
+        assert resp.status_code == 200
+        resp = await session.get(f"http://localhost:{port}/foo")
+        assert resp.status_code == 404
+
     await pf.stop()
     assert pf._bg_task is None
 
