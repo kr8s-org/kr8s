@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple, Union
 
 import aiohttp
 import asyncio_atexit
+import httpx
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
@@ -41,6 +42,7 @@ class Api(object):
         self._serviceaccount = kwargs.get("serviceaccount")
         self._sslcontext = None
         self._session = None
+        self._httpx_session = None
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,
@@ -84,10 +86,81 @@ class Api(object):
         )
         asyncio_atexit.register(self._session.close)
 
-    async def version(self) -> dict:
-        """Get the Kubernetes version"""
-        async with self.call_api(method="GET", version="", base="/version") as response:
-            return await response.json()
+    async def _create_httpx_session(self) -> None:
+        headers = {"User-Agent": self.__version__, "content-type": "application/json"}
+        self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        if self.auth.client_key_file:
+            self._sslcontext.load_cert_chain(
+                certfile=self.auth.client_cert_file,
+                keyfile=self.auth.client_key_file,
+                password=None,
+            )
+
+        if self.auth.server_ca_file:
+            self._sslcontext.load_verify_locations(cafile=self.auth.server_ca_file)
+        if self.auth.token:
+            headers["Authorization"] = f"Bearer {self.auth.token}"
+        userauth = None
+        if self.auth.username and self.auth.password:
+            userauth = httpx.BasicAuth(self.auth.username, self.auth.password)
+        if self._session:
+            await self._session.aclose()
+            self._session = None
+        self._session = httpx.AsyncClient(
+            base_url=self.auth.server,
+            headers=headers,
+            auth=userauth,
+            verify=self._sslcontext,
+        )
+
+    @contextlib.asynccontextmanager
+    async def call_api_httpx(
+        self,
+        method: str = "GET",
+        version: str = "v1",
+        base: str = "",
+        namespace: str = None,
+        url: str = "",
+        raise_for_status: bool = True,
+        **kwargs,
+    ) -> httpx.Response:
+        """Make a Kubernetes API request."""
+        if not self._httpx_session or self._httpx_session.closed:
+            await self._create_httpx_session()
+
+        if not base:
+            if version == "v1":
+                base = "/api"
+            elif "/" in version:
+                base = "/apis"
+            else:
+                raise ValueError("Unknown API version, base must be specified.")
+        parts = [base]
+        if version:
+            parts.append(version)
+        if namespace is not None:
+            parts.extend(["namespaces", namespace])
+        parts.append(url)
+        url = "/".join(parts)
+
+        kwargs.update(url=url, method=method)
+
+        auth_attempts = 0
+        while True:
+            try:
+                response = await self._session.request(**kwargs)
+                if raise_for_status:
+                    response.raise_for_status()
+                yield response
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code in (401, 403) and auth_attempts < 3:
+                    auth_attempts += 1
+                    await self.auth.reauthenticate()
+                    await self._create_httpx_session()
+                    continue
+                else:
+                    raise
+            break
 
     @contextlib.asynccontextmanager
     async def call_api(
@@ -138,6 +211,13 @@ class Api(object):
                 else:
                     raise
             break
+
+    async def version(self) -> dict:
+        """Get the Kubernetes version"""
+        async with self.call_api_httpx(
+            method="GET", version="", base="/version"
+        ) as response:
+            return response.json()
 
     async def reauthenticate(self) -> None:
         """Reauthenticate the API."""

@@ -4,7 +4,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-import aiohttp
+import httpx
 import pytest
 import yaml
 
@@ -72,7 +72,7 @@ async def test_bad_auth(serviceaccount):
         serviceaccount=serviceaccount, kubeconfig="/no/file/here"
     )
     serviceaccount = Path(serviceaccount)
-    with pytest.raises(aiohttp.ClientResponseError):
+    with pytest.raises(httpx.HTTPStatusError):
         await kubernetes.version()
 
 
