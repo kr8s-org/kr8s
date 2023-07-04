@@ -9,11 +9,10 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Type, Union
 
-import aiohttp
 import anyio
+import httpx
 import jsonpath
 import yaml
-from aiohttp import ClientResponse
 
 import kr8s
 import kr8s.asyncio
@@ -191,14 +190,14 @@ class APIObject:
 
     async def _exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
-        async with self.api.call_api(
+        async with self.api.call_api_httpx(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}",
             namespace=self.namespace,
             raise_for_status=False,
         ) as resp:
-            status = resp.status
+            status = resp.status_code
         if status == 200:
             return True
         if ensure:
@@ -207,14 +206,14 @@ class APIObject:
 
     async def create(self) -> None:
         """Create this object in Kubernetes."""
-        async with self.api.call_api(
+        async with self.api.call_api_httpx(
             "POST",
             version=self.version,
             url=self.endpoint,
             namespace=self.namespace,
             data=json.dumps(self.raw),
         ) as resp:
-            self.raw = await resp.json()
+            self.raw = resp.json()
 
     async def delete(self, propagation_policy: str = None) -> None:
         """Delete this object from Kubernetes."""
@@ -222,16 +221,18 @@ class APIObject:
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
         try:
-            async with self.api.call_api(
+            async with self.api.call_api_httpx(
                 "DELETE",
                 version=self.version,
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
                 data=json.dumps(data),
             ) as resp:
-                self.raw = await resp.json()
-        except aiohttp.ClientResponseError as e:
-            raise NotFoundError(f"Object {self.name} does not exist") from e
+                self.raw = resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
 
     async def refresh(self) -> None:
         """Refresh this object from Kubernetes."""
@@ -240,15 +241,15 @@ class APIObject:
     async def _refresh(self) -> None:
         """Refresh this object from Kubernetes."""
         try:
-            async with self.api.call_api(
+            async with self.api.call_api_httpx(
                 "GET",
                 version=self.version,
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
             ) as resp:
-                self.raw = await resp.json()
-        except aiohttp.ClientResponseError as e:
-            if e.status == 404:
+                self.raw = resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
@@ -261,7 +262,7 @@ class APIObject:
         url = f"{self.endpoint}/{self.name}"
         if subresource:
             url = f"{url}/{subresource}"
-        async with self.api.call_api(
+        async with self.api.call_api_httpx(
             "PATCH",
             version=self.version,
             url=url,
@@ -269,7 +270,7 @@ class APIObject:
             data=json.dumps(patch),
             headers={"Content-Type": "application/merge-patch+json"},
         ) as resp:
-            self.raw = await resp.json()
+            self.raw = resp.json()
 
     async def scale(self, replicas: int = None) -> None:
         """Scale this object in Kubernetes."""
@@ -551,14 +552,14 @@ class Pod(APIObject):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
 
-        async with self.api.call_api(
+        async with self.api.call_api_httpx(
             "GET",
             version=self.version,
             url=f"{self.endpoint}/{self.name}/log",
             namespace=self.namespace,
             params=params,
         ) as resp:
-            return await resp.text()
+            return resp.text
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod.
@@ -665,7 +666,7 @@ class Service(APIObject):
 
     async def proxy_http_request(
         self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
-    ) -> ClientResponse:
+    ) -> httpx.Response:
         """Issue a HTTP request with specific HTTP method to proxy of a Service.
 
         Args:
@@ -679,10 +680,10 @@ class Service(APIObject):
 
     async def _proxy_http_request(
         self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
-    ) -> ClientResponse:
+    ) -> httpx.Response:
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
-        async with self.api.call_api(
+        async with self.api.call_api_httpx(
             method,
             version=self.version,
             url=f"{self.endpoint}/{self.name}:{port}/proxy/{path}",
@@ -693,7 +694,7 @@ class Service(APIObject):
 
     async def proxy_http_get(
         self, path: str, port: Optional[int] = None, **kwargs
-    ) -> None:
+    ) -> httpx.Response:
         return await self._proxy_http_request("GET", path, port, **kwargs)
 
     async def proxy_http_post(
@@ -703,12 +704,12 @@ class Service(APIObject):
 
     async def proxy_http_put(
         self, path: str, port: Optional[int] = None, **kwargs
-    ) -> None:
+    ) -> httpx.Response:
         return await self._proxy_http_request("PUT", path, port, **kwargs)
 
     async def proxy_http_delete(
         self, path: str, port: Optional[int] = None, **kwargs
-    ) -> None:
+    ) -> httpx.Response:
         return await self._proxy_http_request("DELETE", path, port, **kwargs)
 
     async def ready_pods(self) -> List[Pod]:

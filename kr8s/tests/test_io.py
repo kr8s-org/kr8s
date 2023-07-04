@@ -17,7 +17,6 @@ def test_trio_runs():
     trio.run(main)
 
 
-@pytest.mark.xfail(reason="trio support is not yet implemented")
 def test_trio_pod_wait_ready(example_pod_spec):
     async def main():
         pod = await kr8s.asyncio.objects.Pod(example_pod_spec)

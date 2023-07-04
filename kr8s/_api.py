@@ -104,7 +104,9 @@ class Api(object):
         if self.auth.username and self.auth.password:
             userauth = httpx.BasicAuth(self.auth.username, self.auth.password)
         if self._httpx_session:
-            await self._httpx_session.aclose()
+            with contextlib.suppress(RuntimeError):
+                await self._httpx_session.aclose()
+
             self._httpx_session = None
         self._httpx_session = httpx.AsyncClient(
             base_url=self.auth.server,
@@ -163,6 +165,12 @@ class Api(object):
                 if e.response.status_code in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
                     await self.auth.reauthenticate()
+                    await self._create_httpx_session()
+                    continue
+                else:
+                    raise
+            except RuntimeError as e:
+                if "Event loop is closed" in str(e):
                     await self._create_httpx_session()
                     continue
                 else:

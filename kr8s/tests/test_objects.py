@@ -4,7 +4,6 @@ import asyncio
 import pathlib
 import time
 
-import aiohttp
 import httpx
 import pytest
 
@@ -132,6 +131,13 @@ def test_pod_wait_ready_sync(example_pod_spec):
     pod.delete()
     pod.wait("condition=Ready=False")
     pod.wait("delete")
+
+
+def test_pod_refresh_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    pod.refresh()
+    pod.delete()
 
 
 def test_pod_create_and_delete_sync(example_pod_spec):
@@ -417,7 +423,7 @@ async def test_service_proxy():
     [service] = await kubernetes.get("services", "kubernetes")
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
-    assert isinstance(data, aiohttp.ClientResponse)
+    assert isinstance(data, httpx.Response)
 
 
 async def test_pod_logs(example_pod_spec):

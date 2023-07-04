@@ -82,7 +82,7 @@ async def test_concurrent_api_creation():
 async def test_bad_api_version():
     kubernetes = await kr8s.asyncio.api()
     with pytest.raises(ValueError):
-        async with kubernetes.call_api("GET", version="foo"):
+        async with kubernetes.call_api_httpx("GET", version="foo"):
             pass  # pragma: no cover
 
 
