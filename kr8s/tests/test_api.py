@@ -69,6 +69,11 @@ async def test_version():
     assert "major" in version
 
 
+def test_helper_version():
+    version = kr8s.version()
+    assert "major" in version
+
+
 async def test_concurrent_api_creation():
     async def get_api():
         api = await kr8s.asyncio.api()
@@ -88,8 +93,7 @@ async def test_bad_api_version():
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
 async def test_get_pods(namespace):
-    kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get("pods", namespace=namespace)
+    pods = await kr8s.asyncio.get("pods", namespace=namespace)
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
@@ -103,12 +107,11 @@ async def test_get_pods_as_table():
 
 
 async def test_watch_pods(example_pod_spec, ns):
-    kubernetes = await kr8s.asyncio.api()
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    async for event, obj in kubernetes.watch("pods", namespace=ns):
+    async for event, obj in kr8s.asyncio.watch("pods", namespace=ns):
         assert event in ["ADDED", "MODIFIED", "DELETED"]
         assert isinstance(obj, Pod)
         if obj.name == pod.name:
@@ -129,8 +132,7 @@ async def test_get_deployments():
 
 
 async def test_api_resources():
-    kubernetes = await kr8s.asyncio.api()
-    resources = await kubernetes.api_resources()
+    resources = await kr8s.asyncio.api_resources()
 
     names = [r["name"] for r in resources]
     assert "nodes" in names
@@ -158,3 +160,30 @@ async def test_ns(ns):
 
     api.namespace = "foo"
     assert api.namespace == "foo"
+
+
+async def test_docstrings():
+    assert (
+        kr8s.Api.get.__doc__
+        == kr8s.asyncio.Api.get.__doc__
+        == kr8s.get.__doc__
+        == kr8s.asyncio.get.__doc__
+    )
+    assert (
+        kr8s.Api.version.__doc__
+        == kr8s.asyncio.Api.version.__doc__
+        == kr8s.version.__doc__
+        == kr8s.asyncio.version.__doc__
+    )
+    assert (
+        kr8s.Api.watch.__doc__
+        == kr8s.asyncio.Api.watch.__doc__
+        == kr8s.watch.__doc__
+        == kr8s.asyncio.watch.__doc__
+    )
+    assert (
+        kr8s.Api.api_resources.__doc__
+        == kr8s.asyncio.Api.api_resources.__doc__
+        == kr8s.api_resources.__doc__
+        == kr8s.asyncio.api_resources.__doc__
+    )

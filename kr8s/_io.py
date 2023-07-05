@@ -39,11 +39,13 @@ def run_sync(coro: Callable[..., Awaitable[T]]) -> Callable[..., T]:
 
     @wraps(coro)
     def wrapped(*args, **kwargs):
+        wrapped = partial(coro, *args, **kwargs)
+        wrapped.__doc__ = coro.__doc__
         with anyio.from_thread.start_blocking_portal() as portal:
             if inspect.iscoroutinefunction(coro):
-                return portal.call(partial(coro, *args, **kwargs))
+                return portal.call(wrapped)
             if inspect.isasyncgenfunction(coro):
-                return iter_over_async(partial(coro, *args, **kwargs))
+                return iter_over_async(wrapped)
             raise TypeError(
                 f"Expected coroutine function, got {coro.__class__.__name__}"
             )

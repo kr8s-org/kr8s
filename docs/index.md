@@ -12,7 +12,7 @@ A simple, extensible Python client library for Kubernetes that feels familiar fo
 - API inspired by `kubectl` to reduce developer learning curve.
 - [Sensible defaults](https://docs.kr8s.org/en/latest/authentication.html) to reduce boiler plate.
 - No swagger generated code, human readable code only.
-- Supports both [async/await](https://docs.kr8s.org/en/latest/asyncio.html) and sync APIs.
+- Also has an [asynchronous API](https://docs.kr8s.org/en/latest/asyncio.html) that can be used with `asyncio` and `trio`.
 - [Client caching](https://docs.kr8s.org/en/latest/client.html#client-caching) to reduce passing API objects around.
 - Batteries included by providing useful utilities and methods inspired by `kubectl`.
 
@@ -29,8 +29,7 @@ $ pip install kr8s
 ```python
 import kr8s
 
-api = kr8s.api()
-pods = api.get("pods")
+pods = kr8s.get("pods")
 ```
 
 See the [Client API docs](https://docs.kr8s.org/en/latest/client.html) for more examples.

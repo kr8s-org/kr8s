@@ -1,21 +1,19 @@
 # Asyncio
 
-`kr8s` uses `asyncio` under the hood when interacting with the Kubernetes API. However, it exposes a standard synchronous API by default.
+`kr8s` is built using async/await under the hood when interacting with the Kubernetes API. However, it exposes a standard synchronous API by default.
 
 ```python
 import kr8s
 
-api = kr8s.api()
-pods = api.get("pods")
+pods = kr8s.get("pods")
 ```
 
-For users that want it the `asyncio` API is also available via `kr8s.asyncio`.
+For users that want to use it with `asyncio` or `trio` you can find the async API is also available via `kr8s.asyncio`.
 
 ```python
 import kr8s.asyncio
 
-api = await kr8s.asyncio.api()
-pods = await api.get("pods")
+pods = await kr8s.asyncio.get("pods")
 ```
 
 Submodules including `kr8s.objects` and `kr8s.portforward` also have `asyncio` equivalents at `kr8s.asyncio.objects` and `kr8s.asyncio.portforward`.
