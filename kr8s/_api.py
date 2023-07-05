@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+from __future__ import annotations
+
 import contextlib
 import json
 import ssl
@@ -193,7 +195,17 @@ class Api(object):
             break
 
     async def version(self) -> dict:
-        """Get the Kubernetes version"""
+        """Get the Kubernetes version information from the API.
+
+        Returns
+        -------
+        dict
+            The Kubernetes version information.
+
+        """
+        return await self._version()
+
+    async def _version(self) -> dict:
         async with self.call_api(method="GET", version="", base="/version") as response:
             return response.json()
 
@@ -254,7 +266,31 @@ class Api(object):
         as_object: object = None,
         **kwargs,
     ) -> List[object]:
-        """Get a Kubernetes resource."""
+        """
+        Get Kubernetes resources.
+
+        Parameters
+        ----------
+        kind : str
+            The kind of resource to get.
+        *names : List[str], optional
+            The names of specific resources to get.
+        namespace : str, optional
+            The namespace to get the resource from.
+        label_selector : Union[str, Dict], optional
+            The label selector to filter the resources by.
+        field_selector : Union[str, Dict], optional
+            The field selector to filter the resources by.
+        as_object : object, optional
+            The object to return the resources as.
+        **kwargs
+            Additional keyword arguments to pass to the API call.
+
+        Returns
+        -------
+        List[object]
+            The resources.
+        """
         return await self._get(
             kind,
             *names,
@@ -345,6 +381,10 @@ class Api(object):
                 yield event["type"], obj_cls(event["object"], api=self)
 
     async def api_resources(self) -> dict:
+        """Get the Kubernetes API resources."""
+        return await self._api_resources()
+
+    async def _api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
         async with self.call_api(method="GET", version="", base="/api") as response:
