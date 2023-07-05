@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
-
 from typing import Dict, List, Union
 
 from kr8s._api import Api
@@ -49,13 +48,14 @@ async def watch(
 ):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    return await api._watch(
+    async for (t, o) in api._watch(
         kind=kind,
         namespace=namespace,
         label_selector=label_selector,
         field_selector=field_selector,
         since=since,
-    )
+    ):
+        yield (t, o)
 
 
 async def api_resources(api=None, _asyncio=True):
