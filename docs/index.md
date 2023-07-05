@@ -29,8 +29,7 @@ $ pip install kr8s
 ```python
 import kr8s
 
-api = kr8s.api()
-pods = api.get("pods")
+pods = kr8s.get("pods")
 ```
 
 See the [Client API docs](https://docs.kr8s.org/en/latest/client.html) for more examples.

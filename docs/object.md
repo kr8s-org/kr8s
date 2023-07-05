@@ -5,14 +5,13 @@ Responses from the Client API are usually objects from [](#kr8s.objects) which r
 ```python
 import kr8s
 
-api = kr8s.api()
-pods = api.get("pods", namespace=kr8s.ALL)
+pods = kr8s.get("pods", namespace=kr8s.ALL)
 pod = pods[0]
 print(type(pod))
 # <class 'kr8s.objects.Pod'>
 ```
 
-In the above example the kr8s API returns a list of [](#kr8s.objects.Pod) objects.
+In the above example the `kr8s.get` function returns a list of [](#kr8s.objects.Pod) objects.
 
 ## Attributes
 
@@ -76,9 +75,9 @@ pod.ready()
 
 ## Client references
 
-All objects returned from client methods will have a reference to the client that created it at `Object.api`.
+All objects returned by `kr8s` will have a reference to the API client that created it at `Object.api`.
 
-You can also create objects yourself from a spec or get existing ones by name. You don't necessarily need to create an API client first to do this.
+You can also create objects yourself from a spec or get existing ones by name. Methods on objects that require communicating with Kubernetes will create an API client or retrieve one from the cache automatically.
 
 ```python
 # Create a new Pod
@@ -172,9 +171,9 @@ class CustomScalableObject(APIObject):
 
 Some objects such as `Pod`, `Node`, `Service` and `Deployment` have additional custom methods such as `Pod.logs()` and `Deployment.ready()` which have been implemented for convenience. It might make sense for you to implement your own utilities on your custom classes.
 
-### Using custom objects with the client API
+### Using custom objects with other `kr8s` functions
 
-When making API calls with the [client API](client) some methods such as `api.get("pods")` will want to return kr8s objects, in this case a `Pod`. The client handles this by looking up all of the subclasses of [`APIObject`](#kr8s.objects.APIObject) and matching the `kind` against the kind returned by the API. If the API returns a kind of object that there is no kr8s object to deserialize into it will raise an exception.
+When using the [`kr8s` API](client) some methods such as `kr8s.get("pods")` will want to return kr8s objects, in this case a `Pod`. The API client handles this by looking up all of the subclasses of [`APIObject`](#kr8s.objects.APIObject) and matching the `kind` against the kind returned by the API. If the API returns a kind of object that there is no kr8s object to deserialize into it will raise an exception.
 
 When you create your own custom objects that subclass [`APIObject`](#kr8s.objects.APIObject) the client is then able to use those objects in its response.
 
@@ -190,9 +189,7 @@ class CustomObject(APIObject):
     kind = "CustomObject"
     namespaced = True
 
-api = kr8s.api()
-
-cos = api.get("customobjects")  # Will return a list of CustomObject instances
+cos = kr8s.get("customobjects")  # Will return a list of CustomObject instances
 ```
 
 ```{note}
