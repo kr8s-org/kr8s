@@ -6,6 +6,7 @@ import trio
 
 import kr8s
 from kr8s._io import NamedTemporaryFile
+from kr8s.asyncio.objects import Pod
 
 
 def test_trio_runs():
@@ -19,7 +20,7 @@ def test_trio_runs():
 
 def test_trio_pod_wait_ready(example_pod_spec):
     async def main():
-        pod = await kr8s.asyncio.objects.Pod(example_pod_spec)
+        pod = await Pod(example_pod_spec)
         await pod.create()
         await pod.wait("condition=Ready")
         with pytest.raises(TimeoutError):
@@ -32,6 +33,21 @@ def test_trio_pod_wait_ready(example_pod_spec):
         await pod.delete()
         await pod.wait("condition=Ready=False")
         await pod.wait("delete")
+
+    trio.run(main)
+
+
+@pytest.mark.xfail(
+    reason="Port forwarding is not yet implemented for trio", raises=RuntimeError
+)
+def test_trio_port_forward(example_pod_spec):
+    async def main():
+        pod = await Pod(example_pod_spec)
+        await pod.create()
+        await pod.wait("condition=Ready")
+        async with pod.portforward(80) as port:
+            assert isinstance(port, int)
+        await pod.delete()
 
     trio.run(main)
 
