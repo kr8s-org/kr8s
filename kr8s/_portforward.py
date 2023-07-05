@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, BinaryIO
 
 import aiohttp
+import sniffio
 
 from ._exceptions import ConnectionClosedError
 
@@ -59,6 +60,11 @@ class PortForward:
     def __init__(
         self, resource: APIObject, remote_port: int, local_port: int = None
     ) -> None:
+        if sniffio.current_async_library() != "asyncio":
+            raise RuntimeError(
+                "PortForward only works with asyncio, "
+                "see https://github.com/kr8s-org/kr8s/issues/104"
+            )
         self.running = True
         self.server = None
         self.websocket = None
