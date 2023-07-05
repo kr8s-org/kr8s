@@ -56,7 +56,7 @@ class Api(object):
 
         return f().__await__()
 
-    def load_ssl_context(self) -> None:
+    def _load_ssl_context(self) -> None:
         self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         if self.auth.client_key_file:
             self._sslcontext.load_cert_chain(
@@ -69,7 +69,7 @@ class Api(object):
 
     async def _create_session(self) -> None:
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        self.load_ssl_context()
+        self._load_ssl_context()
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         if self._session:
@@ -86,6 +86,28 @@ class Api(object):
             verify=self._sslcontext,
         )
 
+    def _construct_url(
+        self,
+        version: str = "v1",
+        base: str = "",
+        namespace: str = None,
+        url: str = "",
+    ) -> str:
+        if not base:
+            if version == "v1":
+                base = "/api"
+            elif "/" in version:
+                base = "/apis"
+            else:
+                raise ValueError("Unknown API version, base must be specified.")
+        parts = [base]
+        if version:
+            parts.append(version)
+        if namespace is not None:
+            parts.extend(["namespaces", namespace])
+        parts.append(url)
+        return "/".join(parts)
+
     @contextlib.asynccontextmanager
     async def call_api(
         self,
@@ -101,24 +123,8 @@ class Api(object):
         """Make a Kubernetes API request."""
         if not self._session or self._session.is_closed:
             await self._create_session()
-
-        if not base:
-            if version == "v1":
-                base = "/api"
-            elif "/" in version:
-                base = "/apis"
-            else:
-                raise ValueError("Unknown API version, base must be specified.")
-        parts = [base]
-        if version:
-            parts.append(version)
-        if namespace is not None:
-            parts.extend(["namespaces", namespace])
-        parts.append(url)
-        url = "/".join(parts)
-
+        url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url, method=method)
-
         auth_attempts = 0
         while True:
             try:
@@ -159,30 +165,14 @@ class Api(object):
     ) -> aiohttp.ClientResponse:
         """Open a websocket connection to a Kubernetes API endpoint."""
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        self.load_ssl_context()
+        self._load_ssl_context()
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         userauth = None
         if self.auth.username and self.auth.password:
             userauth = aiohttp.BasicAuth(self.auth.username, self.auth.password)
-
-        if not base:
-            if version == "v1":
-                base = "/api"
-            elif "/" in version:
-                base = "/apis"
-            else:
-                raise ValueError("Unknown API version, base must be specified.")
-        parts = [base]
-        if version:
-            parts.append(version)
-        if namespace is not None:
-            parts.extend(["namespaces", namespace])
-        parts.append(url)
-        url = "/".join(parts)
-
+        url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url, ssl=self._sslcontext)
-
         auth_attempts = 0
         while True:
             try:
