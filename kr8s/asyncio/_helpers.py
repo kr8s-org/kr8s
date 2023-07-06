@@ -3,7 +3,6 @@
 from typing import Dict, List, Union
 
 from kr8s._api import Api
-from kr8s._io import run_sync as _run_sync
 
 from ._api import api as _api
 
@@ -20,10 +19,7 @@ async def get(
     **kwargs,
 ):
     if api is None:
-        if _asyncio:
-            api = await _api()
-        else:
-            api = _run_sync(_api)(_asyncio=False)
+        api = await _api(_asyncio=_asyncio)
     return await api._get(
         kind,
         *names,
