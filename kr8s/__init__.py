@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from functools import partial, update_wrapper
 
+import kr8s.objects  # noqa
+
 from ._api import ALL  # noqa
 from ._api import Api as _AsyncApi
 from ._exceptions import NotFoundError  # noqa

@@ -245,7 +245,7 @@ class Api(object):
             params["watch"] = "true" if watch else "false"
             kwargs["stream"] = True
         params = params or None
-        obj_cls = get_class(kind)
+        obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
             method="GET",
             url=kind,

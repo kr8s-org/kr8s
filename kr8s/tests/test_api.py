@@ -187,3 +187,19 @@ async def test_docstrings():
         == kr8s.api_resources.__doc__
         == kr8s.asyncio.api_resources.__doc__
     )
+
+
+async def test_async_get_returns_async_objects():
+    pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+    assert pods[0]._asyncio is True
+
+
+def test_sync_get_returns_sync_objects():
+    pods = kr8s.get("pods", namespace=kr8s.ALL)
+    assert pods[0]._asyncio is False
+
+
+def test_sync_api_returns_sync_objects():
+    api = kr8s.api()
+    pods = api.get("pods", namespace=kr8s.ALL)
+    assert pods[0]._asyncio is False

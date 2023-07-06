@@ -1014,8 +1014,28 @@ class Table(APIObject):
         return self._raw["columnDefinitions"]
 
 
-def get_class(kind: str, version: str = None, _asyncio: bool = True) -> Type[APIObject]:
-    for cls in APIObject.__subclasses__():
+def get_class(
+    kind: str, version: Optional[str] = None, _asyncio: bool = True
+) -> Type[APIObject]:
+    """Get an APIObject subclass by kind and version.
+
+    Args:
+        kind: The Kubernetes resource kind.
+        version: The Kubernetes API version.
+
+    Returns:
+        An APIObject subclass.
+
+    Raises:
+        KeyError: If no object is registered for the given kind and version.
+    """
+
+    def _walk_subclasses(cls):
+        yield cls
+        for subcls in cls.__subclasses__():
+            yield from _walk_subclasses(subcls)
+
+    for cls in _walk_subclasses(APIObject):
         if (
             hasattr(cls, "kind")
             and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
