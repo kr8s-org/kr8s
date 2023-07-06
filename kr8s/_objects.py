@@ -1014,8 +1014,14 @@ class Table(APIObject):
         return self._raw["columnDefinitions"]
 
 
+def _walk_subclasses(cls):
+    yield cls
+    for subcls in cls.__subclasses__():
+        yield from _walk_subclasses(subcls)
+
+
 def get_class(kind: str, version: str = None, _asyncio: bool = True) -> Type[APIObject]:
-    for cls in APIObject.__subclasses__():
+    for cls in _walk_subclasses(APIObject):
         if (
             hasattr(cls, "kind")
             and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
