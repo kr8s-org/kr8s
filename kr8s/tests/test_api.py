@@ -203,3 +203,12 @@ def test_sync_api_returns_sync_objects():
     api = kr8s.api()
     pods = api.get("pods", namespace=kr8s.ALL)
     assert pods[0]._asyncio is False
+
+
+def test_api_client_reuse_between_event_loops():
+    async def get_api():
+        await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+
+    asyncio.run(get_api())
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    asyncio.run(get_api())

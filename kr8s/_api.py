@@ -149,7 +149,12 @@ class Api(object):
                 else:
                     raise
             except RuntimeError as e:
-                if "Event loop is closed" in str(e):
+                if any(
+                    [
+                        "Event loop is closed" in str(e),
+                        "bound to a different event loop" in str(e),
+                    ]
+                ):
                     await self._create_session()
                     continue
                 else:
