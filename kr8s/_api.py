@@ -153,6 +153,7 @@ class Api(object):
                     [
                         "Event loop is closed" in str(e),
                         "bound to a different event loop" in str(e),
+                        "attached to a different loop" in str(e),
                     ]
                 ):
                     await self._create_session()
