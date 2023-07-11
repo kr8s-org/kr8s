@@ -13,6 +13,7 @@ import anyio
 import httpx
 import jsonpath
 import yaml
+from box import Box
 
 import kr8s
 import kr8s.asyncio
@@ -99,23 +100,23 @@ class APIObject:
     @property
     def metadata(self) -> dict:
         """Metadata of the Kubernetes resource."""
-        return self.raw["metadata"]
+        return Box(self.raw["metadata"])
 
     @property
     def spec(self) -> dict:
         """Spec of the Kubernetes resource."""
-        return self.raw["spec"]
+        return Box(self.raw["spec"])
 
     @property
     def status(self) -> dict:
         """Status of the Kubernetes resource."""
-        return self.raw["status"]
+        return Box(self.raw["status"])
 
     @property
     def labels(self) -> dict:
         """Labels of the Kubernetes resource."""
         try:
-            return self.raw["metadata"]["labels"]
+            return Box(self.raw["metadata"]["labels"])
         except KeyError:
             return {}
 
@@ -123,7 +124,7 @@ class APIObject:
     def annotations(self) -> dict:
         """Annotations of the Kubernetes resource."""
         try:
-            return self.raw["metadata"]["annotations"]
+            return Box(self.raw["metadata"]["annotations"])
         except KeyError:
             return {}
 
@@ -255,7 +256,7 @@ class APIObject:
 
     async def patch(self, patch, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
-        return await self._patch(patch, subresource=subresource)
+        await self._patch(patch, subresource=subresource)
 
     async def _patch(self, patch: Dict, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""

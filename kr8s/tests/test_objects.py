@@ -535,7 +535,7 @@ async def test_object_from_file():
     assert isinstance(objects[0], Pod)
     assert objects[0].kind == "Pod"
     assert objects[0].name == "nginx"
-    assert len(objects[0].spec["containers"]) == 1
+    assert len(objects[0].spec.containers) == 1
 
 
 async def test_objects_from_file():
@@ -545,6 +545,7 @@ async def test_objects_from_file():
     assert len(objects) == 2
     assert isinstance(objects[0], Pod)
     assert isinstance(objects[1], Service)
+    assert len(objects[1].spec.ports) == 1
 
 
 async def test_objects_from_files():
