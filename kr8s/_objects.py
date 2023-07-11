@@ -98,35 +98,35 @@ class APIObject:
         return None
 
     @property
-    def metadata(self) -> dict:
+    def metadata(self) -> Box:
         """Metadata of the Kubernetes resource."""
         return Box(self.raw["metadata"])
 
     @property
-    def spec(self) -> dict:
+    def spec(self) -> Box:
         """Spec of the Kubernetes resource."""
         return Box(self.raw["spec"])
 
     @property
-    def status(self) -> dict:
+    def status(self) -> Box:
         """Status of the Kubernetes resource."""
         return Box(self.raw["status"])
 
     @property
-    def labels(self) -> dict:
+    def labels(self) -> Box:
         """Labels of the Kubernetes resource."""
         try:
             return Box(self.raw["metadata"]["labels"])
         except KeyError:
-            return {}
+            return Box({})
 
     @property
-    def annotations(self) -> dict:
+    def annotations(self) -> Box:
         """Annotations of the Kubernetes resource."""
         try:
             return Box(self.raw["metadata"]["annotations"])
         except KeyError:
-            return {}
+            return Box({})
 
     @property
     def replicas(self) -> int:
