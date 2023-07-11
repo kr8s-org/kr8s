@@ -39,6 +39,7 @@ pyyaml = "^6.0"
 python-jsonpath = "^0.7.1"
 anyio = "^3.7.0"
 httpx = "^0.24.1"
+python-box = "^7.0.1"
 
 
 [tool.poetry.group.test.dependencies]

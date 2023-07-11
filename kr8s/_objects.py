@@ -13,6 +13,7 @@ import anyio
 import httpx
 import jsonpath
 import yaml
+from box import Box
 
 import kr8s
 import kr8s.asyncio
@@ -97,35 +98,35 @@ class APIObject:
         return None
 
     @property
-    def metadata(self) -> dict:
+    def metadata(self) -> Box:
         """Metadata of the Kubernetes resource."""
-        return self.raw["metadata"]
+        return Box(self.raw["metadata"])
 
     @property
-    def spec(self) -> dict:
+    def spec(self) -> Box:
         """Spec of the Kubernetes resource."""
-        return self.raw["spec"]
+        return Box(self.raw["spec"])
 
     @property
-    def status(self) -> dict:
+    def status(self) -> Box:
         """Status of the Kubernetes resource."""
-        return self.raw["status"]
+        return Box(self.raw["status"])
 
     @property
-    def labels(self) -> dict:
+    def labels(self) -> Box:
         """Labels of the Kubernetes resource."""
         try:
-            return self.raw["metadata"]["labels"]
+            return Box(self.raw["metadata"]["labels"])
         except KeyError:
-            return {}
+            return Box({})
 
     @property
-    def annotations(self) -> dict:
+    def annotations(self) -> Box:
         """Annotations of the Kubernetes resource."""
         try:
-            return self.raw["metadata"]["annotations"]
+            return Box(self.raw["metadata"]["annotations"])
         except KeyError:
-            return {}
+            return Box({})
 
     @property
     def replicas(self) -> int:
@@ -255,7 +256,7 @@ class APIObject:
 
     async def patch(self, patch, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
-        return await self._patch(patch, subresource=subresource)
+        await self._patch(patch, subresource=subresource)
 
     async def _patch(self, patch: Dict, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
