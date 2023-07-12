@@ -373,6 +373,56 @@ class APIObject:
         """Get an item from this object."""
         return self.raw[key]
 
+    async def set_owner(self, owner: APIObject) -> None:
+        """Set the owner of this object.
+
+        Args:
+            owner: The owner object to set.
+
+        Example:
+            >>> from kr8s.objects import Deployment, Pod
+            >>> deployment = Deployment.get("my-deployment")
+            >>> pod = Pod.get("my-pod")
+            >>> pod.set_owner(deployment)
+        """
+        await self._set_owner(owner)
+
+    async def _set_owner(self, owner: APIObject) -> None:
+        """Set the owner of this object."""
+        await self._patch(
+            {
+                "metadata": {
+                    "ownerReferences": [
+                        {
+                            "controller": True,
+                            "blockOwnerDeletion": True,
+                            "apiVersion": owner.version,
+                            "kind": owner.kind,
+                            "name": owner.name,
+                            "uid": owner.metadata.uid,
+                        }
+                    ],
+                }
+            }
+        )
+
+    async def adopt(self, child: APIObject) -> None:
+        """Adopt this object.
+
+        This will set the owner of the child object to this object.
+
+        Args:
+            child: The child object to adopt.
+
+        Example:
+            >>> from kr8s.objects import Deployment, Pod
+            >>> deployment = Deployment.get("my-deployment")
+            >>> pod = Pod.get("my-pod")
+            >>> deployment.adopt(pod)
+
+        """
+        await child._set_owner(self)
+
 
 ## v1 objects
 
