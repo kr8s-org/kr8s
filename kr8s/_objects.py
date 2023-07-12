@@ -374,10 +374,12 @@ class APIObject:
         return self.raw[key]
 
     async def set_owner(self, owner: APIObject) -> None:
-        """Set the owner of this object.
+        """Set the owner reference of this object.
+
+        See https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 
         Args:
-            owner: The owner object to set.
+            owner: The owner object to set a reference to.
 
         Example:
             >>> from kr8s.objects import Deployment, Pod
@@ -409,7 +411,9 @@ class APIObject:
     async def adopt(self, child: APIObject) -> None:
         """Adopt this object.
 
-        This will set the owner of the child object to this object.
+        This will set the owner reference of the child object to this object.
+
+        See https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 
         Args:
             child: The child object to adopt.
