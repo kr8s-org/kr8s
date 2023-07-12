@@ -59,7 +59,10 @@ async def nginx_pod(k8s_cluster, example_pod_spec, ns):
         "count=10",
     )
     yield pod
-    await pod.delete()
+    try:
+        await pod.delete()
+    except kr8s.NotFoundError:
+        pass
 
 
 @pytest.fixture
@@ -71,7 +74,10 @@ async def nginx_service(example_service_spec, nginx_pod):
     while not await service.ready():
         await asyncio.sleep(0.1)  # pragma: no cover
     yield service
-    await service.delete()
+    try:
+        await service.delete()
+    except kr8s.NotFoundError:
+        pass
 
 
 async def test_pod_create_and_delete(example_pod_spec):
@@ -574,3 +580,13 @@ async def test_pod_to_dict(example_pod_spec):
     pod = Pod(example_pod_spec)
     assert dict(pod) == example_pod_spec
     assert dict(pod) == pod.raw
+
+
+async def test_adoption(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+    await nginx_service.adopt(nginx_pod)
+    assert "ownerReferences" in nginx_pod.metadata
+    assert nginx_pod.metadata["ownerReferences"][0]["name"] == nginx_service.name
+    await nginx_service.delete()
+    while await nginx_pod.exists():
+        await asyncio.sleep(0.1)

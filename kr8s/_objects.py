@@ -373,6 +373,60 @@ class APIObject:
         """Get an item from this object."""
         return self.raw[key]
 
+    async def set_owner(self, owner: APIObject) -> None:
+        """Set the owner reference of this object.
+
+        See https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+
+        Args:
+            owner: The owner object to set a reference to.
+
+        Example:
+            >>> from kr8s.objects import Deployment, Pod
+            >>> deployment = Deployment.get("my-deployment")
+            >>> pod = Pod.get("my-pod")
+            >>> pod.set_owner(deployment)
+        """
+        await self._set_owner(owner)
+
+    async def _set_owner(self, owner: APIObject) -> None:
+        """Set the owner of this object."""
+        await self._patch(
+            {
+                "metadata": {
+                    "ownerReferences": [
+                        {
+                            "controller": True,
+                            "blockOwnerDeletion": True,
+                            "apiVersion": owner.version,
+                            "kind": owner.kind,
+                            "name": owner.name,
+                            "uid": owner.metadata.uid,
+                        }
+                    ],
+                }
+            }
+        )
+
+    async def adopt(self, child: APIObject) -> None:
+        """Adopt this object.
+
+        This will set the owner reference of the child object to this object.
+
+        See https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+
+        Args:
+            child: The child object to adopt.
+
+        Example:
+            >>> from kr8s.objects import Deployment, Pod
+            >>> deployment = Deployment.get("my-deployment")
+            >>> pod = Pod.get("my-pod")
+            >>> deployment.adopt(pod)
+
+        """
+        await child._set_owner(self)
+
 
 ## v1 objects
 
