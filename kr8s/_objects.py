@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import pathlib
 import re
@@ -36,7 +37,8 @@ class APIObject:
 
     def __init__(self, resource: dict, namespace: str = None, api: Api = None) -> None:
         """Initialize an APIObject."""
-        # TODO support passing pykube or kubernetes objects in addition to dicts
+        with contextlib.suppress(TypeError, ValueError):
+            resource = dict(resource)
         if isinstance(resource, str):
             self._raw = {"metadata": {"name": resource}}
         elif isinstance(resource, dict):
