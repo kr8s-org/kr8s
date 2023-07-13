@@ -816,6 +816,35 @@ files = [
 ]
 
 [[package]]
+name = "lightkube"
+version = "0.13.0"
+description = "Lightweight kubernetes client library"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "lightkube-0.13.0-py3-none-any.whl", hash = "sha256:1ca46d3b9fae83858149c95af09cd92e34eed611a54c42d1034b02c73ce683d9"},
+    {file = "lightkube-0.13.0.tar.gz", hash = "sha256:9eea3f2e123c672aaba7eca90af9cec1b39b97b318e07aec3ad0fe1a14cf5a31"},
+]
+
+[package.dependencies]
+httpx = ">=0.24.0"
+lightkube-models = ">=1.15.12.0"
+PyYAML = "*"
+
+[[package]]
+name = "lightkube-models"
+version = "1.27.1.4"
+description = "Models and Resources for lightkube module"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "lightkube-models-1.27.1.4.tar.gz", hash = "sha256:5caa97ed46bde5ae8a4313ebf3fa3d0135388d0aea0752261d4720e24d982fb0"},
+    {file = "lightkube_models-1.27.1.4-py3-none-any.whl", hash = "sha256:206abb6d184a07ed84c20fbabe494847e892de2c38ed302f39a87b4ed1f7bcd9"},
+]
+
+[[package]]
 name = "livereload"
 version = "2.6.3"
 description = "Python LiveReload is an awesome tool for web developers"
@@ -1989,4 +2018,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "2e20fef5ee3e43f02762bd26debbb1eea4783853bfa12771e731c09e3f8e82f7"
+content-hash = "6cbc73bccd16add09c7ef70c649e483d3edc226d744f6b9ab47c32797fb68dbc"

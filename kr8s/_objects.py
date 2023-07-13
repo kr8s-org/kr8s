@@ -41,8 +41,10 @@ class APIObject:
             self._raw = {"metadata": {"name": resource}}
         elif isinstance(resource, dict):
             self._raw = resource
+        elif hasattr(resource, "to_dict"):
+            self._raw = resource.to_dict()
         else:
-            raise ValueError("resource must be a dict or a string")
+            raise ValueError("resource must be a dict, string or have a to_dict method")
         if namespace is not None:
             self._raw["metadata"]["namespace"] = namespace
         self.api = api
@@ -426,6 +428,14 @@ class APIObject:
 
         """
         await child._set_owner(self)
+
+    def to_lightkube(self) -> Any:
+        """Return a lightkube representation of this object."""
+        try:
+            from lightkube import codecs
+        except ImportError:
+            raise ImportError("lightkube is not installed")
+        return codecs.from_dict(self.raw)
 
 
 ## v1 objects

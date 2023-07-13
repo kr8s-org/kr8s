@@ -590,3 +590,23 @@ async def test_adoption(nginx_service):
     await nginx_service.delete()
     while await nginx_pod.exists():
         await asyncio.sleep(0.1)
+
+
+async def test_cast_to_from_lightkube(example_pod_spec):
+    pytest.importorskip("lightkube")
+    from lightkube import codecs
+    from lightkube.resources.core_v1 import Pod as LightkubePod
+
+    starting_pod = codecs.from_dict(example_pod_spec)
+
+    kr8s_pod = await Pod(starting_pod)
+    assert isinstance(kr8s_pod, Pod)
+    assert kr8s_pod.name == example_pod_spec["metadata"]["name"]
+    assert kr8s_pod.namespace == example_pod_spec["metadata"]["namespace"]
+    assert kr8s_pod.kind == "Pod"
+    assert kr8s_pod.version == "v1"
+
+    lightkube_pod = kr8s_pod.to_lightkube()
+    assert isinstance(lightkube_pod, LightkubePod)
+    assert lightkube_pod.metadata.name == example_pod_spec["metadata"]["name"]
+    assert lightkube_pod.metadata.namespace == example_pod_spec["metadata"]["namespace"]
