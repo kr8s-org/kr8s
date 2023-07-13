@@ -43,8 +43,12 @@ class APIObject:
             self._raw = resource
         elif hasattr(resource, "to_dict"):
             self._raw = resource.to_dict()
+        elif hasattr(resource, "obj"):
+            self._raw = resource.obj
         else:
-            raise ValueError("resource must be a dict, string or have a to_dict method")
+            raise ValueError(
+                "resource must be a dict, string, have an obj attribute or a to_dict method"
+            )
         if namespace is not None:
             self._raw["metadata"]["namespace"] = namespace
         self.api = api
@@ -436,6 +440,40 @@ class APIObject:
         except ImportError:
             raise ImportError("lightkube is not installed")
         return codecs.from_dict(self.raw)
+
+    def to_pykube(self, api) -> Any:
+        """Return a pykube representation of this object.
+
+        Args:
+            api: A pykube API object.
+
+        Example:
+            >>> from kr8s.objects import Deployment
+            >>> deployment = Deployment.get("my-deployment")
+            >>> # Create a pykube API object
+            >>> from pykube import HTTPClient
+            >>> api = HTTPClient()
+            >>> pykube_deployment = deployment.to_pykube(api)
+
+        """
+        try:
+            import pykube
+        except ImportError:
+            raise ImportError("pykube is not installed")
+        try:
+            pykube_cls = getattr(pykube.objects, self.kind)
+        except AttributeError:
+            base = (
+                pykube.objects.NamespacedAPIObject
+                if self.namespaced
+                else pykube.objects.APIObject
+            )
+            pykube_cls = type(
+                self.kind,
+                (base,),
+                {"version": self.version, "endpoint": self.endpoint, "kind": self.kind},
+            )
+        return pykube_cls(api, self.raw)
 
 
 ## v1 objects

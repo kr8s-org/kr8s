@@ -1268,14 +1268,14 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pykube-ng"
-version = "22.9.0"
+version = "23.6.0"
 description = "Python client library for Kubernetes"
 category = "dev"
 optional = false
 python-versions = ">=3.8,<4"
 files = [
-    {file = "pykube-ng-22.9.0.tar.gz", hash = "sha256:1cd761ed9c7768958fdb92a404b53a5b2b26f71314bbd1c5d1fcf4f45896e2c0"},
-    {file = "pykube_ng-22.9.0-py3-none-any.whl", hash = "sha256:6f414281d4ec64800aaa9603c0eeeff5d591072efddf8c5faaa483f7dbc828d8"},
+    {file = "pykube-ng-23.6.0.tar.gz", hash = "sha256:46de8e17ed87c1a1014667d60e7d94a1f3fa2b8037b41e67d32c28b5869af35d"},
+    {file = "pykube_ng-23.6.0-py3-none-any.whl", hash = "sha256:63f20f634bfcd83966edec32f892286f75dffb817a2c097434ecc039e558ec8f"},
 ]
 
 [package.dependencies]
@@ -2209,4 +2209,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "58a54d823af5669dc9249054c8042d09e1419f47dcc047b756174aab6b0f4be1"
+content-hash = "fde02f45ba95eefc6dbf7591c787c097d4f6f269688859b8f54d1797d5a9aa71"

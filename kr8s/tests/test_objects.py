@@ -628,3 +628,21 @@ async def test_cast_to_from_kubernetes(example_pod_spec):
     assert kr8s_pod.namespace == example_pod_spec["metadata"]["namespace"]
     assert kr8s_pod.kind == "Pod"
     assert kr8s_pod.version == "v1"
+
+
+async def test_cast_to_from_pykube_ng(example_pod_spec):
+    pykube = pytest.importorskip("pykube")
+
+    starting_pod = pykube.objects.Pod(None, example_pod_spec)
+
+    kr8s_pod = await Pod(starting_pod)
+    assert isinstance(kr8s_pod, Pod)
+    assert kr8s_pod.name == example_pod_spec["metadata"]["name"]
+    assert kr8s_pod.namespace == example_pod_spec["metadata"]["namespace"]
+    assert kr8s_pod.kind == "Pod"
+    assert kr8s_pod.version == "v1"
+
+    pykube_pod = kr8s_pod.to_pykube(None)
+    assert isinstance(pykube_pod, pykube.objects.Pod)
+    assert pykube_pod.name == example_pod_spec["metadata"]["name"]
+    assert pykube_pod.namespace == example_pod_spec["metadata"]["namespace"]
