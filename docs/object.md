@@ -196,3 +196,27 @@ cos = kr8s.get("customobjects")  # Will return a list of CustomObject instances
 If multiple subclasses of [`APIObject`](#kr8s.objects.APIObject) are created with the same API version and kind the first one registered will be used.
 ```
 
+## Interoperability with other libraries
+
+If you are also using other Kubernetes client libraries including `kubernetes`, `kubernetes-asyncio`, `pykube-ng` or `lightkube` you can easily convert resource objects from those libraries to `kr8s` objects.
+
+```python
+import pykube
+
+api = pykube.HTTPClient(pykube.KubeConfig.from_file())
+pykube_pod = pykube.Pod.objects(api).filter(namespace="gondor-system").get(name="my-pod")
+```
+
+Objects from other libraries can be cast directly to `kr8s` objects.
+
+```python
+import kr8s
+
+kr8s_pod = kr8s.objects.Pod(pykube_pod)
+```
+
+For some libraries including `pykube-ng` and `lightkube` we also have utility methods that support casting back again.
+
+```python
+pykube_pod = kr8s_pod.to_pykube(api)  # Pykube requires you to provide every object with an instance of HTTPClient so we pass it here
+```
