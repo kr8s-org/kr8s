@@ -630,6 +630,24 @@ async def test_cast_to_from_kubernetes(example_pod_spec):
     assert kr8s_pod.version == "v1"
 
 
+async def test_cast_to_from_kubernetes_asyncio(example_pod_spec):
+    kubernetes_asyncio = pytest.importorskip("kubernetes_asyncio")
+
+    starting_pod = kubernetes_asyncio.client.models.v1_pod.V1Pod(
+        api_version=example_pod_spec["apiVersion"],
+        kind=example_pod_spec["kind"],
+        metadata=example_pod_spec["metadata"],
+        spec=example_pod_spec["spec"],
+    )
+
+    kr8s_pod = await Pod(starting_pod)
+    assert isinstance(kr8s_pod, Pod)
+    assert kr8s_pod.name == example_pod_spec["metadata"]["name"]
+    assert kr8s_pod.namespace == example_pod_spec["metadata"]["namespace"]
+    assert kr8s_pod.kind == "Pod"
+    assert kr8s_pod.version == "v1"
+
+
 async def test_cast_to_from_pykube_ng(example_pod_spec):
     pykube = pytest.importorskip("pykube")
 

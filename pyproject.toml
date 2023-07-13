@@ -53,6 +53,7 @@ trio = "^0.22.0"
 lightkube = "^0.13.0"
 kubernetes = "^26.1.0"
 pykube-ng = "^23.6.0"
+kubernetes-asyncio = "^24.2.3"
 
 
 [tool.poetry.group.docs.dependencies]
