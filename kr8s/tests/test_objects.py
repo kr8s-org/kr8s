@@ -610,3 +610,21 @@ async def test_cast_to_from_lightkube(example_pod_spec):
     assert isinstance(lightkube_pod, LightkubePod)
     assert lightkube_pod.metadata.name == example_pod_spec["metadata"]["name"]
     assert lightkube_pod.metadata.namespace == example_pod_spec["metadata"]["namespace"]
+
+
+async def test_cast_to_from_kubernetes(example_pod_spec):
+    kubernetes = pytest.importorskip("kubernetes")
+
+    starting_pod = kubernetes.client.models.v1_pod.V1Pod(
+        api_version=example_pod_spec["apiVersion"],
+        kind=example_pod_spec["kind"],
+        metadata=example_pod_spec["metadata"],
+        spec=example_pod_spec["spec"],
+    )
+
+    kr8s_pod = await Pod(starting_pod)
+    assert isinstance(kr8s_pod, Pod)
+    assert kr8s_pod.name == example_pod_spec["metadata"]["name"]
+    assert kr8s_pod.namespace == example_pod_spec["metadata"]["namespace"]
+    assert kr8s_pod.kind == "Pod"
+    assert kr8s_pod.version == "v1"
