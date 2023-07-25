@@ -139,7 +139,7 @@ class KubeAuth:
                     f"auth-provider {p} was deprecated in Kubernetes 1.21 "
                     "and is not supported by kr8s"
                 )
-            # TODO: Handle refreshing OIDC token
+            # TODO: Handle refreshing OIDC token if missing or expired
             self.token = self._user["auth-provider"]["config"]["id-token"]
 
     async def _load_service_account(self) -> None:
