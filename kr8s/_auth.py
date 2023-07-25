@@ -133,7 +133,14 @@ class KubeAuth:
             self.password = self._user["password"]
         if self.namespace is None:
             self.namespace = self._context.get("namespace", "default")
-        # TODO: Handle auth-provider oidc auth
+        if "auth-provider" in self._user:
+            if p := self._user["auth-provider"]["name"] != "oidc":
+                raise ValueError(
+                    f"auth-provider {p} was deprecated in Kubernetes 1.21 "
+                    "and is not supported by kr8s"
+                )
+            # TODO: Handle refreshing OIDC token if missing or expired
+            self.token = self._user["auth-provider"]["config"]["id-token"]
 
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
