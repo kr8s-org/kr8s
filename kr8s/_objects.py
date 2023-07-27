@@ -271,15 +271,20 @@ class APIObject:
         url = f"{self.endpoint}/{self.name}"
         if subresource:
             url = f"{url}/{subresource}"
-        async with self.api.call_api(
-            "PATCH",
-            version=self.version,
-            url=url,
-            namespace=self.namespace,
-            data=json.dumps(patch),
-            headers={"Content-Type": "application/merge-patch+json"},
-        ) as resp:
-            self.raw = resp.json()
+        try:
+            async with self.api.call_api(
+                "PATCH",
+                version=self.version,
+                url=url,
+                namespace=self.namespace,
+                data=json.dumps(patch),
+                headers={"Content-Type": "application/merge-patch+json"},
+            ) as resp:
+                self.raw = resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
 
     async def scale(self, replicas: int = None) -> None:
         """Scale this object in Kubernetes."""
