@@ -843,6 +843,16 @@ class Service(APIObject):
 
     async def ready(self) -> bool:
         """Check if the service is ready."""
+        await self._refresh()
+
+        # If the service is of type LoadBalancer, check if it has endpoints
+        if (
+            self.spec.type == "LoadBalancer"
+            and len(self.status.load_balancer.ingress or []) == 0
+        ):
+            return False
+
+        # Check there is at least one Pod in service
         pods = await self._ready_pods()
         return len(pods) > 0
 
