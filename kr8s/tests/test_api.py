@@ -104,6 +104,7 @@ async def test_get_pods_as_table():
     pods = await kubernetes.get("pods", namespace="kube-system", as_object=Table)
     assert isinstance(pods, Table)
     assert len(pods.rows) > 0
+    assert not await pods.exists()  # Cannot exist in the Kubernetes API
 
 
 async def test_watch_pods(example_pod_spec, ns):
