@@ -96,7 +96,10 @@ class APIObject:
     @property
     def name(self) -> str:
         """Name of the Kubernetes resource."""
-        return self.raw["metadata"]["name"]
+        try:
+            return self.raw["metadata"]["name"]
+        except KeyError:
+            raise ValueError("Resource does not have a name")
 
     @property
     def namespace(self) -> str:
@@ -199,14 +202,17 @@ class APIObject:
 
     async def _exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
-        async with self.api.call_api(
-            "GET",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}",
-            namespace=self.namespace,
-            raise_for_status=False,
-        ) as resp:
-            status = resp.status_code
+        try:
+            async with self.api.call_api(
+                "GET",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}",
+                namespace=self.namespace,
+                raise_for_status=False,
+            ) as resp:
+                status = resp.status_code
+        except ValueError:
+            status = 400
         if status == 200:
             return True
         if ensure:

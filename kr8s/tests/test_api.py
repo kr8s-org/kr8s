@@ -27,7 +27,7 @@ async def test_api_factory(serviceaccount):
     assert k1 is not k3
     assert k3 is k4
 
-    p = await Pod({})
+    p = await Pod({"metadata": {"name": "foo"}})
     assert p.api is k1
     assert p.api is not k3
 
@@ -40,13 +40,13 @@ async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
     assert k3 is k1
     assert k3 is not k2
 
-    p = await Pod({})
+    p = await Pod({"metadata": {"name": "foo"}})
     assert p.api is k1
 
-    p2 = await Pod({}, api=k2)
+    p2 = await Pod({"metadata": {"name": "bar"}}, api=k2)
     assert p2.api is k2
 
-    p3 = await Pod({}, api=k3)
+    p3 = await Pod({"metadata": {"name": "baz"}}, api=k3)
     assert p3.api is k3
     assert p3.api is not k2
 
@@ -104,6 +104,7 @@ async def test_get_pods_as_table():
     pods = await kubernetes.get("pods", namespace="kube-system", as_object=Table)
     assert isinstance(pods, Table)
     assert len(pods.rows) > 0
+    assert not await pods.exists()  # Cannot exist in the Kubernetes API
 
 
 async def test_watch_pods(example_pod_spec, ns):
