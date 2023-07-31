@@ -510,7 +510,7 @@ async def test_service_port_forward_start_stop(nginx_service):
 
 
 async def test_unsupported_port_forward():
-    pv = await PersistentVolume({})
+    pv = await PersistentVolume({"metadata": {"name": "foo"}})
     with pytest.raises(AttributeError):
         await pv.portforward(80)
     with pytest.raises(ValueError):
