@@ -3,6 +3,7 @@
 import base64
 import json
 import os
+import ssl
 
 import anyio
 import yaml
@@ -37,6 +38,7 @@ class KubeAuth:
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
         self._kubeconfig = kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+        self.__auth_lock = anyio.Lock()
 
         if url:
             self.server = url
@@ -50,12 +52,26 @@ class KubeAuth:
 
     async def reauthenticate(self) -> None:
         """Reauthenticate with the server."""
-        if self._serviceaccount and not self.server:
-            await self._load_service_account()
-        if self._kubeconfig is not False and not self.server:
-            await self._load_kubeconfig()
-        if not self.server:
-            raise ValueError("Unable to find valid credentials")
+        async with self.__auth_lock:
+            if self._serviceaccount and not self.server:
+                await self._load_service_account()
+            if self._kubeconfig is not False and not self.server:
+                await self._load_kubeconfig()
+            if not self.server:
+                raise ValueError("Unable to find valid credentials")
+
+    async def ssl_context(self):
+        async with self.__auth_lock:
+            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            if self.client_key_file:
+                sslcontext.load_cert_chain(
+                    certfile=self.client_cert_file,
+                    keyfile=self.client_key_file,
+                    password=None,
+                )
+            if self.server_ca_file:
+                sslcontext.load_verify_locations(cafile=self.server_ca_file)
+            return sslcontext
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""

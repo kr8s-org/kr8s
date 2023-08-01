@@ -41,7 +41,6 @@ class Api(object):
         self._url = kwargs.get("url")
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
-        self._sslcontext = None
         self._session = None
         self.auth = KubeAuth(
             url=self._url,
@@ -58,20 +57,8 @@ class Api(object):
 
         return f().__await__()
 
-    def _load_ssl_context(self) -> None:
-        self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        if self.auth.client_key_file:
-            self._sslcontext.load_cert_chain(
-                certfile=self.auth.client_cert_file,
-                keyfile=self.auth.client_key_file,
-                password=None,
-            )
-        if self.auth.server_ca_file:
-            self._sslcontext.load_verify_locations(cafile=self.auth.server_ca_file)
-
     async def _create_session(self) -> None:
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        self._load_ssl_context()
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         if self._session:
@@ -85,7 +72,7 @@ class Api(object):
             base_url=self.auth.server,
             headers=headers,
             auth=userauth,
-            verify=self._sslcontext,
+            verify=await self.auth.ssl_context(),
         )
 
     def _construct_url(
@@ -188,14 +175,13 @@ class Api(object):
     ) -> aiohttp.ClientResponse:
         """Open a websocket connection to a Kubernetes API endpoint."""
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        self._load_ssl_context()
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         userauth = None
         if self.auth.username and self.auth.password:
             userauth = aiohttp.BasicAuth(self.auth.username, self.auth.password)
         url = self._construct_url(version, base, namespace, url)
-        kwargs.update(url=url, ssl=self._sslcontext)
+        kwargs.update(url=url, ssl=await self.auth.ssl_context())
         auth_attempts = 0
         while True:
             try:
