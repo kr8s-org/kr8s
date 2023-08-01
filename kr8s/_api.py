@@ -128,6 +128,7 @@ class Api(object):
         url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url, method=method)
         auth_attempts = 0
+        ssl_attempts = 0
         while True:
             try:
                 if stream:
@@ -141,6 +142,8 @@ class Api(object):
                         response.raise_for_status()
                     yield response
             except httpx.HTTPStatusError as e:
+                # If we get a 401 or 403 our credentials may have expired so we
+                # reauthenticate and try again a few times before giving up.
                 if e.response.status_code in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
                     await self.auth.reauthenticate()
@@ -148,7 +151,19 @@ class Api(object):
                     continue
                 else:
                     raise
+            except ssl.SSLCertVerificationError:
+                # In some rare edge cases the SSL verification fails, so we try again
+                # a few times before giving up.
+                if ssl_attempts < 3:
+                    ssl_attempts += 1
+                    await self.auth.reauthenticate()
+                    await self._create_session()
+                    continue
+                else:
+                    raise
             except RuntimeError as e:
+                # If the client is reused on a different event loop, we need to create
+                # a new session.
                 if any(
                     [
                         "Event loop is closed" in str(e),
