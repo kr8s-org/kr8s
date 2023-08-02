@@ -211,6 +211,8 @@ async def test_pod_missing_labels_annotations(example_pod_spec):
 async def test_pod_get(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
+    with pytest.raises(kr8s.NotFoundError):
+        await Pod.get(f"{pod.name}-foo", namespace=pod.namespace, timeout=0.1)
     pod2 = await Pod.get(pod.name, namespace=pod.namespace)
     assert pod2.name == pod.name
     assert pod2.namespace == pod.namespace
