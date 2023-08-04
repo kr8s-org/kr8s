@@ -168,6 +168,7 @@ class APIObject:
                 api = await kr8s.asyncio.api()
             else:
                 api = kr8s.api()
+        namespace = namespace if namespace else api.namespace
         start = time.time()
         backoff = 0.1
         while start + timeout > time.time():
@@ -199,7 +200,9 @@ class APIObject:
                     f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
                 )
             return resources[0]
-        raise NotFoundError(f"Could not find {cls.kind} {name}.")
+        raise NotFoundError(
+            f"Could not find {cls.kind} {name} in namespace {namespace}."
+        )
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
