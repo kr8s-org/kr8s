@@ -26,10 +26,19 @@ async def api(
 
     async def _f(**kwargs):
         key = frozenset(kwargs.items())
-        if key in _cls._instances:
-            return await _cls._instances[key]
-        if all(k is None for k in kwargs.values()) and list(_cls._instances.values()):
-            return await list(_cls._instances.values())[0]
+        thread_id = threading.get_ident()
+        if (
+            _cls._instances
+            and thread_id in _cls._instances
+            and key in _cls._instances[thread_id]
+        ):
+            return await _cls._instances[thread_id][key]
+        if (
+            all(k is None for k in kwargs.values())
+            and thread_id in _cls._instances
+            and list(_cls._instances[thread_id].values())
+        ):
+            return await list(_cls._instances[thread_id].values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
     return await _f(
@@ -37,5 +46,4 @@ async def api(
         kubeconfig=kubeconfig,
         serviceaccount=serviceaccount,
         namespace=namespace,
-        thread_id=threading.get_ident(),
     )

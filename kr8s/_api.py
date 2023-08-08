@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import json
 import ssl
+import threading
 import weakref
 from typing import Dict, List, Tuple, Union
 
@@ -29,7 +30,7 @@ class Api(object):
     """
 
     _asyncio = True
-    _instances = weakref.WeakValueDictionary()
+    _instances = {}
 
     def __init__(self, **kwargs) -> None:
         if not kwargs.pop("bypass_factory", False):
@@ -48,7 +49,10 @@ class Api(object):
             serviceaccount=self._serviceaccount,
             namespace=kwargs.get("namespace"),
         )
-        Api._instances[frozenset(kwargs.items())] = self
+        thread_id = threading.get_ident()
+        if thread_id not in Api._instances:
+            Api._instances[thread_id] = weakref.WeakValueDictionary()
+        Api._instances[thread_id][frozenset(kwargs.items())] = self
 
     def __await__(self):
         async def f():

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import threading
 
 import pytest
 
@@ -30,6 +31,24 @@ async def test_api_factory(serviceaccount):
     p = await Pod({"metadata": {"name": "foo"}})
     assert p.api is k1
     assert p.api is not k3
+
+
+def test_api_factory_threaded():
+    assert len(kr8s.Api._instances) == 0
+    k1 = kr8s.api()
+    assert len(kr8s.Api._instances) == 1
+
+    def run_in_thread():
+        k2 = kr8s.api()
+        assert k1 is not k2
+
+    t = threading.Thread(target=run_in_thread)
+    t.start()
+    t.join()
+    assert len(kr8s.Api._instances) == 2
+
+    k3 = kr8s.api()
+    assert k1 is k3
 
 
 async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
