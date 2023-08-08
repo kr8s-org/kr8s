@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+import threading
 from kr8s._api import Api as _AsyncApi
 
 
@@ -12,7 +13,7 @@ async def api(
 ) -> _AsyncApi:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
-    If a kr8s object already exists with the same arguments, it will be returned.
+    If a kr8s object already exists with the same arguments in this thread, it will be returned.
     """
 
     from kr8s import Api as _SyncApi
@@ -35,4 +36,5 @@ async def api(
         kubeconfig=kubeconfig,
         serviceaccount=serviceaccount,
         namespace=namespace,
+        thread_id=threading.get_ident(),
     )
