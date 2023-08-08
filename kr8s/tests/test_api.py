@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import queue
 import threading
 
 import pytest
@@ -38,14 +39,30 @@ def test_api_factory_threaded():
     k1 = kr8s.api()
     assert len(kr8s.Api._instances) == 1
 
-    def run_in_thread():
-        k2 = kr8s.api()
-        assert k1 is not k2
+    q = queue.Queue()
 
-    t = threading.Thread(target=run_in_thread)
+    def run_in_thread(k1, q):
+        k2 = kr8s.api()
+        try:
+            assert k1 is not k2
+            assert len(kr8s.Api._instances) == 2
+        except AssertionError as e:
+            q.put(e)
+        else:
+            q.put(None)
+
+    t = threading.Thread(
+        target=run_in_thread,
+        args=(
+            k1,
+            q,
+        ),
+    )
     t.start()
     t.join()
-    assert len(kr8s.Api._instances) == 2
+    e = q.get()
+    if e:
+        raise e
 
     k3 = kr8s.api()
     assert k1 is k3
