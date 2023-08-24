@@ -62,6 +62,13 @@ class KubeAuth:
 
     async def ssl_context(self):
         async with self.__auth_lock:
+            if (
+                not self.client_key_file
+                and not self.client_cert_file
+                and not self.server_ca_file
+            ):
+                # If no cert information is provided, skip verification
+                return False
             sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             if self.client_key_file:
                 sslcontext.load_cert_chain(
