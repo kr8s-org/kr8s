@@ -67,8 +67,8 @@ class KubeAuth:
                 and not self.client_cert_file
                 and not self.server_ca_file
             ):
-                # If no cert information is provided, skip verification
-                return False
+                # If no cert information is provided, fall back to default verification
+                return True
             sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             if self.client_key_file:
                 sslcontext.load_cert_chain(
