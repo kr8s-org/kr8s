@@ -38,6 +38,17 @@ async def kubeconfig_with_exec(k8s_cluster):
             yield f.name
 
 
+@pytest.fixture
+async def kubeconfig_with_token(k8s_cluster, k8s_token):
+    # Open kubeconfig and extract the certificates
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    kubeconfig["users"][0]["user"] = {"token": k8s_token}
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name
+
+
 async def test_kubeconfig(k8s_cluster):
     kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     version = await kubernetes.version()
@@ -103,5 +114,11 @@ async def test_service_account(serviceaccount):
 
 async def test_exec(kubeconfig_with_exec):
     kubernetes = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
+    version = await kubernetes.version()
+    assert "major" in version
+
+
+async def test_token(kubeconfig_with_token):
+    kubernetes = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
     version = await kubernetes.version()
     assert "major" in version
