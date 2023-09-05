@@ -457,7 +457,7 @@ async def test_pod_port_forward_context_manager(nginx_service):
             resp.read()
 
 
-@pytest.mark.skip(reason="For manual testing only")
+# @pytest.mark.skip(reason="For manual testing only")
 async def test_pod_port_forward_context_manager_manual(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     pf = nginx_pod.portforward(80, 8184)
