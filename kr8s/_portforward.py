@@ -71,7 +71,7 @@ class PortForward:
         self.local_port = local_port if local_port is not None else 0
         from ._objects import Pod
 
-        if not isinstance(resource, Pod) or not hasattr(resource, "ready_pods"):
+        if not isinstance(resource, Pod) and not hasattr(resource, "ready_pods"):
             raise ValueError(
                 "resource must be a Pod or a resource with a ready_pods method"
             )
