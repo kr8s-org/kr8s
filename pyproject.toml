@@ -56,7 +56,8 @@ dependencies = [
 ]
 
 [tool.hatch.envs.docs.scripts]
-build = "sphinx-build docs docs/_build"
+build = "sphinx-build docs/ docs/_build/"
+rtd = "sphinx-build docs/ _readthedocs/html/"
 serve = "sphinx-autobuild docs docs/_build --ignore 'docs/autoapi/**/*' --host 0.0.0.0"
 
 [tool.hatch.build.hooks.vcs]
