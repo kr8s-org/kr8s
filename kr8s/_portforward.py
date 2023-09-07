@@ -69,18 +69,14 @@ class PortForward:
         self.server = None
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
-        self._resource = resource
         from ._objects import Pod
 
+        if not isinstance(resource, Pod) and not hasattr(resource, "ready_pods"):
+            raise ValueError(
+                "resource must be a Pod or a resource with a ready_pods method"
+            )
+        self._resource = resource
         self.pod = None
-        if isinstance(resource, Pod):
-            self.pod = resource
-        else:
-            if not hasattr(resource, "ready_pods"):
-                raise ValueError(
-                    "resource must be a Pod or a resource with a ready_pods method"
-                )
-        self.connection_attempts = 0
         self._loop = asyncio.get_event_loop()
         self._tasks = []
         self._run_task = None
@@ -118,11 +114,6 @@ class PortForward:
     @asynccontextmanager
     async def _run(self) -> int:
         """Start the port forward and yield the local port."""
-        if not self.pod:
-            try:
-                self.pod = random.choice(await self._resource.ready_pods())
-            except IndexError:
-                raise RuntimeError("No ready pods found")
         self.server = await asyncio.start_server(
             self._sync_sockets, port=self.local_port, host="0.0.0.0"
         )
@@ -134,20 +125,44 @@ class PortForward:
             self.server.close()
             await self.server.wait_closed()
 
+    async def _select_pod(self) -> object:
+        """Select a Pod to forward to."""
+        from ._objects import Pod
+
+        if isinstance(self._resource, Pod):
+            return self._resource
+
+        if hasattr(self._resource, "ready_pods"):
+            try:
+                return random.choice(await self._resource.ready_pods())
+            except IndexError:
+                raise RuntimeError("No ready pods found")
+
     @asynccontextmanager
     async def _connect_websocket(self) -> None:
-        async with self.pod.api.open_websocket(
-            version=self.pod.version,
-            url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
-            namespace=self.pod.namespace,
-            params={
-                "name": self.pod.name,
-                "namespace": self.pod.namespace,
-                "ports": f"{self.remote_port}",
-                "_preload_content": "false",
-            },
-        ) as websocket:
-            yield websocket
+        """Connect to the Kubernetes portforward websocket."""
+        connection_attempts = 0
+        while True:
+            if not self.pod:
+                self.pod = await self._select_pod()
+            try:
+                async with self.pod.api.open_websocket(
+                    version=self.pod.version,
+                    url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
+                    namespace=self.pod.namespace,
+                    params={
+                        "name": self.pod.name,
+                        "namespace": self.pod.namespace,
+                        "ports": f"{self.remote_port}",
+                        "_preload_content": "false",
+                    },
+                ) as websocket:
+                    yield websocket
+            except aiohttp.client_exceptions.WSServerHandshakeError as e:
+                self.pod = None
+                if connection_attempts > 5:
+                    raise ConnectionClosedError("Unable to connect to Pod") from e
+                await asyncio.sleep(0.1 * connection_attempts)
 
     async def _sync_sockets(self, reader: BinaryIO, writer: BinaryIO) -> None:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
