@@ -143,3 +143,4 @@ cython_debug/
 .ruff_cache/
 
 docs/autoapi/
+_version.py
