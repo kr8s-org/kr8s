@@ -6,14 +6,19 @@ on:
 jobs:
   publish-kr8s:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/kr8s
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
       - uses: actions/checkout@v3
-      - name: Publish kr8s
-        uses: JRubics/poetry-publish@v1.16
         with:
-          pypi_token: ${{ secrets.PYPI_TOKEN_KR8S }}
-          poetry_version: ==1.4.0
-          plugins: "poetry-dynamic-versioning-plugin"
+          fetch-depth: 0
+      - name: Build package
+        run: pipx install hatch && hatch build
+      - name: Publish kr8s
+        uses: pypa/gh-action-pypi-publish@release/v1
   publish-kubectl-ng:
     runs-on: ubuntu-latest
     steps:

@@ -1,70 +1,21 @@
 [project]
 name = "kr8s"
-authors = [
-    {name = "Jacob Tomlimson", email = "jacob@tomlinson.email"},
-]
+authors = [{ name = "Jacob Tomlimson", email = "jacob@tomlinson.email" }]
 description = "A Kubernetes API library"
 readme = "README.md"
 keywords = ["kubernetes", "kubectl"]
-license = {text = "BSD-3-Clause"}
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
-dependencies = [
-    "aiohttp",
-    'importlib-metadata; python_version<"3.8"',
-]
+license = { text = "BSD-3-Clause" }
+classifiers = ["Programming Language :: Python :: 3"]
+requires-python = ">=3.8"
 dynamic = ["version"]
-
-[tool.poetry]
-name = "kr8s"
-version = "0.0.0"  # This will be populated at build time by poetry-dynamic-versioning
-description = "A Kubernetes API library"
-authors = ["Jacob Tomlinson <jacob@tomlinson.email>"]
-license = "BSD-3-Clause"
-readme = "README.md"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "semver"
-
-[tool.poetry-dynamic-versioning.substitution]
-files = ["kr8s/__init__.py"]
-
-[tool.poetry.dependencies]
-python = "^3.8"
-aiohttp = "^3.8.4"
-pyyaml = "^6.0"
-python-jsonpath = "^0.7.1"
-anyio = "^3.7.0"
-httpx = "^0.24.1"
-python-box = "^7.0.1"
-
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.2.2"
-pytest-asyncio = "^0.20.3"
-pytest-kind = {git = "https://codeberg.org/hjacobs/pytest-kind.git"}
-pytest-timeout = "^2.1.0"
-pytest-rerunfailures = "^11.1.2"
-pytest-cov = "^4.0.0"
-trio = "^0.22.0"
-lightkube = "^0.13.0"
-kubernetes = "^26.1.0"
-pykube-ng = "^23.6.0"
-kubernetes-asyncio = "^24.2.3"
-
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "^5.3.0"
-sphinx-autobuild = "^2021.3.14"
-myst-parser = "^1.0.0"
-furo = "^2023.3.27"
-sphinx-copybutton = "^0.5.1"
-sphinx-design = "^0.3.0"
-sphinxcontrib-mermaid = "^0.8.1"
-sphinx-autoapi = "^2.1.0"
+dependencies = [
+    "aiohttp>=3.8.4",
+    "pyyaml>=6.0",
+    "python-jsonpath>=0.7.1",
+    "anyio>=3.7.0",
+    "httpx>=0.24.1",
+    "python-box>=7.0.1",
+]
 
 [tool.pytest.ini_options]
 addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
@@ -74,9 +25,53 @@ reruns = 3
 reruns_delay = 1
 asyncio_mode = "auto"
 
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest>=7.2.2",
+    "pytest-asyncio>=0.20.3",
+    "pytest-kind@git+https://codeberg.org/hjacobs/pytest-kind.git",
+    "pytest-timeout>=2.1.0",
+    "pytest-rerunfailures>=11.1.2",
+    "pytest-cov>=4.0.0",
+    "trio>=0.22.0",
+    "lightkube>=0.13.0",
+    "kubernetes>=26.1.0",
+    "pykube-ng>=23.6.0",
+    "kubernetes-asyncio>=24.2.3",
+]
+
+[tool.hatch.envs.test.scripts]
+run = "pytest kr8s"
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "sphinx>=5.3.0",
+    "sphinx-autobuild>=2021.3.14",
+    "myst-parser>=1.0.0",
+    "furo>=2023.3.27",
+    "sphinx-copybutton>=0.5.1",
+    "sphinx-design>=0.3.0",
+    "sphinxcontrib-mermaid>=0.8.1",
+    "sphinx-autoapi>=2.1.0",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build docs/ docs/_build/"
+rtd = "sphinx-build docs/ _readthedocs/html/"
+serve = "sphinx-autobuild docs docs/_build --ignore 'docs/autoapi/**/*' --host 0.0.0.0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "kr8s/_version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
