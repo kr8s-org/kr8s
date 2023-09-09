@@ -62,6 +62,7 @@ See the [Object API docs](https://docs.kr8s.org/en/latest/object.html) for more 
 :caption: Getting Started
 :hidden: true
 installation
+examples/index
 ```
 
 ```{toctree}
