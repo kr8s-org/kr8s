@@ -2,17 +2,14 @@
 
 Build an operator that periodically reconciles all Deployments and adds a label to any with a certain annotation.
 
-```{warning}
-While you can build operators with `kr8s` we would recommend folks look at using [kopf](https://kopf.readthedocs.io/en/stable/) for building anything more complex than the below example.
-```
+> [!NOTE]
+> While you can build operators with `kr8s` we would recommend folks look at using [kopf](https://kopf.readthedocs.io/en/stable/) for building anything more complex than the below example.
 
 ## Controller
 
 First we need to create a Python script called `controller.py` containing the controller code that uses `kr8s`.
 
-`````{tab-set}
-
-````{tab-item} Sync
+### Sync
 ```python
 # controller.py
 import time
@@ -28,9 +25,8 @@ def run():
 if __name__ == "__main__":
     run()
 ```
-````
 
-````{tab-item} Async
+### Async
 ```python
 # controller.py
 import asyncio
@@ -46,11 +42,8 @@ async def run():
 if __name__ == "__main__":
     asyncio.run(run())
 ```
-````
 
-`````
-
-## Packaging
+### Packaging
 
 Now we can package our controller code in a container image.
 
