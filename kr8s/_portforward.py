@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, BinaryIO
 
 import aiohttp
+import anyio
+import sniffio
 
 from ._exceptions import ConnectionClosedError
 
@@ -24,6 +26,9 @@ class PortForward:
 
     .. note::
         The ``ready_pods`` method should return a list of Pods that are ready to accept connections.
+
+    .. warning:
+        Currently Port Forwards only work when using ``asyncio`` and not ``trio``.
 
     Args:
         ``resource`` (Pod or Resource): The Pod or Resource to forward to.
@@ -56,23 +61,22 @@ class PortForward:
     def __init__(
         self, resource: APIObject, remote_port: int, local_port: int = None
     ) -> None:
-        self.running = True
+        if sniffio.current_async_library() != "asyncio":
+            raise RuntimeError(
+                "PortForward only works with asyncio, "
+                "see https://github.com/kr8s-org/kr8s/issues/104"
+            )
         self.server = None
-        self.websocket = None
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
-        self._resource = resource
         from ._objects import Pod
 
+        if not isinstance(resource, Pod) and not hasattr(resource, "ready_pods"):
+            raise ValueError(
+                "resource must be a Pod or a resource with a ready_pods method"
+            )
+        self._resource = resource
         self.pod = None
-        if isinstance(resource, Pod):
-            self.pod = resource
-        else:
-            if not hasattr(resource, "ready_pods"):
-                raise ValueError(
-                    "resource must be a Pod or a resource with a ready_pods method"
-                )
-        self.connection_attempts = 0
         self._loop = asyncio.get_event_loop()
         self._tasks = []
         self._run_task = None
@@ -110,11 +114,6 @@ class PortForward:
     @asynccontextmanager
     async def _run(self) -> int:
         """Start the port forward and yield the local port."""
-        if not self.pod:
-            try:
-                self.pod = random.choice(await self._resource.ready_pods())
-            except IndexError:
-                raise RuntimeError("No ready pods found")
         self.server = await asyncio.start_server(
             self._sync_sockets, port=self.local_port, host="0.0.0.0"
         )
@@ -126,15 +125,31 @@ class PortForward:
             self.server.close()
             await self.server.wait_closed()
 
-    async def _connect_websocket(self) -> None:
-        while self.running:
-            self.connection_attempts += 1
+    async def _select_pod(self) -> object:
+        """Select a Pod to forward to."""
+        from ._objects import Pod
+
+        if isinstance(self._resource, Pod):
+            return self._resource
+
+        if hasattr(self._resource, "ready_pods"):
             try:
-                async with self.pod.api.call_api(
+                return random.choice(await self._resource.ready_pods())
+            except IndexError:
+                raise RuntimeError("No ready pods found")
+
+    @asynccontextmanager
+    async def _connect_websocket(self) -> None:
+        """Connect to the Kubernetes portforward websocket."""
+        connection_attempts = 0
+        while True:
+            if not self.pod:
+                self.pod = await self._select_pod()
+            try:
+                async with self.pod.api.open_websocket(
                     version=self.pod.version,
                     url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
                     namespace=self.pod.namespace,
-                    websocket=True,
                     params={
                         "name": self.pod.name,
                         "namespace": self.pod.namespace,
@@ -142,67 +157,54 @@ class PortForward:
                         "_preload_content": "false",
                     },
                 ) as websocket:
-                    self.websocket = websocket
-                    while not self.websocket.closed:
-                        await asyncio.sleep(0.1)
-            except (aiohttp.WSServerHandshakeError, aiohttp.ServerDisconnectedError):
-                await asyncio.sleep(0.1)
+                    yield websocket
+            except aiohttp.client_exceptions.WSServerHandshakeError as e:
+                self.pod = None
+                if connection_attempts > 5:
+                    raise ConnectionClosedError("Unable to connect to Pod") from e
+                await asyncio.sleep(0.1 * connection_attempts)
 
     async def _sync_sockets(self, reader: BinaryIO, writer: BinaryIO) -> None:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
-            self.tasks = [
-                asyncio.create_task(self._connect_websocket()),
-                asyncio.create_task(self._tcp_to_ws(reader)),
-                asyncio.create_task(self._ws_to_tcp(writer)),
-            ]
-            await asyncio.gather(*self.tasks)
-        except ConnectionClosedError as e:
-            self.running = False
-            for task in self.tasks:
-                task.cancel()
-            raise e
+            async with self._connect_websocket() as ws:
+                async with anyio.create_task_group() as tg:
+                    tg.start_soon(self._tcp_to_ws, ws, reader)
+                    tg.start_soon(self._ws_to_tcp, ws, writer)
+        except ConnectionClosedError:
+            pass
         finally:
             writer.close()
 
-    async def _tcp_to_ws(self, reader: BinaryIO) -> None:
+    async def _tcp_to_ws(self, ws, reader: BinaryIO) -> None:
         while True:
-            if self.websocket and not self.websocket.closed:
-                data = await reader.read(1024 * 1024)
-                if not data:
-                    raise ConnectionClosedError("TCP socket closed")
-                else:
-                    # Send data to channel 0 of the websocket.
-                    # TODO Support multiple channels for multiple ports.
-                    while not self.websocket or self.websocket.closed:
-                        await asyncio.sleep(0.1)
-                    await self.websocket.send_bytes(b"\x00" + data)
+            data = await reader.read(1024 * 1024)
+            if not data:
+                raise ConnectionClosedError("TCP socket closed")
             else:
-                await asyncio.sleep(0.1)
+                # Send data to channel 0 of the websocket.
+                # TODO Support multiple channels for multiple ports.
+                try:
+                    await ws.send_bytes(b"\x00" + data)
+                except ConnectionResetError:
+                    raise ConnectionClosedError("Websocket closed")
 
-    async def _ws_to_tcp(self, writer: BinaryIO) -> None:
+    async def _ws_to_tcp(self, ws, writer: BinaryIO) -> None:
         channels = []
         while True:
-            if (
-                self.websocket
-                and not self.websocket.closed
-                and self.websocket._waiting is None
-            ):
-                message = await self.websocket.receive()
-                if message.type == aiohttp.WSMsgType.CLOSED:
-                    await asyncio.sleep(0.1)
-                    continue
-                elif message.type == aiohttp.WSMsgType.BINARY:
-                    # Kubernetes portforward protocol prefixes all frames with a byte to represent
-                    # the channel. Channel 0 is rw for data and channel 1 is ro for errors.
-                    if message.data[0] not in channels:
-                        # Keep track of our channels. Could be useful later for listening to multiple ports.
-                        channels.append(message.data[0])
-                    else:
-                        if message.data[0] % 2 == 1:  # pragma: no cover
-                            # Odd channels are for errors.
-                            raise ConnectionClosedError(message.data[1:].decode())
-                        writer.write(message.data[1:])
-                        await writer.drain()
-            else:
+            message = await ws.receive()
+            if message.type == aiohttp.WSMsgType.CLOSED:
                 await asyncio.sleep(0.1)
+                continue
+            elif message.type == aiohttp.WSMsgType.BINARY:
+                # Kubernetes portforward protocol prefixes all frames with a byte to represent
+                # the channel. Channel 0 is rw for data and channel 1 is ro for errors.
+                if message.data[0] not in channels:
+                    # Keep track of our channels. Could be useful later for listening to multiple ports.
+                    channels.append(message.data[0])
+                else:
+                    if message.data[0] % 2 == 1:  # pragma: no cover
+                        # Odd channels are for errors.
+                        raise ConnectionClosedError(message.data[1:].decode())
+                    writer.write(message.data[1:])
+                    await writer.drain()

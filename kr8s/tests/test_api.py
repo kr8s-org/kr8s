@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import queue
+import threading
 
+import anyio
 import pytest
 
 import kr8s
@@ -27,9 +30,40 @@ async def test_api_factory(serviceaccount):
     assert k1 is not k3
     assert k3 is k4
 
-    p = await Pod({})
+    p = await Pod({"metadata": {"name": "foo"}})
     assert p.api is k1
     assert p.api is not k3
+
+
+def test_api_factory_threaded():
+    assert len(kr8s.Api._instances) == 0
+
+    q = queue.Queue()
+
+    def run_in_thread(q):
+        async def create_api(q):
+            k = await kr8s.asyncio.api()
+            q.put(k)
+
+        anyio.run(create_api, q)
+
+    t1 = threading.Thread(
+        target=run_in_thread,
+        args=(q,),
+    )
+    t2 = threading.Thread(
+        target=run_in_thread,
+        args=(q,),
+    )
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+    k1 = q.get()
+    k2 = q.get()
+
+    assert k1 is not k2
+    assert type(k1) is type(k2)
 
 
 async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
@@ -40,13 +74,13 @@ async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
     assert k3 is k1
     assert k3 is not k2
 
-    p = await Pod({})
+    p = await Pod({"metadata": {"name": "foo"}})
     assert p.api is k1
 
-    p2 = await Pod({}, api=k2)
+    p2 = await Pod({"metadata": {"name": "bar"}}, api=k2)
     assert p2.api is k2
 
-    p3 = await Pod({}, api=k3)
+    p3 = await Pod({"metadata": {"name": "baz"}}, api=k3)
     assert p3.api is k3
     assert p3.api is not k2
 
@@ -69,6 +103,11 @@ async def test_version():
     assert "major" in version
 
 
+def test_helper_version():
+    version = kr8s.version()
+    assert "major" in version
+
+
 async def test_concurrent_api_creation():
     async def get_api():
         api = await kr8s.asyncio.api()
@@ -88,8 +127,7 @@ async def test_bad_api_version():
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
 async def test_get_pods(namespace):
-    kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get("pods", namespace=namespace)
+    pods = await kr8s.asyncio.get("pods", namespace=namespace)
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
@@ -100,15 +138,15 @@ async def test_get_pods_as_table():
     pods = await kubernetes.get("pods", namespace="kube-system", as_object=Table)
     assert isinstance(pods, Table)
     assert len(pods.rows) > 0
+    assert not await pods.exists()  # Cannot exist in the Kubernetes API
 
 
-async def test_watch_pods(example_pod_spec):
-    kubernetes = await kr8s.asyncio.api()
+async def test_watch_pods(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    async for event, obj in kubernetes.watch("pods"):
+    async for event, obj in kr8s.asyncio.watch("pods", namespace=ns):
         assert event in ["ADDED", "MODIFIED", "DELETED"]
         assert isinstance(obj, Pod)
         if obj.name == pod.name:
@@ -129,8 +167,7 @@ async def test_get_deployments():
 
 
 async def test_api_resources():
-    kubernetes = await kr8s.asyncio.api()
-    resources = await kubernetes.api_resources()
+    resources = await kr8s.asyncio.api_resources()
 
     names = [r["name"] for r in resources]
     assert "nodes" in names
@@ -150,3 +187,63 @@ async def test_api_resources():
     assert deployment["version"] == "apps/v1"
     assert "get" in deployment["verbs"]
     assert "deploy" in deployment["shortNames"]
+
+
+async def test_ns(ns):
+    api = await kr8s.asyncio.api(namespace=ns)
+    assert ns == api.namespace
+
+    api.namespace = "foo"
+    assert api.namespace == "foo"
+
+
+async def test_docstrings():
+    assert (
+        kr8s.Api.get.__doc__
+        == kr8s.asyncio.Api.get.__doc__
+        == kr8s.get.__doc__
+        == kr8s.asyncio.get.__doc__
+    )
+    assert (
+        kr8s.Api.version.__doc__
+        == kr8s.asyncio.Api.version.__doc__
+        == kr8s.version.__doc__
+        == kr8s.asyncio.version.__doc__
+    )
+    assert (
+        kr8s.Api.watch.__doc__
+        == kr8s.asyncio.Api.watch.__doc__
+        == kr8s.watch.__doc__
+        == kr8s.asyncio.watch.__doc__
+    )
+    assert (
+        kr8s.Api.api_resources.__doc__
+        == kr8s.asyncio.Api.api_resources.__doc__
+        == kr8s.api_resources.__doc__
+        == kr8s.asyncio.api_resources.__doc__
+    )
+
+
+async def test_async_get_returns_async_objects():
+    pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+    assert pods[0]._asyncio is True
+
+
+def test_sync_get_returns_sync_objects():
+    pods = kr8s.get("pods", namespace=kr8s.ALL)
+    assert pods[0]._asyncio is False
+
+
+def test_sync_api_returns_sync_objects():
+    api = kr8s.api()
+    pods = api.get("pods", namespace=kr8s.ALL)
+    assert pods[0]._asyncio is False
+
+
+def test_api_client_reuse_between_event_loops():
+    async def get_api():
+        await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+
+    asyncio.run(get_api())
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    asyncio.run(get_api())

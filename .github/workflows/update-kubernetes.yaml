@@ -1,13 +1,5 @@
 name: "Update Kubernetes"
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/update-kubernetes.yaml"
-      - "ci/update-kubernetes.py"
-  push:
-    paths:
-      - ".github/workflows/update-kubernetes.yaml"
-      - "ci/update-kubernetes.py"
   schedule:
     - cron:  '30 2 * * *'
   workflow_dispatch: {}

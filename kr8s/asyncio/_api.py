@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
+# SPDX-License-Identifier: BSD 3-Clause License
+import threading
+
 from kr8s._api import Api as _AsyncApi
 
 
@@ -10,7 +14,7 @@ async def api(
 ) -> _AsyncApi:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
-    If a kr8s object already exists with the same arguments, it will be returned.
+    If a kr8s object already exists with the same arguments in this thread, it will be returned.
     """
 
     from kr8s import Api as _SyncApi
@@ -22,10 +26,19 @@ async def api(
 
     async def _f(**kwargs):
         key = frozenset(kwargs.items())
-        if key in _cls._instances:
-            return await _cls._instances[key]
-        if all(k is None for k in kwargs.values()) and list(_cls._instances.values()):
-            return await list(_cls._instances.values())[0]
+        thread_id = threading.get_ident()
+        if (
+            _cls._instances
+            and thread_id in _cls._instances
+            and key in _cls._instances[thread_id]
+        ):
+            return await _cls._instances[thread_id][key]
+        if (
+            all(k is None for k in kwargs.values())
+            and thread_id in _cls._instances
+            and list(_cls._instances[thread_id].values())
+        ):
+            return await list(_cls._instances[thread_id].values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
     return await _f(

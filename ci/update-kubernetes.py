@@ -48,8 +48,8 @@ def update_test_workflow(versions):
     yaml.dump(workflow, Path(".github/workflows/test.yaml"))
 
 
-def update_readme_badge(versions):
-    readme = Path("README.md").read_text()
+def update_badges(filename, versions):
+    readme = Path(filename).read_text()
     # Use regex to replace the badge
     v = [x["cycle"] for x in versions]
     v.sort()
@@ -59,7 +59,7 @@ def update_readme_badge(versions):
         f"img.shields.io/badge/Kubernetes%20support-{version_list}-blue",
         readme,
     )
-    Path("README.md").write_text(readme)
+    Path(filename).write_text(readme)
 
 
 def main():
@@ -70,7 +70,8 @@ def main():
         print(f"{version['version']} until {version['eol']}")
 
     update_test_workflow(versions)
-    update_readme_badge(versions)
+    update_badges("README.md", versions)
+    update_badges("docs/index.md", versions)
 
 
 if __name__ == "__main__":

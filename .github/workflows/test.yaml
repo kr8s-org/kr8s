@@ -15,14 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
-        kubernetes-version: ["1.27.2"]
+        kubernetes-version: ["1.28.0"]
         include:
           - python-version: '3.10'
-            kubernetes-version: 1.26.4
+            kubernetes-version: 1.27.3
           - python-version: '3.10'
-            kubernetes-version: 1.25.9
+            kubernetes-version: 1.26.6
           - python-version: '3.10'
-            kubernetes-version: 1.24.13
+            kubernetes-version: 1.25.11
     env:
       KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
 
@@ -31,24 +31,12 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: snok/install-poetry@v1
-        with:
-          version: 1.4.0
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - name: cache deps
-        id: cache-deps
-        uses: actions/cache@v2
-        with:
-          path: .venv
-          key: pydeps-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - run: poetry install --no-interaction --no-root
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-      - run: poetry install --no-interaction
+      - name: Install hatch
+        run: pipx install hatch
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-        run: poetry run pytest kr8s
+        run: hatch run test:run
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
       - name: Debug k8s resources

@@ -119,17 +119,17 @@ def k8s_cluster(request) -> KindCluster:
         kind_cluster.delete()
 
 
-@pytest.fixture(scope="session")
-def ns(k8s_cluster) -> str:
-    # Ideally we want to generate a random namespace for each test or suite, but
-    # this can make teardown very slow. So we just use the default namespace for now.
+@pytest.fixture(scope="session", autouse=True)
+def run_id():
+    return uuid.uuid4().hex[:4]
 
-    yield "default"
 
-    # name = "kr8s-pytest-" + uuid.uuid4().hex[:4]
-    # k8s_cluster.kubectl("create", "namespace", name)
-    # yield name
-    # k8s_cluster.kubectl("delete", "namespace", name)
+@pytest.fixture(autouse=True)
+def ns(k8s_cluster, run_id) -> str:
+    name = f"kr8s-pytest-{run_id}-{uuid.uuid4().hex[:4]}"
+    k8s_cluster.kubectl("create", "namespace", name)
+    yield name
+    k8s_cluster.kubectl("delete", "namespace", name, "--wait=false")
 
 
 @pytest.fixture
@@ -146,19 +146,27 @@ async def kubectl_proxy(k8s_cluster):
     proxy.kill()
 
 
+@pytest.fixture(scope="session")
+def k8s_token(k8s_cluster):
+    # Apply the serviceaccount.yaml
+    k8s_cluster.kubectl(
+        "apply", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
+    )
+    yield k8s_cluster.kubectl("create", "token", "pytest")
+    # Delete the serviceaccount.yaml
+    k8s_cluster.kubectl(
+        "delete", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
+    )
+
+
 @pytest.fixture
-def serviceaccount(k8s_cluster):
+def serviceaccount(k8s_cluster, k8s_token):
     # Load kubeconfig
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
 
     # Get the server host and port from the kubeconfig
     _hostport = kubeconfig["clusters"][0]["cluster"]["server"].split("//")[1]
     host, port = _hostport.split(":")
-
-    # Apply the serviceaccount.yaml
-    k8s_cluster.kubectl(
-        "apply", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
-    )
 
     # Create a temporary directory and populate it with the serviceaccount files
     with tempfile.TemporaryDirectory() as tempdir, set_env(
@@ -171,16 +179,10 @@ def serviceaccount(k8s_cluster):
                 kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
             ).decode()
         )
-        token = k8s_cluster.kubectl("create", "token", "pytest")
         namespace = "default"
-        (tempdir / "token").write_text(token)
+        (tempdir / "token").write_text(k8s_token)
         (tempdir / "namespace").write_text(namespace)
         yield str(tempdir)
-
-    # Delete the serviceaccount.yaml
-    k8s_cluster.kubectl(
-        "delete", "-f", str(HERE / "tests" / "resources" / "serviceaccount.yaml")
-    )
 
 
 @pytest.fixture(autouse=True)

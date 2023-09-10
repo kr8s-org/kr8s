@@ -18,9 +18,10 @@ When reading from a kube config file the following authentication methods are su
 - Client certificate
 - Token
 - Exec
+- OIDC
 
 ```{warning}
-Legacy `auth-provider` methods are not currently supported along with OIDC.
+Support for the legacy `auth-provider` methods is not planned.
 ```
 
 ## Manual configuration

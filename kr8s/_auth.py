@@ -3,12 +3,12 @@
 import base64
 import json
 import os
+import ssl
 
-import aiofiles
-import aiofiles.os
+import anyio
 import yaml
 
-from ._asyncio import check_output
+from ._io import NamedTemporaryFile, check_output
 
 
 class KubeAuth:
@@ -18,7 +18,7 @@ class KubeAuth:
         self,
         kubeconfig=None,
         url=None,
-        serviceaccount="/var/run/secrets/kubernetes.io/serviceaccount",
+        serviceaccount=None,
         namespace=None,
     ) -> None:
         self.server = None
@@ -32,10 +32,14 @@ class KubeAuth:
         self._context = None
         self._cluster = None
         self._user = None
-        self._serviceaccount = serviceaccount
-        self._kubeconfig = os.path.expanduser(
-            kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+        self._serviceaccount = (
+            serviceaccount
+            if serviceaccount is not None
+            else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
+        self._kubeconfig = kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+        self.__auth_lock = anyio.Lock()
+
         if url:
             self.server = url
 
@@ -48,18 +52,40 @@ class KubeAuth:
 
     async def reauthenticate(self) -> None:
         """Reauthenticate with the server."""
-        if self._serviceaccount and not self.server:
-            await self._load_service_account()
-        if self._kubeconfig is not False and not self.server:
-            await self._load_kubeconfig()
-        if not self.server:
-            raise ValueError("Unable to find valid credentials")
+        async with self.__auth_lock:
+            if self._serviceaccount and not self.server:
+                await self._load_service_account()
+            if self._kubeconfig is not False and not self.server:
+                await self._load_kubeconfig()
+            if not self.server:
+                raise ValueError("Unable to find valid credentials")
+
+    async def ssl_context(self):
+        async with self.__auth_lock:
+            if (
+                not self.client_key_file
+                and not self.client_cert_file
+                and not self.server_ca_file
+            ):
+                # If no cert information is provided, fall back to default verification
+                return True
+            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            if self.client_key_file:
+                sslcontext.load_cert_chain(
+                    certfile=self.client_cert_file,
+                    keyfile=self.client_key_file,
+                    password=None,
+                )
+            if self.server_ca_file:
+                sslcontext.load_verify_locations(cafile=self.server_ca_file)
+            return sslcontext
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
-        if not await aiofiles.os.path.isfile(self._kubeconfig):
+        self._kubeconfig = os.path.expanduser(self._kubeconfig)
+        if not os.path.exists(self._kubeconfig):
             return
-        async with aiofiles.open(self._kubeconfig, mode="r") as f:
+        async with await anyio.open_file(self._kubeconfig) as f:
             config = yaml.safe_load(await f.read())
         if "current-context" in config:
             [self._context] = [
@@ -105,24 +131,23 @@ class KubeAuth:
                 raise KeyError(f"Did not find credentials in {command} output.")
 
         if "client-key-data" in self._user:
-            async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as key_file:
-                await key_file.write(base64.b64decode(self._user["client-key-data"]))
-                await key_file.flush()
-                self.client_key_file = key_file.name
+            async with NamedTemporaryFile(delete=False) as key_file:
+                await key_file.write_bytes(
+                    base64.b64decode(self._user["client-key-data"])
+                )
+                self.client_key_file = str(key_file)
         if "client-certificate-data" in self._user:
-            async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as cert_file:
-                await cert_file.write(
+            async with NamedTemporaryFile(delete=False) as cert_file:
+                await cert_file.write_bytes(
                     base64.b64decode(self._user["client-certificate-data"])
                 )
-                await cert_file.flush()
-                self.client_cert_file = cert_file.name
+                self.client_cert_file = str(cert_file)
         if "certificate-authority-data" in self._cluster:
-            async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as ca_file:
-                await ca_file.write(
+            async with NamedTemporaryFile(delete=False) as ca_file:
+                await ca_file.write_bytes(
                     base64.b64decode(self._cluster["certificate-authority-data"])
                 )
-                await ca_file.flush()
-                self.server_ca_file = ca_file.name
+                self.server_ca_file = str(ca_file)
         if "token" in self._user:
             self.token = self._user["token"]
         if "username" in self._user:
@@ -131,22 +156,30 @@ class KubeAuth:
             self.password = self._user["password"]
         if self.namespace is None:
             self.namespace = self._context.get("namespace", "default")
-        # TODO: Handle auth-provider oidc auth
+        if "auth-provider" in self._user:
+            if p := self._user["auth-provider"]["name"] != "oidc":
+                raise ValueError(
+                    f"auth-provider {p} was deprecated in Kubernetes 1.21 "
+                    "and is not supported by kr8s"
+                )
+            # TODO: Handle refreshing OIDC token if missing or expired
+            self.token = self._user["auth-provider"]["config"]["id-token"]
 
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
-        if not await aiofiles.os.path.isdir(self._serviceaccount):
+        self._serviceaccount = os.path.expanduser(self._serviceaccount)
+        if not os.path.isdir(self._serviceaccount):
             return
         host = os.environ["KUBERNETES_SERVICE_HOST"]
         port = os.environ["KUBERNETES_SERVICE_PORT"]
         self.server = f"https://{host}:{port}"
-        async with aiofiles.open(
-            os.path.join(self._serviceaccount, "token"), mode="r"
+        async with await anyio.open_file(
+            os.path.join(self._serviceaccount, "token")
         ) as f:
             self.token = await f.read()
         self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
         if self.namespace is None:
-            async with aiofiles.open(
-                os.path.join(self._serviceaccount, "namespace"), mode="r"
+            async with await anyio.open_file(
+                os.path.join(self._serviceaccount, "namespace")
             ) as f:
                 self.namespace = await f.read()

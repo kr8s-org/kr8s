@@ -1,15 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+from __future__ import annotations
+
 import contextlib
 import json
 import ssl
+import threading
 import weakref
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import aiohttp
-import asyncio_atexit
+import httpx
 
 from ._auth import KubeAuth
+from ._data_utils import dict_to_selector
 
 ALL = "all"
 
@@ -26,7 +30,7 @@ class Api(object):
     """
 
     _asyncio = True
-    _instances = weakref.WeakValueDictionary()
+    _instances = {}
 
     def __init__(self, **kwargs) -> None:
         if not kwargs.pop("bypass_factory", False):
@@ -38,7 +42,6 @@ class Api(object):
         self._url = kwargs.get("url")
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
-        self._sslcontext = None
         self._session = None
         self.auth = KubeAuth(
             url=self._url,
@@ -46,7 +49,10 @@ class Api(object):
             serviceaccount=self._serviceaccount,
             namespace=kwargs.get("namespace"),
         )
-        Api._instances[frozenset(kwargs.items())] = self
+        thread_id = threading.get_ident()
+        if thread_id not in Api._instances:
+            Api._instances[thread_id] = weakref.WeakValueDictionary()
+        Api._instances[thread_id][frozenset(kwargs.items())] = self
 
     def __await__(self):
         async def f():
@@ -57,53 +63,29 @@ class Api(object):
 
     async def _create_session(self) -> None:
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        self._sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        if self.auth.client_key_file:
-            self._sslcontext.load_cert_chain(
-                certfile=self.auth.client_cert_file,
-                keyfile=self.auth.client_key_file,
-                password=None,
-            )
-
-        if self.auth.server_ca_file:
-            self._sslcontext.load_verify_locations(cafile=self.auth.server_ca_file)
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
+        if self._session:
+            with contextlib.suppress(RuntimeError):
+                await self._session.aclose()
+            self._session = None
         userauth = None
         if self.auth.username and self.auth.password:
-            userauth = aiohttp.BasicAuth(self.auth.username, self.auth.password)
-        if self._session:
-            asyncio_atexit.unregister(self._session.close)
-            await self._session.close()
-            self._session = None
-        self._session = aiohttp.ClientSession(
+            userauth = httpx.BasicAuth(self.auth.username, self.auth.password)
+        self._session = httpx.AsyncClient(
             base_url=self.auth.server,
             headers=headers,
             auth=userauth,
+            verify=await self.auth.ssl_context(),
         )
-        asyncio_atexit.register(self._session.close)
 
-    async def version(self) -> dict:
-        """Get the Kubernetes version"""
-        async with self.call_api(method="GET", version="", base="/version") as response:
-            return await response.json()
-
-    @contextlib.asynccontextmanager
-    async def call_api(
+    def _construct_url(
         self,
-        method: str = "GET",
         version: str = "v1",
         base: str = "",
         namespace: str = None,
         url: str = "",
-        raise_for_status: bool = True,
-        websocket: bool = False,
-        **kwargs,
-    ) -> aiohttp.ClientResponse:
-        """Make a Kubernetes API request."""
-        if not self._session or self._session.closed:
-            await self._create_session()
-
+    ) -> str:
         if not base:
             if version == "v1":
                 base = "/api"
@@ -117,18 +99,103 @@ class Api(object):
         if namespace is not None:
             parts.extend(["namespaces", namespace])
         parts.append(url)
-        url = "/".join(parts)
+        return "/".join(parts)
 
-        call_method = self._session.ws_connect if websocket else self._session.request
-        kwargs.update(url=url, ssl=self._sslcontext)
-        if not websocket:
-            kwargs.update(method=method, raise_for_status=raise_for_status)
+    @contextlib.asynccontextmanager
+    async def call_api(
+        self,
+        method: str = "GET",
+        version: str = "v1",
+        base: str = "",
+        namespace: str = None,
+        url: str = "",
+        raise_for_status: bool = True,
+        stream: bool = False,
+        **kwargs,
+    ) -> httpx.Response:
+        """Make a Kubernetes API request."""
+        if not self._session or self._session.is_closed:
+            await self._create_session()
+        url = self._construct_url(version, base, namespace, url)
+        kwargs.update(url=url, method=method)
+        auth_attempts = 0
+        ssl_attempts = 0
+        while True:
+            try:
+                if stream:
+                    async with self._session.stream(**kwargs) as response:
+                        if raise_for_status:
+                            response.raise_for_status()
+                        yield response
+                else:
+                    response = await self._session.request(**kwargs)
+                    if raise_for_status:
+                        response.raise_for_status()
+                    yield response
+            except httpx.HTTPStatusError as e:
+                # If we get a 401 or 403 our credentials may have expired so we
+                # reauthenticate and try again a few times before giving up.
+                if e.response.status_code in (401, 403) and auth_attempts < 3:
+                    auth_attempts += 1
+                    await self.auth.reauthenticate()
+                    await self._create_session()
+                    continue
+                else:
+                    raise
+            except ssl.SSLCertVerificationError:
+                # In some rare edge cases the SSL verification fails, so we try again
+                # a few times before giving up.
+                if ssl_attempts < 3:
+                    ssl_attempts += 1
+                    await self.auth.reauthenticate()
+                    await self._create_session()
+                    continue
+                else:
+                    raise
+            except RuntimeError as e:
+                # If the client is reused on a different event loop, we need to create
+                # a new session.
+                if any(
+                    [
+                        "Event loop is closed" in str(e),
+                        "bound to a different event loop" in str(e),
+                        "attached to a different loop" in str(e),
+                    ]
+                ):
+                    await self._create_session()
+                    continue
+                else:
+                    raise
+            break
 
+    @contextlib.asynccontextmanager
+    async def open_websocket(
+        self,
+        version: str = "v1",
+        base: str = "",
+        namespace: str = None,
+        url: str = "",
+        **kwargs,
+    ) -> aiohttp.ClientResponse:
+        """Open a websocket connection to a Kubernetes API endpoint."""
+        headers = {"User-Agent": self.__version__, "content-type": "application/json"}
+        if self.auth.token:
+            headers["Authorization"] = f"Bearer {self.auth.token}"
+        userauth = None
+        if self.auth.username and self.auth.password:
+            userauth = aiohttp.BasicAuth(self.auth.username, self.auth.password)
+        url = self._construct_url(version, base, namespace, url)
+        kwargs.update(url=url, ssl=await self.auth.ssl_context())
         auth_attempts = 0
         while True:
             try:
-                async with call_method(**kwargs) as response:
-                    yield response
+                async with aiohttp.ClientSession(
+                    base_url=self.auth.server,
+                    headers=headers,
+                    auth=userauth,
+                ) as session:
+                    async with session.ws_connect(**kwargs) as response:
+                        yield response
             except aiohttp.ClientResponseError as e:
                 if e.status in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
@@ -137,6 +204,21 @@ class Api(object):
                 else:
                     raise
             break
+
+    async def version(self) -> dict:
+        """Get the Kubernetes version information from the API.
+
+        Returns
+        -------
+        dict
+            The Kubernetes version information.
+
+        """
+        return await self._version()
+
+    async def _version(self) -> dict:
+        async with self.call_api(method="GET", version="", base="/version") as response:
+            return response.json()
 
     async def reauthenticate(self) -> None:
         """Reauthenticate the API."""
@@ -147,8 +229,8 @@ class Api(object):
         self,
         kind: str,
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         params: dict = None,
         watch: bool = False,
         **kwargs,
@@ -157,19 +239,24 @@ class Api(object):
         from ._objects import get_class
 
         if not namespace:
-            namespace = self.auth.namespace
+            namespace = self.namespace
         if namespace is ALL:
             namespace = ""
         if params is None:
             params = {}
         if label_selector:
+            if isinstance(label_selector, dict):
+                label_selector = dict_to_selector(label_selector)
             params["labelSelector"] = label_selector
         if field_selector:
+            if isinstance(field_selector, dict):
+                field_selector = dict_to_selector(field_selector)
             params["fieldSelector"] = field_selector
         if watch:
             params["watch"] = "true" if watch else "false"
+            kwargs["stream"] = True
         params = params or None
-        obj_cls = get_class(kind)
+        obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
             method="GET",
             url=kind,
@@ -185,12 +272,36 @@ class Api(object):
         kind: str,
         *names: List[str],
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         as_object: object = None,
         **kwargs,
     ) -> List[object]:
-        """Get a Kubernetes resource."""
+        """
+        Get Kubernetes resources.
+
+        Parameters
+        ----------
+        kind : str
+            The kind of resource to get.
+        *names : List[str], optional
+            The names of specific resources to get.
+        namespace : str, optional
+            The namespace to get the resource from.
+        label_selector : Union[str, Dict], optional
+            The label selector to filter the resources by.
+        field_selector : Union[str, Dict], optional
+            The field selector to filter the resources by.
+        as_object : object, optional
+            The object to return the resources as.
+        **kwargs
+            Additional keyword arguments to pass to the API call.
+
+        Returns
+        -------
+        List[object]
+            The resources.
+        """
         return await self._get(
             kind,
             *names,
@@ -206,8 +317,8 @@ class Api(object):
         kind: str,
         *names: List[str],
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         as_object: object = None,
         **kwargs,
     ) -> List[object]:
@@ -225,7 +336,7 @@ class Api(object):
             headers=headers or None,
             **kwargs,
         ) as (obj_cls, response):
-            resourcelist = await response.json()
+            resourcelist = response.json()
             if (
                 as_object
                 and "kind" in resourcelist
@@ -245,8 +356,8 @@ class Api(object):
         self,
         kind: str,
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         since: str = None,
     ):
         """Watch a Kubernetes resource."""
@@ -263,8 +374,8 @@ class Api(object):
         self,
         kind: str,
         namespace: str = None,
-        label_selector: str = None,
-        field_selector: str = None,
+        label_selector: Union[str, Dict] = None,
+        field_selector: Union[str, Dict] = None,
         since: str = None,
     ) -> Tuple[str, object]:
         """Watch a Kubernetes resource."""
@@ -276,21 +387,25 @@ class Api(object):
             params={"resourceVersion": since} if since else None,
             watch=True,
         ) as (obj_cls, response):
-            async for line in response.content:
+            async for line in response.aiter_lines():
                 event = json.loads(line)
                 yield event["type"], obj_cls(event["object"], api=self)
 
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
+        return await self._api_resources()
+
+    async def _api_resources(self) -> dict:
+        """Get the Kubernetes API resources."""
         resources = []
         async with self.call_api(method="GET", version="", base="/api") as response:
-            core_api_list = await response.json()
+            core_api_list = response.json()
 
         for version in core_api_list["versions"]:
             async with self.call_api(
                 method="GET", version="", base="/api", url=version
             ) as response:
-                resource = await response.json()
+                resource = response.json()
             resources.extend(
                 [
                     {"version": version, **r}
@@ -299,13 +414,13 @@ class Api(object):
                 ]
             )
         async with self.call_api(method="GET", version="", base="/apis") as response:
-            api_list = await response.json()
+            api_list = response.json()
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
             version = api["versions"][0]["groupVersion"]
             async with self.call_api(
                 method="GET", version="", base="/apis", url=version
             ) as response:
-                resource = await response.json()
+                resource = response.json()
             resources.extend(
                 [
                     {"version": version, **r}
@@ -320,3 +435,12 @@ class Api(object):
         from . import __version__
 
         return f"kr8s/{__version__}"
+
+    @property
+    def namespace(self) -> str:
+        """Get the default namespace."""
+        return self.auth.namespace
+
+    @namespace.setter
+    def namespace(self, value):
+        self.auth.namespace = value

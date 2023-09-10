@@ -3,22 +3,23 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import pathlib
 import re
 import time
 from typing import Any, Dict, List, Optional, Type, Union
 
-import aiohttp
+import anyio
+import httpx
 import jsonpath
 import yaml
-from aiohttp import ClientResponse
-from async_timeout import timeout as async_timeout
+from box import Box
 
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import dot_to_nested_dict, list_dict_unpack
+from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
@@ -34,10 +35,24 @@ class APIObject:
     scalable_spec = "replicas"
     _asyncio = True
 
-    def __init__(self, resource: dict, api: Api = None) -> None:
+    def __init__(self, resource: dict, namespace: str = None, api: Api = None) -> None:
         """Initialize an APIObject."""
-        # TODO support passing pykube or kubernetes objects in addition to dicts
-        self._raw = resource
+        with contextlib.suppress(TypeError, ValueError):
+            resource = dict(resource)
+        if isinstance(resource, str):
+            self._raw = {"metadata": {"name": resource}}
+        elif isinstance(resource, dict):
+            self._raw = resource
+        elif hasattr(resource, "to_dict"):
+            self._raw = resource.to_dict()
+        elif hasattr(resource, "obj"):
+            self._raw = resource.obj
+        else:
+            raise ValueError(
+                "resource must be a dict, string, have an obj attribute or a to_dict method"
+            )
+        if namespace is not None:
+            self._raw["metadata"]["namespace"] = namespace
         self.api = api
         if self.api is None and not self._asyncio:
             self.api = kr8s.api()
@@ -58,6 +73,17 @@ class APIObject:
         """Return a string representation of the Kubernetes resource."""
         return self.name
 
+    def __eq__(self, other):
+        if self.version != other.version:
+            return False
+        if self.kind != other.kind:
+            return False
+        if self.name != other.name:
+            return False
+        if self.namespaced and self.namespace != other.namespace:
+            return False
+        return True
+
     @property
     def raw(self) -> str:
         """Raw object returned from the Kubernetes API."""
@@ -70,47 +96,48 @@ class APIObject:
     @property
     def name(self) -> str:
         """Name of the Kubernetes resource."""
-        return self.raw["metadata"]["name"]
+        try:
+            return self.raw["metadata"]["name"]
+        except KeyError:
+            raise ValueError("Resource does not have a name")
 
     @property
     def namespace(self) -> str:
         """Namespace of the Kubernetes resource."""
         if self.namespaced:
-            return self.raw.get("metadata", {}).get(
-                "namespace", self.api.auth.namespace
-            )
+            return self.raw.get("metadata", {}).get("namespace", self.api.namespace)
         return None
 
     @property
-    def metadata(self) -> dict:
+    def metadata(self) -> Box:
         """Metadata of the Kubernetes resource."""
-        return self.raw["metadata"]
+        return Box(self.raw["metadata"])
 
     @property
-    def spec(self) -> dict:
+    def spec(self) -> Box:
         """Spec of the Kubernetes resource."""
-        return self.raw["spec"]
+        return Box(self.raw["spec"])
 
     @property
-    def status(self) -> dict:
+    def status(self) -> Box:
         """Status of the Kubernetes resource."""
-        return self.raw["status"]
+        return Box(self.raw["status"])
 
     @property
-    def labels(self) -> dict:
+    def labels(self) -> Box:
         """Labels of the Kubernetes resource."""
         try:
-            return self.raw["metadata"]["labels"]
+            return Box(self.raw["metadata"]["labels"])
         except KeyError:
-            return {}
+            return Box({})
 
     @property
-    def annotations(self) -> dict:
+    def annotations(self) -> Box:
         """Annotations of the Kubernetes resource."""
         try:
-            return self.raw["metadata"]["annotations"]
+            return Box(self.raw["metadata"]["annotations"])
         except KeyError:
-            return {}
+            return Box({})
 
     @property
     def replicas(self) -> int:
@@ -126,25 +153,44 @@ class APIObject:
     @classmethod
     async def get(
         cls,
-        name: str,
+        name: str = None,
         namespace: str = None,
         api: Api = None,
+        label_selector: Union[str, Dict[str, str]] = None,
+        field_selector: Union[str, Dict[str, str]] = None,
         timeout: int = 2,
         **kwargs,
     ) -> APIObject:
-        """Get a Kubernetes resource by name."""
+        """Get a Kubernetes resource by name or via selectors."""
 
         if api is None:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
             else:
                 api = kr8s.api()
+        namespace = namespace if namespace else api.namespace
         start = time.time()
         backoff = 0.1
         while start + timeout > time.time():
-            resources = await api._get(
-                cls.endpoint, name, namespace=namespace, **kwargs
-            )
+            if name:
+                try:
+                    resources = await api._get(
+                        cls.endpoint, name, namespace=namespace, **kwargs
+                    )
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 404:
+                        continue
+                    raise e
+            elif label_selector or field_selector:
+                resources = await api._get(
+                    cls.endpoint,
+                    namespace=namespace,
+                    label_selector=label_selector,
+                    field_selector=field_selector,
+                    **kwargs,
+                )
+            else:
+                raise ValueError("Must specify name or selector")
             if len(resources) == 0:
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 1)
@@ -154,7 +200,9 @@ class APIObject:
                     f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
                 )
             return resources[0]
-        raise NotFoundError(f"Could not find {cls.kind} {name}.")
+        raise NotFoundError(
+            f"Could not find {cls.kind} {name} in namespace {namespace}."
+        )
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
@@ -162,14 +210,17 @@ class APIObject:
 
     async def _exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
-        async with self.api.call_api(
-            "GET",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}",
-            namespace=self.namespace,
-            raise_for_status=False,
-        ) as resp:
-            status = resp.status
+        try:
+            async with self.api.call_api(
+                "GET",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}",
+                namespace=self.namespace,
+                raise_for_status=False,
+            ) as resp:
+                status = resp.status_code
+        except ValueError:
+            status = 400
         if status == 200:
             return True
         if ensure:
@@ -185,7 +236,7 @@ class APIObject:
             namespace=self.namespace,
             data=json.dumps(self.raw),
         ) as resp:
-            self.raw = await resp.json()
+            self.raw = resp.json()
 
     async def create(self) -> None:
         """Create this object in Kubernetes."""
@@ -215,9 +266,11 @@ class APIObject:
                 namespace=self.namespace,
                 data=json.dumps(data),
             ) as resp:
-                self.raw = await resp.json()
-        except aiohttp.ClientResponseError as e:
-            raise NotFoundError(f"Object {self.name} does not exist") from e
+                self.raw = resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
 
     async def refresh(self) -> None:
         """Refresh this object from Kubernetes."""
@@ -232,31 +285,35 @@ class APIObject:
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
             ) as resp:
-                self.raw = await resp.json()
-        except aiohttp.ClientResponseError as e:
-            if e.status == 404:
+                self.raw = resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
     async def patch(self, patch, *, subresource=None) -> None:
         """Patch this object in Kubernetes."""
-        return await self._patch(patch, subresource=subresource)
+        await self._patch(patch, subresource=subresource)
 
     async def _patch(self, patch: Dict, *, subresource=None, **kwargs) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if subresource:
             url = f"{url}/{subresource}"
-        async with self.api.call_api(
-            "PATCH",
-            version=self.version,
-            url=url,
-            namespace=self.namespace,
-            data=json.dumps(patch),
-            headers={"Content-Type": "application/merge-patch+json"},
-            **kwargs,
-        ) as resp:
-            self.raw = await resp.json()
+        try:
+            async with self.api.call_api(
+                "PATCH",
+                version=self.version,
+                url=url,
+                namespace=self.namespace,
+                data=json.dumps(patch),
+                headers={"Content-Type": "application/merge-patch+json"},
+            ) as resp:
+                self.raw = resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
 
     async def scale(self, replicas: int = None) -> None:
         """Scale this object in Kubernetes."""
@@ -322,7 +379,7 @@ class APIObject:
         if isinstance(conditions, str):
             conditions = [conditions]
 
-        with async_timeout(timeout):
+        with anyio.fail_after(timeout):
             try:
                 await self._refresh()
             except NotFoundError:
@@ -333,6 +390,126 @@ class APIObject:
             async for _ in self._watch():
                 if await self._test_conditions(conditions):
                     return
+
+    async def annotate(self, annotations: dict = None, **kwargs) -> None:
+        """Annotate this object in Kubernetes."""
+        if annotations is None:
+            annotations = kwargs
+        if not annotations:
+            raise ValueError("No annotations provided")
+        await self._patch({"metadata": {"annotations": annotations}})
+
+    async def label(self, labels: dict = None, **kwargs) -> None:
+        """Label this object in Kubernetes."""
+        if labels is None:
+            labels = kwargs
+        if not labels:
+            raise ValueError("No labels provided")
+        await self._patch({"metadata": {"labels": labels}})
+
+    def keys(self) -> list:
+        """Return the keys of this object."""
+        return self.raw.keys()
+
+    def __getitem__(self, key: str) -> Any:
+        """Get an item from this object."""
+        return self.raw[key]
+
+    async def set_owner(self, owner: APIObject) -> None:
+        """Set the owner reference of this object.
+
+        See https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+
+        Args:
+            owner: The owner object to set a reference to.
+
+        Example:
+            >>> from kr8s.objects import Deployment, Pod
+            >>> deployment = Deployment.get("my-deployment")
+            >>> pod = Pod.get("my-pod")
+            >>> pod.set_owner(deployment)
+        """
+        await self._set_owner(owner)
+
+    async def _set_owner(self, owner: APIObject) -> None:
+        """Set the owner of this object."""
+        await self._patch(
+            {
+                "metadata": {
+                    "ownerReferences": [
+                        {
+                            "controller": True,
+                            "blockOwnerDeletion": True,
+                            "apiVersion": owner.version,
+                            "kind": owner.kind,
+                            "name": owner.name,
+                            "uid": owner.metadata.uid,
+                        }
+                    ],
+                }
+            }
+        )
+
+    async def adopt(self, child: APIObject) -> None:
+        """Adopt this object.
+
+        This will set the owner reference of the child object to this object.
+
+        See https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+
+        Args:
+            child: The child object to adopt.
+
+        Example:
+            >>> from kr8s.objects import Deployment, Pod
+            >>> deployment = Deployment.get("my-deployment")
+            >>> pod = Pod.get("my-pod")
+            >>> deployment.adopt(pod)
+
+        """
+        await child._set_owner(self)
+
+    def to_lightkube(self) -> Any:
+        """Return a lightkube representation of this object."""
+        try:
+            from lightkube import codecs
+        except ImportError:
+            raise ImportError("lightkube is not installed")
+        return codecs.from_dict(self.raw)
+
+    def to_pykube(self, api) -> Any:
+        """Return a pykube representation of this object.
+
+        Args:
+            api: A pykube API object.
+
+        Example:
+            >>> from kr8s.objects import Deployment
+            >>> deployment = Deployment.get("my-deployment")
+            >>> # Create a pykube API object
+            >>> from pykube import HTTPClient
+            >>> api = HTTPClient()
+            >>> pykube_deployment = deployment.to_pykube(api)
+
+        """
+        try:
+            import pykube
+        except ImportError:
+            raise ImportError("pykube is not installed")
+        try:
+            pykube_cls = getattr(pykube.objects, self.kind)
+        except AttributeError:
+            base = (
+                pykube.objects.NamespacedAPIObject
+                if self.namespaced
+                else pykube.objects.APIObject
+            )
+            pykube_cls = type(
+                self.kind,
+                (base,),
+                {"version": self.version, "endpoint": self.endpoint, "kind": self.kind},
+            )
+        return pykube_cls(api, self.raw)
 
 
 ## v1 objects
@@ -521,7 +698,7 @@ class Pod(APIObject):
             namespace=self.namespace,
             params=params,
         ) as resp:
-            return await resp.text()
+            return resp.text
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod.
@@ -628,7 +805,7 @@ class Service(APIObject):
 
     async def proxy_http_request(
         self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
-    ) -> ClientResponse:
+    ) -> httpx.Response:
         """Issue a HTTP request with specific HTTP method to proxy of a Service.
 
         Args:
@@ -642,7 +819,7 @@ class Service(APIObject):
 
     async def _proxy_http_request(
         self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
-    ) -> ClientResponse:
+    ) -> httpx.Response:
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
         async with self.api.call_api(
@@ -656,7 +833,7 @@ class Service(APIObject):
 
     async def proxy_http_get(
         self, path: str, port: Optional[int] = None, **kwargs
-    ) -> None:
+    ) -> httpx.Response:
         return await self._proxy_http_request("GET", path, port, **kwargs)
 
     async def proxy_http_post(
@@ -666,26 +843,39 @@ class Service(APIObject):
 
     async def proxy_http_put(
         self, path: str, port: Optional[int] = None, **kwargs
-    ) -> None:
+    ) -> httpx.Response:
         return await self._proxy_http_request("PUT", path, port, **kwargs)
 
     async def proxy_http_delete(
         self, path: str, port: Optional[int] = None, **kwargs
-    ) -> None:
+    ) -> httpx.Response:
         return await self._proxy_http_request("DELETE", path, port, **kwargs)
 
     async def ready_pods(self) -> List[Pod]:
-        """Return a list of ready pods for this service."""
+        """Return a list of ready Pods for this Service."""
         return await self._ready_pods()
 
     async def _ready_pods(self) -> List[Pod]:
-        """Return a list of ready pods for this service."""
-        pod_selector = ",".join([f"{k}={v}" for k, v in self.labels.items()])
-        pods = await self.api._get("pods", label_selector=pod_selector)
+        """Return a list of ready Pods for this Service."""
+        pods = await self.api._get(
+            "pods",
+            label_selector=dict_to_selector(self.spec["selector"]),
+            namespace=self.namespace,
+        )
         return [pod for pod in pods if await pod.ready()]
 
     async def ready(self) -> bool:
         """Check if the service is ready."""
+        await self._refresh()
+
+        # If the service is of type LoadBalancer, check if it has endpoints
+        if (
+            self.spec.type == "LoadBalancer"
+            and len(self.status.load_balancer.ingress or []) == 0
+        ):
+            return False
+
+        # Check there is at least one Pod in service
         pods = await self._ready_pods()
         return len(pods) > 0
 
@@ -753,6 +943,15 @@ class Deployment(APIObject):
     singular = "deployment"
     namespaced = True
     scalable = True
+
+    async def pods(self) -> List[Pod]:
+        """Return a list of Pods for this Deployment."""
+        pods = await self.api._get(
+            "pods",
+            label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
+            namespace=self.namespace,
+        )
+        return pods
 
     async def ready(self):
         """Check if the deployment is ready."""
@@ -964,8 +1163,28 @@ class Table(APIObject):
         return self._raw["columnDefinitions"]
 
 
-def get_class(kind: str, version: str = None, _asyncio: bool = True) -> Type[APIObject]:
-    for cls in APIObject.__subclasses__():
+def get_class(
+    kind: str, version: Optional[str] = None, _asyncio: bool = True
+) -> Type[APIObject]:
+    """Get an APIObject subclass by kind and version.
+
+    Args:
+        kind: The Kubernetes resource kind.
+        version: The Kubernetes API version.
+
+    Returns:
+        An APIObject subclass.
+
+    Raises:
+        KeyError: If no object is registered for the given kind and version.
+    """
+
+    def _walk_subclasses(cls):
+        yield cls
+        for subcls in cls.__subclasses__():
+            yield from _walk_subclasses(subcls)
+
+    for cls in _walk_subclasses(APIObject):
         if (
             hasattr(cls, "kind")
             and (cls.kind == kind or cls.singular == kind or cls.plural == kind)

@@ -2,14 +2,20 @@
 
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kr8s)](https://pypi.org/project/kr8s/)
+[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.25%7C1.26%7C1.27%7C1.28-blue)](https://docs.kr8s.org/en/latest/installation.html#supported-kubernetes-versions)
 [![PyPI - Wheel](https://img.shields.io/pypi/wheel/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
 
-```{warning}
-This is beta software and might not be ready for prime time.
-```
+A simple, extensible Python client library for Kubernetes that feels familiar for folks who already know how to use `kubectl`.
 
-A Kubernetes API for Python. Inspired by `kubectl`.
+## Highlights
+
+- API inspired by `kubectl` to reduce developer learning curve.
+- [Sensible defaults](https://docs.kr8s.org/en/latest/authentication.html) to reduce boiler plate.
+- No swagger generated code, human readable code only.
+- Also has an [asynchronous API](https://docs.kr8s.org/en/latest/asyncio.html) that can be used with `asyncio` and `trio`.
+- [Client caching](https://docs.kr8s.org/en/latest/client.html#client-caching) to reduce passing API objects around.
+- Batteries included by providing useful utilities and methods inspired by `kubectl`.
 
 ## Quickstart
 
@@ -24,14 +30,15 @@ $ pip install kr8s
 ```python
 import kr8s
 
-api = kr8s.api()
-pods = api.get("pods")
+pods = kr8s.get("pods")
 ```
+
+See the [Client API docs](https://docs.kr8s.org/en/latest/client.html) for more examples.
 
 ### Object API
 
 ```python
-from kr8s.object import Pod
+from kr8s.objects import Pod
 
 pod = Pod({
         "apiVersion": "v1",
@@ -47,12 +54,15 @@ pod = Pod({
 pod.create()
 ```
 
+See the [Object API docs](https://docs.kr8s.org/en/latest/object.html) for more examples.
+
 
 ```{toctree}
 :maxdepth: 2
 :caption: Getting Started
 :hidden: true
 installation
+examples/index
 ```
 
 ```{toctree}

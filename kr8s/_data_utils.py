@@ -50,3 +50,19 @@ def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
         else:
             nested_dict = {key: nested_dict}
     return nested_dict
+
+
+def dict_to_selector(selector_dict: Dict) -> str:
+    """Convert a dictionary to a Kubernetes selector.
+
+    Parameters
+    ----------
+    selector_dict : Dict
+        The dictionary to convert to a Kubernetes selector.
+
+    Returns
+    -------
+    str
+        A Kubernetes selector string.
+    """
+    return ",".join(f"{k}={v}" for k, v in selector_dict.items())
