@@ -34,9 +34,9 @@ async def apply(
             "kubectl.kubernetes.io/last-applied-configuration"
         ] = json.dumps(obj.raw)
         try:
-            await obj.apply()
+            status = await obj.apply()
             # TODO detect if created, modified or unchanged
-            console.print(f"[green]{obj.singular}/{obj.name} applied[/green]")
+            console.print(f"[green]{obj.singular}/{obj.name} {status}[/green]")
         except Exception as e:
             console.print(f"[red]{obj.singular}/{obj.name} failed[/red]: {e}")
             successful = False
