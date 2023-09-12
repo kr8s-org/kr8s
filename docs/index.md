@@ -87,6 +87,7 @@ releasing
 :maxdepth: 2
 :caption: Misc
 :hidden: true
+alternatives
 branding
 history
 ```
