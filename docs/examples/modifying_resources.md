@@ -51,3 +51,35 @@ await pod.label({"foo": "bar"})
 ````
 
 `````
+
+## Cordon a Node
+
+Cordon a Node to mark it as unschedulable.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+from kr8s.objects import Node
+
+node = Node("k8s-node-1")
+
+node.cordon()
+# Is equivalent to
+# node.patch({"spec": {"unschedulable": True}})
+```
+````
+
+````{tab-item} Async
+```python
+from kr8s.asyncio.objects import Node
+
+node = await Node("k8s-node-1")
+
+await node.cordon()
+# Is equivalent to
+# await node.patch({"spec": {"unschedulable": True}})
+```
+````
+
+`````
