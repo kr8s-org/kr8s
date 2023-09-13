@@ -109,3 +109,61 @@ for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL, label_selector=sel
 ````
 
 `````
+
+## List Running Pods
+
+Get a list of Pod resources that have `status.phase=Running` using a field selector.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+import kr8s
+
+for pod in kr8s.get("pods", namespace="kube-system", field_selector="status.phase=Running"):
+    print(pod.name)
+```
+````
+
+````{tab-item} Async
+```python
+import kr8s
+
+for pod in await kr8s.asyncio.get("pods", namespace="kube-system", field_selector="status.phase=Running"):
+    print(pod.name)
+```
+````
+
+`````
+
+## List Pods sorted by restart count
+
+List Pods and sort them by their restart count.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+import kr8s
+
+pods = kr8s.get("pods", namespace=kr8s.ALL)
+pods.sort(key=lambda pod: pod.status.containerStatuses[0].restartCount, reverse=True)
+
+for pod in pods:
+    print(pod.name, pod.status.containerStatuses[0].restartCount)
+```
+````
+
+````{tab-item} Async
+```python
+import kr8s
+
+pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+pods.sort(key=lambda pod: pod.status.containerStatuses[0].restartCount, reverse=True)
+
+for pod in pods:
+    print(pod.name, pod.status.containerStatuses[0].restartCount)
+```
+````
+
+`````
