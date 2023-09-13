@@ -45,3 +45,55 @@ await pod.create()
 ````
 
 `````
+
+## Create a Secret
+
+Create a Secret with several keys.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+from base64 import b64encode
+from kr8s.objects import Secret
+
+secret = Secret({
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {
+            "name": "mysecret",
+        },
+        "type": "Opaque",
+        "data": {
+            "password": b64encode("s33msi4".encode()).decode(),
+            "username": b64encode("jane".encode()).decode(),
+        },
+    })
+
+secret.create()
+```
+````
+
+````{tab-item} Async
+```python
+from base64 import b64encode
+from kr8s.asyncio.objects import Secret
+
+secret = await Secret({
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {
+            "name": "mysecret",
+        },
+        "type": "Opaque",
+        "data": {
+            "password": b64encode("s33msi4".encode()).decode(),
+            "username": b64encode("jane".encode()).decode(),
+        },
+    })
+
+await secret.create()
+```
+````
+
+`````
