@@ -14,6 +14,7 @@ import httpx
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
+from ._exceptions import ServerStatusError
 
 ALL = "all"
 
@@ -141,7 +142,10 @@ class Api(object):
                     await self._create_session()
                     continue
                 else:
-                    raise
+                    status = e.response.json()
+                    raise ServerStatusError(
+                        e.response.status_code, status["message"]
+                    ) from e
             except ssl.SSLCertVerificationError:
                 # In some rare edge cases the SSL verification fails, so we try again
                 # a few times before giving up.

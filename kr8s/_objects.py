@@ -25,7 +25,7 @@ from kr8s._data_utils import (
     dot_to_nested_dict,
     list_dict_unpack,
 )
-from kr8s._exceptions import NotFoundError
+from kr8s._exceptions import NotFoundError, ServerStatusError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -341,6 +341,8 @@ class APIObject:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
+        except ServerStatusError as e:
             raise e
 
     async def scale(self, replicas: int = None) -> None:
