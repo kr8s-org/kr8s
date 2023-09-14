@@ -48,6 +48,7 @@ class Api(object):
             kubeconfig=self._kubeconfig,
             serviceaccount=self._serviceaccount,
             namespace=kwargs.get("namespace"),
+            context=kwargs.get("context"),
         )
         thread_id = threading.get_ident()
         if thread_id not in Api._instances:

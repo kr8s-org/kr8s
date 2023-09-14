@@ -49,9 +49,30 @@ async def kubeconfig_with_token(k8s_cluster, k8s_token):
         yield f.name
 
 
+@pytest.fixture
+async def kubeconfig_with_second_context(k8s_cluster):
+    # Open kubeconfig and extract the certificates
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    kubeconfig["contexts"].append(
+        {"context": kubeconfig["contexts"][0]["context"], "name": "foo-context"}
+    )
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name, kubeconfig["contexts"][1]["name"]
+
+
 async def test_kubeconfig(k8s_cluster):
     kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     version = await kubernetes.version()
+    assert "major" in version
+
+
+async def test_kubeconfig_context(kubeconfig_with_second_context):
+    kubeconfig_path, context_name = kubeconfig_with_second_context
+    client = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
+    assert client.auth.active_context == context_name
+    version = await client.version()
     assert "major" in version
 
 

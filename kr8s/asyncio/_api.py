@@ -10,6 +10,7 @@ async def api(
     kubeconfig: str = None,
     serviceaccount: str = None,
     namespace: str = None,
+    context: str = None,
     _asyncio: bool = True,
 ) -> _AsyncApi:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
@@ -46,4 +47,5 @@ async def api(
         kubeconfig=kubeconfig,
         serviceaccount=serviceaccount,
         namespace=namespace,
+        context=context,
     )
