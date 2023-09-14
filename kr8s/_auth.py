@@ -20,6 +20,7 @@ class KubeAuth:
         url=None,
         serviceaccount=None,
         namespace=None,
+        context=None,
     ) -> None:
         self.server = None
         self.client_cert_file = None
@@ -29,6 +30,8 @@ class KubeAuth:
         self.username = None
         self.password = None
         self.namespace = namespace
+        self.active_context = None
+        self._use_context = context
         self._context = None
         self._cluster = None
         self._user = None
@@ -87,14 +90,26 @@ class KubeAuth:
             return
         async with await anyio.open_file(self._kubeconfig) as f:
             config = yaml.safe_load(await f.read())
-        if "current-context" in config:
+        if self._use_context:
+            try:
+                [self._context] = [
+                    c["context"]
+                    for c in config["contexts"]
+                    if c["name"] == self._use_context
+                ]
+                self.active_context = self._use_context
+            except ValueError as e:
+                raise ValueError(f"No such context {self._use_context}") from e
+        elif "current-context" in config:
             [self._context] = [
                 c["context"]
                 for c in config["contexts"]
                 if c["name"] == config["current-context"]
             ]
+            self.active_context = config["current-context"]
         else:
-            self.context = config["contexts"][0]["context"]
+            self._context = config["contexts"][0]["context"]
+            self.active_context = config["contexts"][0]["name"]
 
         [self._cluster] = [
             c["cluster"]
