@@ -116,10 +116,10 @@ class KubeAuth:
                     "Only client.authentication.k8s.io/v1beta1 is supported for exec auth"
                 )
             command = self._user["exec"]["command"]
-            args = self._user["exec"].get("args", [])
+            args = self._user["exec"].get("args") or []
             env = os.environ.copy()
             env.update(
-                **{e["name"]: e["value"] for e in self._user["exec"].get("env", [])}
+                **{e["name"]: e["value"] for e in self._user["exec"].get("env") or []}
             )
             data = json.loads(await check_output(command, *args, env=env))["status"]
             if "token" in data:
