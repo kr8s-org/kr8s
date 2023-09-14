@@ -29,17 +29,24 @@ A simple, extensible Python client library for Kubernetes that feels familiar fo
 $ pip install kr8s
 ```
 
-### Client API
+## Examples
+
+See the [Examples Documentation](https://docs.kr8s.org/en/latest/examples/index.html) for a full set of examples including `asyncio` examples.
+
+### List Nodes
+
+Print out all of the node names in the cluster.
 
 ```python
 import kr8s
 
-pods = kr8s.get("pods")
+for node in kr8s.get("nodes"):
+    print(node.name)
 ```
 
-See the [Client API docs](https://docs.kr8s.org/en/latest/client.html) for more examples.
+### Create a Pod
 
-### Object API
+Create a new Pod.
 
 ```python
 from kr8s.objects import Pod
@@ -58,4 +65,51 @@ pod = Pod({
 pod.create()
 ```
 
-See the [Object API docs](https://docs.kr8s.org/en/latest/object.html) for more examples.
+### Scale a Deployment
+
+Scale the Deployment `metrics-server` in the Namespace `kube-system` to `1` replica.
+
+```python
+from kr8s.objects import Deployment
+
+deploy = Deployment.get("metrics-server", namespace="kube-system")
+deploy.scale(1)
+```
+
+### List Pods by label selector
+
+Get all Pods from all Namespaces matching a label selector.
+
+```python
+import kr8s
+
+selector = {'component': 'kube-scheduler'}
+
+for pod in kr8s.get("pods", namespace=kr8s.ALL, label_selector=selector):
+    print(pod.namespace, pod.name)
+```
+
+### Add a label to a Pod
+
+Add the label `foo` with the value `bar` to an existing Pod.
+
+```python
+from kr8s.objects import Pod
+
+pod = Pod("kube-apiserver", namespace="kube-system")
+pod.label({"foo": "bar"})
+```
+
+### Cordon a Node
+
+Cordon a Node to mark it as unschedulable.
+
+```python
+from kr8s.objects import Node
+
+node = Node("k8s-node-1")
+
+node.cordon()
+# Is equivalent to
+# node.patch({"spec": {"unschedulable": True}})
+```
