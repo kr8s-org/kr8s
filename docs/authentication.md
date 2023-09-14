@@ -10,7 +10,7 @@ client = kr8s.api()
 
 Lookup order:
 
-- `~/.kube/config`
+- `~/.kube/config` (or the path set by the `KUBECONFIG` environment variable)
 - `/var/run/secrets/kubernetes.io/serviceaccount`
 
 When reading from a kube config file the following authentication methods are supported:
