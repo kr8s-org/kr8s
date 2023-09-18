@@ -5,6 +5,7 @@
 [![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.25%7C1.26%7C1.27%7C1.28-blue)](https://docs.kr8s.org/en/latest/installation.html#supported-kubernetes-versions)
 [![PyPI - Wheel](https://img.shields.io/pypi/wheel/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
+<iframe src="https://ghbtns.com/github-btn.html?user=kr8s-org&repo=kr8s&type=star&count=true" frameborder="0" scrolling="0" width="150" height="20" title="GitHub"></iframe>
 
 A simple, extensible Python client library for Kubernetes that feels familiar for folks who already know how to use `kubectl`.
 
