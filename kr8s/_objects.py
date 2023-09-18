@@ -8,7 +8,7 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 import anyio
 import httpx
@@ -19,8 +19,13 @@ from box import Box
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
-from kr8s._exceptions import NotFoundError
+from kr8s._data_utils import (
+    dict_to_selector,
+    diff_nested_dicts,
+    dot_to_nested_dict,
+    list_dict_unpack,
+)
+from kr8s._exceptions import NotFoundError, ServerStatusError
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -227,7 +232,7 @@ class APIObject:
             raise NotFoundError(f"Object {self.name} does not exist")
         return False
 
-    async def create(self) -> None:
+    async def _create(self) -> None:
         """Create this object in Kubernetes."""
         async with self.api.call_api(
             "POST",
@@ -237,6 +242,44 @@ class APIObject:
             data=json.dumps(self.raw),
         ) as resp:
             self.raw = resp.json()
+
+    async def create(self) -> None:
+        """Create this object in Kubernetes."""
+        await self._create()
+
+    async def apply(self) -> Literal["created", "modified", "unchanged"]:
+        """Apply this object to Kubernetes."""
+        try:
+            existing = await self.get(self.name, self.namespace)
+            print(existing.raw)
+            print(self.raw)
+            if (
+                existing.spec.to_dict() == self.spec.to_dict()
+                and existing.annotations == self.annotations
+                and existing.labels == self.labels
+            ):
+                return "unchanged"
+            metadata = {
+                k: v for k, v in self.metadata.items() if k in ["labels", "annotations"]
+            }
+            existing_metadata = {
+                k: v
+                for k, v in existing.metadata.items()
+                if k in ["labels", "annotations"]
+            }
+            patch = diff_nested_dicts(
+                {"spec": existing.spec.to_dict(), "metadata": existing_metadata},
+                {"spec": self.spec.to_dict(), "metadata": metadata},
+            )
+            print(patch)
+            await self._patch(
+                patch,
+                force=True,
+            )
+            return "modified"
+        except NotFoundError:
+            await self._create()
+            return "created"
 
     async def delete(self, propagation_policy: str = None) -> None:
         """Delete this object from Kubernetes."""
@@ -280,7 +323,7 @@ class APIObject:
         """Patch this object in Kubernetes."""
         await self._patch(patch, subresource=subresource)
 
-    async def _patch(self, patch: Dict, *, subresource=None) -> None:
+    async def _patch(self, patch: Dict, *, subresource=None, **kwargs) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if subresource:
@@ -298,6 +341,8 @@ class APIObject:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
+            raise e
+        except ServerStatusError as e:
             raise e
 
     async def scale(self, replicas: int = None) -> None:

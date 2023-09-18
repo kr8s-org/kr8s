@@ -66,3 +66,28 @@ def dict_to_selector(selector_dict: Dict) -> str:
         A Kubernetes selector string.
     """
     return ",".join(f"{k}={v}" for k, v in selector_dict.items())
+
+
+def diff_nested_dicts(dict1: dict, dict2: dict) -> dict:
+    """Return the difference between two nested dictionaries.
+
+    Parameters
+    ----------
+    dict1 : dict
+        The first dictionary to compare.
+    dict2 : dict
+        The second dictionary to compare.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the differences between the two input
+        dictionaries.
+    """
+    diff = {}
+    for key in dict1.keys() | dict2.keys():
+        if isinstance(dict1.get(key), dict) and isinstance(dict2.get(key), dict):
+            diff[key] = diff_nested_dicts(dict1[key], dict2[key])
+        elif dict1.get(key) != dict2.get(key):
+            diff[key] = dict2.get(key)
+    return diff
