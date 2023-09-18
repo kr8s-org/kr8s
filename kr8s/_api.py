@@ -9,8 +9,8 @@ import threading
 import weakref
 from typing import Dict, List, Tuple, Union
 
-import aiohttp
 import httpx
+import httpx_ws
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
@@ -177,27 +177,20 @@ class Api(object):
         namespace: str = None,
         url: str = "",
         **kwargs,
-    ) -> aiohttp.ClientResponse:
+    ) -> httpx_ws.WebSocketSession:
         """Open a websocket connection to a Kubernetes API endpoint."""
-        headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        if self.auth.token:
-            headers["Authorization"] = f"Bearer {self.auth.token}"
-        userauth = None
-        if self.auth.username and self.auth.password:
-            userauth = aiohttp.BasicAuth(self.auth.username, self.auth.password)
+        if not self._session or self._session.is_closed:
+            await self._create_session()
         url = self._construct_url(version, base, namespace, url)
-        kwargs.update(url=url, ssl=await self.auth.ssl_context())
+        kwargs.update(url=url)
         auth_attempts = 0
         while True:
             try:
-                async with aiohttp.ClientSession(
-                    base_url=self.auth.server,
-                    headers=headers,
-                    auth=userauth,
-                ) as session:
-                    async with session.ws_connect(**kwargs) as response:
-                        yield response
-            except aiohttp.ClientResponseError as e:
+                async with httpx_ws.aconnect_ws(
+                    client=self._session, **kwargs
+                ) as response:
+                    yield response
+            except httpx_ws.HTTPXWSException as e:
                 if e.status in (401, 403) and auth_attempts < 3:
                     auth_attempts += 1
                     await self.auth.reauthenticate()
