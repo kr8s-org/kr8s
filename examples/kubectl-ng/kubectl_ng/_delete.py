@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 
+import anyio
 import typer
 from rich.console import Console
 
@@ -36,6 +37,11 @@ async def delete(
         "-f",
         help="Filename, directory, or URL to files identifying the resources to delete",
     ),
+    wait: bool = typer.Option(
+        True,
+        "--wait",
+        help="If true, wait for resources to be gone before returning. This waits for finalizers.",
+    ),
 ):
     api = await kr8s.asyncio.api()
     try:
@@ -50,3 +56,7 @@ async def delete(
             console.print(f"[red]Error deleting {obj}[/red]: {e}")
             raise typer.Exit(1)
         console.print(f'[green]{obj.singular} "{obj}" deleted [/green]')
+    async with anyio.create_task_group() as tg:
+        for obj in objs:
+            if wait:
+                tg.start_soon(obj.wait, "delete")
