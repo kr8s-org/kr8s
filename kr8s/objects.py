@@ -1,3 +1,5 @@
+from functools import partial
+
 from ._io import run_sync, sync
 from ._objects import (
     APIObject as _APIObject,
@@ -328,5 +330,5 @@ class Table(_Table):
     _asyncio = False
 
 
-object_from_name_type = run_sync(_object_from_name_type)
-objects_from_files = run_sync(_objects_from_files)
+object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
+objects_from_files = run_sync(partial(_objects_from_files, _asyncio=False))
