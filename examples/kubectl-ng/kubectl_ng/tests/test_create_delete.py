@@ -10,7 +10,7 @@ runner = CliRunner()
 HERE = pathlib.Path(__file__).parent.absolute()
 
 
-def test_version():
+def test_create_and_delete():
     spec = str(HERE / "resources" / "simple" / "nginx_pod_service.yaml")
 
     objs = objects_from_files(spec)
