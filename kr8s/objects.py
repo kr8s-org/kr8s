@@ -332,20 +332,24 @@ class CustomResourceDefinition(_CustomResourceDefinition):
     __doc__ = _CustomResourceDefinition.__doc__
     _asyncio = False
 
+
 @sync
 class VolumeSnapshotClass(_VolumeSnapshotClass):
     __doc__ = _VolumeSnapshotClass.__doc__
     _asyncio = False
+
 
 @sync
 class VolumeSnapshot(_VolumeSnapshot):
     __doc__ = _VolumeSnapshot.__doc__
     _asyncio = False
 
+
 @sync
 class VolumeSnapshotContent(_VolumeSnapshotContent):
     __doc__ = _VolumeSnapshotContent.__doc__
     _asyncio = False
+
 
 @sync
 class Table(_Table):

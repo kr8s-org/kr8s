@@ -1123,6 +1123,7 @@ class VolumeSnapshotClass(APIObject):
     singular = "volumesnapshotclass"
     namespaced = False
 
+
 class VolumeSnapshot(APIObject):
     """A Kubernetes VolumeSnapshot."""
 
@@ -1132,6 +1133,7 @@ class VolumeSnapshot(APIObject):
     plural = "volumesnapshots"
     singular = "volumesnapshot"
     namespaced = True
+
 
 class VolumeSnapshotContent(APIObject):
     """A Kubernetes VolumeSnapshotContent."""
