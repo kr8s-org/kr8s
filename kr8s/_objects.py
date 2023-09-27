@@ -1110,6 +1110,40 @@ class Role(APIObject):
     namespaced = True
 
 
+## snapshot.storage.k8s.io/v1
+
+
+class VolumeSnapshotClass(APIObject):
+    """A Kubernetes VolumeSnapshotClass."""
+
+    version = "snapshot.storage.k8s.io/v1"
+    endpoint = "volumesnapshotclasses"
+    kind = "VolumeSnapshotClass"
+    plural = "volumesnapshotclasses"
+    singular = "volumesnapshotclass"
+    namespaced = False
+
+class VolumeSnapshot(APIObject):
+    """A Kubernetes VolumeSnapshot."""
+
+    version = "snapshot.storage.k8s.io/v1"
+    endpoint = "volumesnapshots"
+    kind = "VolumeSnapshot"
+    plural = "volumesnapshots"
+    singular = "volumesnapshot"
+    namespaced = True
+
+class VolumeSnapshotContent(APIObject):
+    """A Kubernetes VolumeSnapshotContent."""
+
+    version = "snapshot.storage.k8s.io/v1"
+    endpoint = "volumesnapshotcontents"
+    kind = "VolumeSnapshotContent"
+    plural = "volumesnapshotcontents"
+    singular = "volumesnapshotcontent"
+    namespaced = False
+
+
 ## apiextensions.k8s.io/v1 objects
 
 

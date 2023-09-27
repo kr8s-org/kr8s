@@ -109,6 +109,15 @@ from ._objects import (
 from ._objects import (
     Table as _Table,
 )
+from ._objects import (
+    VolumeSnapshot as _VolumeSnapshot,
+)
+from ._objects import (
+    VolumeSnapshotClass as _VolumeSnapshotClass,
+)
+from ._objects import (
+    VolumeSnapshotContent as _VolumeSnapshotContent,
+)
 from ._objects import get_class, new_class, object_from_spec  # noqa
 from ._objects import object_from_name_type as _object_from_name_type
 from ._objects import objects_from_files as _objects_from_files
@@ -323,6 +332,20 @@ class CustomResourceDefinition(_CustomResourceDefinition):
     __doc__ = _CustomResourceDefinition.__doc__
     _asyncio = False
 
+@sync
+class VolumeSnapshotClass(_VolumeSnapshotClass):
+    __doc__ = _VolumeSnapshotClass.__doc__
+    _asyncio = False
+
+@sync
+class VolumeSnapshot(_VolumeSnapshot):
+    __doc__ = _VolumeSnapshot.__doc__
+    _asyncio = False
+
+@sync
+class VolumeSnapshotContent(_VolumeSnapshotContent):
+    __doc__ = _VolumeSnapshotContent.__doc__
+    _asyncio = False
 
 @sync
 class Table(_Table):

@@ -37,6 +37,9 @@ from kr8s._objects import (  # noqa
     ServiceAccount,
     StatefulSet,
     Table,
+    VolumeSnapshot,
+    VolumeSnapshotClass,
+    VolumeSnapshotContent,
     object_from_name_type,
     objects_from_files,
 )
