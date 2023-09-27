@@ -387,6 +387,7 @@ class Api(object):
             field_selector=field_selector,
             params={"resourceVersion": since} if since else None,
             watch=True,
+            timeout=None,
         ) as (obj_cls, response):
             async for line in response.aiter_lines():
                 event = json.loads(line)
