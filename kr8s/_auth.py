@@ -168,7 +168,7 @@ class KubeAuth:
                 self.server_ca_file = self._cluster["certificate-authority"]
             else:
                 self.server_ca_file = os.path.join(
-                    os.path.expanduser("~/.kube/"),
+                    os.path.dirname(self._kubeconfig),
                     self._cluster["certificate-authority"],
                 )
         if "token" in self._user:
