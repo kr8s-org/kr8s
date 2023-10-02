@@ -164,7 +164,7 @@ class KubeAuth:
                 )
                 self.server_ca_file = str(ca_file)
         if "certificate-authority" in self._cluster:
-            if os.path.isabs(self._cluster["certificate-authority"]):
+            if os.path.isfile(self._cluster["certificate-authority"]):
                 self.server_ca_file = self._cluster["certificate-authority"]
             else:
                 self.server_ca_file = os.path.join(
