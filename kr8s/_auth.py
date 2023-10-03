@@ -163,6 +163,14 @@ class KubeAuth:
                     base64.b64decode(self._cluster["certificate-authority-data"])
                 )
                 self.server_ca_file = str(ca_file)
+        if "certificate-authority" in self._cluster:
+            if os.path.isfile(self._cluster["certificate-authority"]):
+                self.server_ca_file = self._cluster["certificate-authority"]
+            else:
+                self.server_ca_file = os.path.join(
+                    os.path.dirname(self._kubeconfig),
+                    self._cluster["certificate-authority"],
+                )
         if "token" in self._user:
             self.token = self._user["token"]
         if "username" in self._user:
