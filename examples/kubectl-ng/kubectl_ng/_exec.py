@@ -4,6 +4,7 @@ import typer
 from rich.console import Console
 
 import kr8s
+from kr8s.asyncio.objects import Pod
 
 console = Console()
 
@@ -27,6 +28,6 @@ async def kexec(
     command: List[str] = typer.Argument(..., help="COMMAND [args...]"),
 ):
     """Execute a command in a container."""
-    pod = await kr8s.asyncio.objects.Pod(resource, namespace=namespace)
+    pod = await Pod.get(resource, namespace=namespace)
     console.print(pod.name)
     await pod.exec(command, container=container)

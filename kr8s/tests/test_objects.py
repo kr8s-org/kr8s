@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import datetime
 import pathlib
 import time
 
@@ -666,3 +667,13 @@ async def test_cast_to_from_pykube_ng(example_pod_spec):
     assert isinstance(pykube_pod, pykube.objects.Pod)
     assert pykube_pod.name == example_pod_spec["metadata"]["name"]
     assert pykube_pod.namespace == example_pod_spec["metadata"]["namespace"]
+
+
+async def test_pod_exec(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    async with pod.exec(["date"]).run() as ex:
+        assert str(datetime.datetime.now().year) in ex.stdout
+    await pod.delete()
