@@ -31,6 +31,7 @@ class KubeAuth:
         self.password = None
         self.namespace = namespace
         self.active_context = None
+        self._insecure_skip_tls_verify = False
         self._use_context = context
         self._context = None
         self._cluster = None
@@ -64,6 +65,8 @@ class KubeAuth:
                 raise ValueError("Unable to find valid credentials")
 
     async def ssl_context(self):
+        if self._insecure_skip_tls_verify:
+            return False
         async with self.__auth_lock:
             if (
                 not self.client_key_file
@@ -121,6 +124,12 @@ class KubeAuth:
         ]
 
         self.server = self._cluster["server"]
+
+        if (
+            "insecure-skip-tls-verify" in self._cluster
+            and self._cluster["insecure-skip-tls-verify"]
+        ):
+            self._insecure_skip_tls_verify = True
 
         if "exec" in self._user:
             if (
