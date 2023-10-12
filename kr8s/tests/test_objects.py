@@ -439,7 +439,7 @@ async def test_pod_logs(example_pod_spec):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    log = await pod.logs(container="pause")
+    log = "\n".join([line async for line in pod.logs(container="pause")])
     assert isinstance(log, str)
     await pod.delete()
 

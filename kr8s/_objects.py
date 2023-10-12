@@ -8,7 +8,7 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Type, Union
 
 import anyio
 import httpx
@@ -657,8 +657,29 @@ class Pod(APIObject):
         timestamps=False,
         tail_lines=None,
         limit_bytes=None,
-    ) -> str:
+        follow=False,
+        timeout=3600,
+    ) -> AsyncGenerator[str, None, None]:
+        """Streams logs from a Pod.
+
+        Args:
+            container: The container to get logs from. Defaults to the first container in the Pod.
+            pretty: If True, return pretty logs. Defaults to False.
+            previous: If True, return previous terminated container logs. Defaults to False.
+            since_seconds: If set, return logs since this many seconds ago.
+            since_time: If set, return logs since this time.
+            timestamps: If True, prepend each log line with a timestamp. Defaults to False.
+            tail_lines: If set, return this many lines from the end of the logs.
+            limit_bytes: If set, return this many bytes from the end of the logs.
+            follow: If True, follow the logs until the timeout is reached. Defaults to False.
+            timeout: If following timeout after this many seconds. Set to None to disable timeout.
+
+        Returns:
+            An async generator yielding log lines.
+        """
         params = {}
+        if follow:
+            params["follow"] = "true"
         if container is not None:
             params["container"] = container
         if pretty is not None:
@@ -676,14 +697,18 @@ class Pod(APIObject):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
 
-        async with self.api.call_api(
-            "GET",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}/log",
-            namespace=self.namespace,
-            params=params,
-        ) as resp:
-            return resp.text
+        with contextlib.suppress(httpx.ReadTimeout):
+            async with self.api.call_api(
+                "GET",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}/log",
+                namespace=self.namespace,
+                params=params,
+                stream=True,
+                timeout=timeout,
+            ) as resp:
+                async for line in resp.aiter_lines():
+                    yield line
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod.
