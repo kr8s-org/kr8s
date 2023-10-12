@@ -66,7 +66,7 @@ Some objects also have additional methods that are unique to them.
 
 ```python
 # Get Pod logs
-logs = pod.logs()
+logs = [line for line in pod.logs()]
 
 # Check if Pod containers are ready
 pod.ready()
