@@ -223,6 +223,21 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+def test_pod_get_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    with pytest.raises(kr8s.NotFoundError):
+        SyncPod.get(f"{pod.name}-foo", namespace=pod.namespace, timeout=0.1)
+    pod2 = SyncPod.get(pod.name, namespace=pod.namespace)
+    assert pod2.name == pod.name
+    assert pod2.namespace == pod.namespace
+    pod.delete()
+    while pod.exists():
+        time.sleep(0.1)
+    with pytest.raises(kr8s.NotFoundError):
+        pod2.delete()
+
+
 async def test_pod_from_name(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
