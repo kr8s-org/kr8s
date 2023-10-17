@@ -10,17 +10,44 @@
 #
 # This implementation now uses anyio to simplify dispatching to a loop in a thread using either
 # asyncio or trio.
+from __future__ import annotations
 
 import asyncio
 import inspect
 import tempfile
 from contextlib import asynccontextmanager
 from functools import partial, wraps
+from threading import Thread
 from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, Tuple, TypeVar
 
 import anyio
 
 T = TypeVar("T")
+
+
+class Portal:
+    _instance = None
+    _portal = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Portal, cls).__new__(cls)
+            cls._instance.thread = Thread(
+                target=anyio.run, args=[cls._instance._run], name="kr8s-portal"
+            )
+            cls._instance.thread.daemon = True
+            cls._instance.thread.start()
+        return cls._instance
+
+    async def _run(self):
+        async with anyio.from_thread.BlockingPortal() as portal:
+            self._portal = portal
+            await portal.sleep_until_stopped()
+
+    def call(self, func: Callable[..., T], *args, **kwargs) -> T:
+        while not self._portal:
+            pass
+        return self._portal.call(func, *args, **kwargs)
 
 
 def run_sync(coro: Callable[..., Awaitable[T]]) -> Callable[..., T]:
@@ -43,12 +70,10 @@ def run_sync(coro: Callable[..., Awaitable[T]]) -> Callable[..., T]:
         wrapped.__doc__ = coro.__doc__
         if inspect.isasyncgenfunction(coro):
             return iter_over_async(wrapped)
-        with anyio.from_thread.start_blocking_portal() as portal:
-            if inspect.iscoroutinefunction(coro):
-                return portal.call(wrapped)
-            raise TypeError(
-                f"Expected coroutine function, got {coro.__class__.__name__}"
-            )
+        portal = Portal()
+        if inspect.iscoroutinefunction(coro):
+            return portal.call(wrapped)
+        raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
 
     wrapped.__doc__ = coro.__doc__
     return wrapped
@@ -64,12 +89,12 @@ def iter_over_async(agen: AsyncGenerator) -> Generator:
         except StopAsyncIteration:
             return True, None
 
-    with anyio.from_thread.start_blocking_portal() as portal:
-        while True:
-            done, obj = portal.call(get_next)
-            if done:
-                break
-            yield obj
+    portal = Portal()
+    while True:
+        done, obj = portal.call(get_next)
+        if done:
+            break
+        yield obj
 
 
 def sync(source: object) -> object:
