@@ -33,7 +33,7 @@ class Portal:
         if cls._instance is None:
             cls._instance = super(Portal, cls).__new__(cls)
             cls._instance.thread = Thread(
-                target=anyio.run, args=[cls._instance._run], name="kr8s-portal"
+                target=anyio.run, args=[cls._instance._run], name="Kr8sSyncRunnerThread"
             )
             cls._instance.thread.daemon = True
             cls._instance.thread.start()
