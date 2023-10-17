@@ -167,7 +167,7 @@ class APIObject:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
             else:
-                api = kr8s.api()
+                api = await kr8s.asyncio.api(_asyncio=False)
         namespace = namespace if namespace else api.namespace
         start = time.time()
         backoff = 0.1
