@@ -158,20 +158,6 @@ class Api(object):
                 raise APITimeoutError(
                     "Timeout while waiting for the Kubernetes API server"
                 ) from e
-            except RuntimeError as e:
-                # If the client is reused on a different event loop, we need to create
-                # a new session.
-                if any(
-                    [
-                        "Event loop is closed" in str(e),
-                        "bound to a different event loop" in str(e),
-                        "attached to a different loop" in str(e),
-                    ]
-                ):
-                    await self._create_session()
-                    continue
-                else:
-                    raise
             break
 
     @contextlib.asynccontextmanager
