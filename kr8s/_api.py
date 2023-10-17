@@ -14,6 +14,7 @@ import httpx
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
+from ._exceptions import APITimeoutError
 
 ALL = "all"
 
@@ -153,6 +154,10 @@ class Api(object):
                     continue
                 else:
                     raise
+            except httpx.ReadTimeout as e:
+                raise APITimeoutError(
+                    "Timeout while waiting for the Kubernetes API server"
+                ) from e
             except RuntimeError as e:
                 # If the client is reused on a different event loop, we need to create
                 # a new session.
