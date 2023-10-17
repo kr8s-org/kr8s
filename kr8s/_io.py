@@ -31,7 +31,6 @@ class Portal:
 
     def __new__(cls):
         if cls._instance is None:
-            print("Creating the object")
             cls._instance = super(Portal, cls).__new__(cls)
             cls._instance.thread = Thread(
                 target=anyio.run, args=[cls._instance._run], name="kr8s-portal"
