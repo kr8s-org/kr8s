@@ -729,6 +729,45 @@ class Pod(APIObject):
                 async for line in resp.aiter_lines():
                     yield line
 
+    def exec(self, command: List[str], container: str) -> Generator[str]:
+        """Executes a command inside a pod and returns the output."""
+
+        params = {}
+        params["stdout"] = True
+        params["tty"] = True
+        params["command"] = command
+
+        if container:
+            params["container"] = container
+        else:
+            # TODO: automatically choose correct container based on
+            # "kubectl.kubernetes.io/default-container" annotation
+            # or fallback to the "first" container of the pod
+            raise Error("A container must be provided")
+
+        headers = {
+            "X-Stream-Protocol-Version": "v4.channel.k8s.io",
+        }
+
+        # example "kubectl exec -n my-namespace my-pod -- cat /etc/passwd":
+        # POST https://{kube_api}/api/v1/namespaces/my-namespace/pods/my-pod/exec?command=cat&command=%2Fetc%2Fpasswd&container=nginx&stdin=true&stdout=true
+
+        # NOTE: DOES NOT WORK
+        # httpx does not support the "Connection: Upgrade" mechanism to switch the
+        # transport to SPDY or Websockets.
+        with contextlib.supress(httpx.ReadTimeout):
+            with self.api.call_api(
+                    "POST",
+                    url=f"{self.endpoint}/{self.name}/exec",
+                    namespace=self.namespace,
+                    params=params,
+                    stream=True,
+                    headers=headers,
+            ) as resp:
+                for line in resp.iter_lines():
+                    yield line
+
+
     def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod.
 
