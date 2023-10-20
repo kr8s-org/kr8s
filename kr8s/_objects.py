@@ -757,16 +757,15 @@ class Pod(APIObject):
         # transport to SPDY or Websockets.
         with contextlib.supress(httpx.ReadTimeout):
             with self.api.call_api(
-                    "POST",
-                    url=f"{self.endpoint}/{self.name}/exec",
-                    namespace=self.namespace,
-                    params=params,
-                    stream=True,
-                    headers=headers,
+                "POST",
+                url=f"{self.endpoint}/{self.name}/exec",
+                namespace=self.namespace,
+                params=params,
+                stream=True,
+                headers=headers,
             ) as resp:
                 for line in resp.iter_lines():
                     yield line
-
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod.
