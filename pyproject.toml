@@ -10,7 +10,6 @@ requires-python = ">=3.8"
 dynamic = ["version"]
 dependencies = [
     "aiohttp>=3.8.4",
-    "async-lru>=2",
     "pyyaml>=6.0",
     "python-jsonpath>=0.7.1",
     "anyio>=3.7.0",
