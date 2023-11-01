@@ -261,4 +261,5 @@ async def test_api_names(example_pod_spec, ns):
 
     await kr8s.asyncio.get("roles", namespace=ns)
     await kr8s.asyncio.get("roles.rbac.authorization.k8s.io", namespace=ns)
+    await kr8s.asyncio.get("roles.v1.rbac.authorization.k8s.io", namespace=ns)
     await kr8s.asyncio.get("roles.rbac.authorization.k8s.io/v1", namespace=ns)

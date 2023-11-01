@@ -1249,12 +1249,21 @@ def get_class(
             cls_group, cls_version = None, cls.version
         if (
             hasattr(cls, "kind")
-            and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
-            and (group is None or cls_group == group)
-            and (version is None or cls_version == version)
             and cls._asyncio == _asyncio
+            and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
         ):
-            return cls
+            if (group is None or cls_group == group) and (
+                version is None or cls_version == version
+            ):
+                return cls
+            if (
+                not version
+                and "." in group
+                and cls_group == group.split(".", 1)[1]
+                and cls_version == group.split(".", 1)[0]
+            ):
+                return cls
+
     raise KeyError(f"No object registered for {kind}{'.' + group if group else ''}")
 
 
