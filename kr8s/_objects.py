@@ -1208,13 +1208,15 @@ class Table(APIObject):
 
 
 def get_class(
-    kind: str, version: Optional[str] = None, _asyncio: bool = True
+    kind: str,
+    version: Optional[str] = None,
+    _asyncio: bool = True,
 ) -> Type[APIObject]:
     """Get an APIObject subclass by kind and version.
 
     Args:
         kind: The Kubernetes resource kind.
-        version: The Kubernetes API version.
+        version: The Kubernetes API group/version.
 
     Returns:
         An APIObject subclass.
@@ -1222,6 +1224,16 @@ def get_class(
     Raises:
         KeyError: If no object is registered for the given kind and version.
     """
+    group = None
+    if "/" in kind:
+        kind, version = kind.split("/", 1)
+    if "." in kind:
+        kind, group = kind.split(".", 1)
+    if version and "/" in version:
+        if group:
+            raise ValueError("Cannot specify group in both kind and version")
+        group, version = version.split("/", 1)
+    kind = kind.lower()
 
     def _walk_subclasses(cls):
         yield cls
@@ -1229,14 +1241,21 @@ def get_class(
             yield from _walk_subclasses(subcls)
 
     for cls in _walk_subclasses(APIObject):
+        if not hasattr(cls, "version"):
+            continue
+        if "/" in cls.version:
+            cls_group, cls_version = cls.version.split("/")
+        else:
+            cls_group, cls_version = None, cls.version
         if (
             hasattr(cls, "kind")
             and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
-            and (version is None or cls.version == version)
+            and (group is None or cls_group == group)
+            and (version is None or cls_version == version)
             and cls._asyncio == _asyncio
         ):
             return cls
-    raise KeyError(f"No object registered for {version}/{kind}")
+    raise KeyError(f"No object registered for {kind}{'.' + group if group else ''}")
 
 
 def new_class(

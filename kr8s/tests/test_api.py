@@ -247,3 +247,18 @@ def test_api_client_reuse_between_event_loops():
     asyncio.run(get_api())
     asyncio.set_event_loop(asyncio.new_event_loop())
     asyncio.run(get_api())
+
+
+async def test_api_names(example_pod_spec, ns):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    assert pod in await kr8s.asyncio.get("pods", namespace=ns)
+    assert pod in await kr8s.asyncio.get("pods/v1", namespace=ns)
+    assert pod in await kr8s.asyncio.get("Pod", namespace=ns)
+    assert pod in await kr8s.asyncio.get("pod", namespace=ns)
+    assert pod in await kr8s.asyncio.get("po", namespace=ns)
+    await pod.delete()
+
+    await kr8s.asyncio.get("roles", namespace=ns)
+    await kr8s.asyncio.get("roles.rbac.authorization.k8s.io", namespace=ns)
+    await kr8s.asyncio.get("roles.rbac.authorization.k8s.io/v1", namespace=ns)

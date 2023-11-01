@@ -78,16 +78,7 @@ async def get(
     kubernetes = await kr8s.asyncio.api()
     if all_namespaces:
         namespace = kr8s.ALL
-    api_resources = await kubernetes.api_resources()
     for kind in resources:
-        for api_resource in api_resources:
-            if (
-                kind == api_resource["name"]
-                or kind == api_resource["singularName"]
-                or ("shortNames" in api_resource and kind in api_resource["shortNames"])
-            ):
-                kind = api_resource["name"]
-                break
         response = await kubernetes.get(
             kind,
             namespace=namespace,

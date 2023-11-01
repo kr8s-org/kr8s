@@ -11,6 +11,7 @@ from typing import Dict, List, Tuple, Union
 
 import aiohttp
 import httpx
+from async_lru import alru_cache
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
@@ -247,11 +248,16 @@ class Api(object):
         if watch:
             params["watch"] = "true" if watch else "false"
             kwargs["stream"] = True
+        resources = await self._api_resources()
+        for resource in resources:
+            if "shortNames" in resource and kind in resource["shortNames"]:
+                kind = resource["name"]
+                break
         params = params or None
         obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
             method="GET",
-            url=kind,
+            url=obj_cls.endpoint,
             version=obj_cls.version,
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
@@ -388,6 +394,7 @@ class Api(object):
         """Get the Kubernetes API resources."""
         return await self._api_resources()
 
+    @alru_cache(ttl=30)
     async def _api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
