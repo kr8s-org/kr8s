@@ -247,11 +247,16 @@ class Api(object):
         if watch:
             params["watch"] = "true" if watch else "false"
             kwargs["stream"] = True
+        resources = await self._api_resources()
+        for resource in resources:
+            if "shortNames" in resource and kind in resource["shortNames"]:
+                kind = resource["name"]
+                break
         params = params or None
         obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
             method="GET",
-            url=kind,
+            url=obj_cls.endpoint,
             version=obj_cls.version,
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
