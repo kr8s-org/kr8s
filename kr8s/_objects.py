@@ -108,6 +108,11 @@ class APIObject:
             return self.raw.get("metadata", {}).get("namespace", self.api.namespace)
         return None
 
+    @namespace.setter
+    def namespace(self, value: str) -> None:
+        if self.namespaced:
+            self.raw["metadata"]["namespace"] = value
+
     @property
     def metadata(self) -> Box:
         """Metadata of the Kubernetes resource."""
@@ -1352,9 +1357,10 @@ async def objects_from_files(
         with open(file, "r") as f:
             for doc in yaml.safe_load_all(f):
                 if doc is not None:
-                    objects.append(
-                        object_from_spec(
-                            doc, api=api, allow_unknown_type=True, _asyncio=_asyncio
-                        )
+                    obj = object_from_spec(
+                        doc, api=api, allow_unknown_type=True, _asyncio=_asyncio
                     )
+                    if _asyncio:
+                        await obj
+                    objects.append(obj)
     return objects
