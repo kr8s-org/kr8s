@@ -532,6 +532,11 @@ class ConfigMap(APIObject):
     singular = "configmap"
     namespaced = True
 
+    @property
+    def data(self) -> Box:
+        """Data of the ConfigMap."""
+        return Box(self.raw["data"])
+
 
 class Endpoints(APIObject):
     """A Kubernetes Endpoints."""
@@ -809,6 +814,11 @@ class Secret(APIObject):
     plural = "secrets"
     singular = "secret"
     namespaced = True
+
+    @property
+    def data(self) -> Box:
+        """Data of the Secret."""
+        return Box(self.raw["data"])
 
 
 class ServiceAccount(APIObject):
