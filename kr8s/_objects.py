@@ -1259,7 +1259,7 @@ def get_class(
 
 
 def new_class(
-    kind: str, version: str = None, asyncio: bool = True, namespaced=True
+    kind: str, version: Optional[str] = None, asyncio: bool = True, namespaced=True
 ) -> Type[APIObject]:
     """Create a new APIObject subclass.
 
@@ -1272,6 +1272,8 @@ def new_class(
     Returns:
         A new APIObject subclass.
     """
+    if "." in kind:
+        kind, version = kind.split(".", 1)
     if version is None:
         version = "v1"
     return type(

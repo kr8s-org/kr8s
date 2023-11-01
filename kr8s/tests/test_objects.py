@@ -20,7 +20,7 @@ from kr8s.asyncio.objects import (
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
-from kr8s.objects import get_class, object_from_spec
+from kr8s.objects import get_class, new_class, object_from_spec
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
@@ -413,6 +413,15 @@ async def test_subclass_registration():
         namespaced = True
 
     get_class("MyResource", "foo.kr8s.org/v1alpha1")
+
+
+async def test_new_class_registration():
+    with pytest.raises(KeyError):
+        get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
+
+    MyOtherResource = new_class("MyOtherResource.foo.kr8s.org/v1alpha1")  # noqa: F841
+
+    get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
 
 
 async def test_deployment_scale(example_deployment_spec):
