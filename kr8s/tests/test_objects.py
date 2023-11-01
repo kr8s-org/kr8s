@@ -681,3 +681,21 @@ async def test_cast_to_from_pykube_ng(example_pod_spec):
     assert isinstance(pykube_pod, pykube.objects.Pod)
     assert pykube_pod.name == example_pod_spec["metadata"]["name"]
     assert pykube_pod.namespace == example_pod_spec["metadata"]["namespace"]
+
+
+async def test_configmap_data(ns):
+    [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
+    cm.namespace = ns
+    await cm.create()
+    assert "game.properties" in cm.data
+    assert cm.data.player_initial_lives == "3"
+    assert "color.good=purple" in cm.data["user-interface.properties"]
+    await cm.delete()
+
+
+async def test_secret_data(ns):
+    [secret] = await objects_from_files(CURRENT_DIR / "resources" / "secret.yaml")
+    secret.namespace = ns
+    await secret.create()
+    assert "tls.crt" in secret.data
+    await secret.delete()
