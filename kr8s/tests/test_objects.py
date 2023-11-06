@@ -376,7 +376,7 @@ async def test_patch_pod_json(example_pod_spec):
         [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
         type="json",
     )
-    assert "patched" in pod.labels
+    assert set(pod.labels) == {"patched"}
     await pod.delete()
 
 
