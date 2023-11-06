@@ -281,13 +281,17 @@ class APIObject:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
-    async def patch(self, patch, *, subresource=None) -> None:
+    async def patch(self, patch, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
-        await self._patch(patch, subresource=subresource)
+        await self._patch(patch, subresource=subresource, type=type)
 
-    async def _patch(self, patch: Dict, *, subresource=None) -> None:
+    async def _patch(self, patch: Dict, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
+        if type == "json":
+            headers = {"Content-Type": "application/json-patch+json"}
+        else:
+            headers = {"Content-Type": "application/merge-patch+json"}
         if subresource:
             url = f"{url}/{subresource}"
         try:
@@ -297,7 +301,7 @@ class APIObject:
                 url=url,
                 namespace=self.namespace,
                 data=json.dumps(patch),
-                headers={"Content-Type": "application/merge-patch+json"},
+                headers=headers,
             ) as resp:
                 self.raw = resp.json()
         except httpx.HTTPStatusError as e:

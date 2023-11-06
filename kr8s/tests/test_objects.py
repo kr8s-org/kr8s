@@ -368,6 +368,18 @@ async def test_patch_pod(example_pod_spec):
     await pod.delete()
 
 
+async def test_patch_pod_json(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    assert "patched" not in pod.labels
+    await pod.patch(
+        [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
+        type="json",
+    )
+    assert set(pod.labels) == {"patched"}
+    await pod.delete()
+
+
 async def test_all_v1_objects_represented():
     kubernetes = await kr8s.asyncio.api()
     k8s_objects = await kubernetes.api_resources()
