@@ -74,7 +74,7 @@ pod.patch(
 ```python
 from kr8s.asyncio.objects import Pod
 
-pod = Pod("my-pod", namespace="kube-system")
+pod = await Pod("my-pod", namespace="kube-system")
 await pod.patch(
     [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
     type="json",
