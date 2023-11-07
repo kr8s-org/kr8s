@@ -52,6 +52,43 @@ for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL):
 
 `````
 
+## List Ingresses (all styles)
+
+List all Ingresses in the current namespace using all styles from shorthand to explicit group and version naming.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+import kr8s
+
+# All of these are equivalent
+ings = kr8s.get("ing")                           # Short name
+ings = kr8s.get("ingress")                       # Singular
+ings = kr8s.get("ingresses")                     # Plural
+ings = kr8s.get("Ingress")                       # Title
+ings = kr8s.get("ingress.networking.k8s.io")     # Full group name
+ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
+ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+```
+````
+
+````{tab-item} Async
+```python
+import kr8s.asyncio
+
+# All of these are equivalent
+ings = await kr8s.asyncio.get("ing")                           # Short name
+ings = await kr8s.asyncio.get("ingress")                       # Singular
+ings = await kr8s.asyncio.get("ingresses")                     # Plural
+ings = await kr8s.asyncio.get("Ingress")                       # Title
+ings = await kr8s.asyncio.get("ingress.networking.k8s.io")     # Full group name
+ings = await kr8s.asyncio.get("ingress.v1.networking.k8s.io")  # Full with explicit version
+ings = await kr8s.asyncio.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+```
+````
+
+`````
 ## List Ready Pods
 
 Get a list of Pod resources that have the `Ready=True` condition.
