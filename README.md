@@ -31,7 +31,7 @@ $ pip install kr8s
 
 ## Examples
 
-See the [Examples Documentation](https://docs.kr8s.org/en/stable/examples/index.html) for a full set of examples including `asyncio` examples.
+See the [Examples Documentation](https://docs.kr8s.org/en/stable/examples/) for a full set of examples including `asyncio` examples.
 
 ### List Nodes
 
