@@ -26,7 +26,7 @@ class Api(object):
         This class is not intended to be instantiated directly. Instead, use the
         :func:`kr8s.api` function to get a singleton instance of the API.
 
-        See https://docs.kr8s.org/en/latest/client.html#client-caching.
+        See https://docs.kr8s.org/en/stable/client.html#client-caching.
 
     """
 
@@ -37,7 +37,7 @@ class Api(object):
         if not kwargs.pop("bypass_factory", False):
             raise ValueError(
                 "Use kr8s.api() to get an instance of Api. "
-                "See https://docs.kr8s.org/en/latest/client.html#client-caching."
+                "See https://docs.kr8s.org/en/stable/client.html#client-caching."
             )
 
         self._url = kwargs.get("url")

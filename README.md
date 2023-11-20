@@ -3,10 +3,10 @@
 [![Test](https://github.com/kr8s-org/kr8s/actions/workflows/test.yaml/badge.svg)](https://github.com/kr8s-org/kr8s/actions/workflows/test.yaml)
 [![Codecov](https://img.shields.io/codecov/c/gh/kr8s-org/kr8s?logo=codecov&logoColor=ffffff)](https://app.codecov.io/gh/kr8s-org/kr8s)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/kr8s-org/kr8s/main.svg)](https://results.pre-commit.ci/latest/github/kr8s-org/kr8s/main)
-[![Read the Docs](https://img.shields.io/readthedocs/kr8s?logo=readthedocs&logoColor=white)](https://kr8s.readthedocs.io/en/latest/?badge=latest)
+[![Read the Docs](https://img.shields.io/readthedocs/kr8s?logo=readthedocs&logoColor=white)](https://docs.kr8s.org/en/stable/)
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kr8s)](https://pypi.org/project/kr8s/)
-[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.26%7C1.27%7C1.28-blue)](https://docs.kr8s.org/en/latest/installation.html#supported-kubernetes-versions)
+[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.26%7C1.27%7C1.28-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
 [![PyPI - Wheel](https://img.shields.io/pypi/wheel/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
 
@@ -15,10 +15,10 @@ A simple, extensible Python client library for Kubernetes that feels familiar fo
 ## Highlights
 
 - API inspired by `kubectl` to reduce developer learning curve.
-- [Sensible defaults](https://docs.kr8s.org/en/latest/authentication.html) to reduce boiler plate.
+- [Sensible defaults](https://docs.kr8s.org/en/stable/authentication.html) to reduce boiler plate.
 - No swagger generated code, human readable code only.
-- Also has an [asynchronous API](https://docs.kr8s.org/en/latest/asyncio.html) that can be used with `asyncio` and `trio`.
-- [Client caching](https://docs.kr8s.org/en/latest/client.html#client-caching) to reduce passing API objects around.
+- Also has an [asynchronous API](https://docs.kr8s.org/en/stable/asyncio.html) that can be used with `asyncio` and `trio`.
+- [Client caching](https://docs.kr8s.org/en/stable/client.html#client-caching) to reduce passing API objects around.
 - Batteries included by providing useful utilities and methods inspired by `kubectl`.
 
 ## Quickstart
@@ -31,7 +31,7 @@ $ pip install kr8s
 
 ## Examples
 
-See the [Examples Documentation](https://docs.kr8s.org/en/latest/examples/index.html) for a full set of examples including `asyncio` examples.
+See the [Examples Documentation](https://docs.kr8s.org/en/stable/examples/) for a full set of examples including `asyncio` examples.
 
 ### List Nodes
 
