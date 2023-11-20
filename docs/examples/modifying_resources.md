@@ -52,6 +52,38 @@ await pod.label({"foo": "bar"})
 
 `````
 
+## Replace all Pod labels
+
+Using the JSON 6902 style patching replace all Pod labels with `{"patched": "true"}`.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+from kr8s.objects import Pod
+
+pod = Pod("my-pod", namespace="kube-system")
+pod.patch(
+    [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
+    type="json",
+)
+```
+````
+
+````{tab-item} Async
+```python
+from kr8s.asyncio.objects import Pod
+
+pod = await Pod("my-pod", namespace="kube-system")
+await pod.patch(
+    [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
+    type="json",
+)
+```
+````
+
+`````
+
 ## Cordon a Node
 
 Cordon a Node to mark it as unschedulable.

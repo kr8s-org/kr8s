@@ -4,3 +4,7 @@ class NotFoundError(Exception):
 
 class ConnectionClosedError(Exception):
     """A connection has been closed."""
+
+
+class APITimeoutError(Exception):
+    """A timeout has occurred while waiting for a response from the Kubernetes API server."""

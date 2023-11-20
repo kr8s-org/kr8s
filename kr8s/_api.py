@@ -14,6 +14,7 @@ import httpx
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
+from ._exceptions import APITimeoutError
 
 ALL = "all"
 
@@ -25,7 +26,7 @@ class Api(object):
         This class is not intended to be instantiated directly. Instead, use the
         :func:`kr8s.api` function to get a singleton instance of the API.
 
-        See https://docs.kr8s.org/en/latest/client.html#client-caching.
+        See https://docs.kr8s.org/en/stable/client.html#client-caching.
 
     """
 
@@ -36,7 +37,7 @@ class Api(object):
         if not kwargs.pop("bypass_factory", False):
             raise ValueError(
                 "Use kr8s.api() to get an instance of Api. "
-                "See https://docs.kr8s.org/en/latest/client.html#client-caching."
+                "See https://docs.kr8s.org/en/stable/client.html#client-caching."
             )
 
         self._url = kwargs.get("url")
@@ -153,20 +154,10 @@ class Api(object):
                     continue
                 else:
                     raise
-            except RuntimeError as e:
-                # If the client is reused on a different event loop, we need to create
-                # a new session.
-                if any(
-                    [
-                        "Event loop is closed" in str(e),
-                        "bound to a different event loop" in str(e),
-                        "attached to a different loop" in str(e),
-                    ]
-                ):
-                    await self._create_session()
-                    continue
-                else:
-                    raise
+            except httpx.ReadTimeout as e:
+                raise APITimeoutError(
+                    "Timeout while waiting for the Kubernetes API server"
+                ) from e
             break
 
     @contextlib.asynccontextmanager
@@ -256,11 +247,16 @@ class Api(object):
         if watch:
             params["watch"] = "true" if watch else "false"
             kwargs["stream"] = True
+        resources = await self._api_resources()
+        for resource in resources:
+            if "shortNames" in resource and kind in resource["shortNames"]:
+                kind = resource["name"]
+                break
         params = params or None
         obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
             method="GET",
-            url=kind,
+            url=obj_cls.endpoint,
             version=obj_cls.version,
             namespace=namespace if obj_cls.namespaced else None,
             params=params,
@@ -387,6 +383,7 @@ class Api(object):
             field_selector=field_selector,
             params={"resourceVersion": since} if since else None,
             watch=True,
+            timeout=None,
         ) as (obj_cls, response):
             async for line in response.aiter_lines():
                 event = json.loads(line)

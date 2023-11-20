@@ -21,7 +21,7 @@ from kr8s.asyncio.objects import (
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
-from kr8s.objects import get_class, object_from_spec
+from kr8s.objects import get_class, new_class, object_from_spec
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
@@ -224,6 +224,21 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+def test_pod_get_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    with pytest.raises(kr8s.NotFoundError):
+        SyncPod.get(f"{pod.name}-foo", namespace=pod.namespace, timeout=0.1)
+    pod2 = SyncPod.get(pod.name, namespace=pod.namespace)
+    assert pod2.name == pod.name
+    assert pod2.namespace == pod.namespace
+    pod.delete()
+    while pod.exists():
+        time.sleep(0.1)
+    with pytest.raises(kr8s.NotFoundError):
+        pod2.delete()
+
+
 async def test_pod_from_name(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
@@ -354,6 +369,18 @@ async def test_patch_pod(example_pod_spec):
     await pod.delete()
 
 
+async def test_patch_pod_json(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    assert "patched" not in pod.labels
+    await pod.patch(
+        [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
+        type="json",
+    )
+    assert set(pod.labels) == {"patched"}
+    await pod.delete()
+
+
 async def test_all_v1_objects_represented():
     kubernetes = await kr8s.asyncio.api()
     k8s_objects = await kubernetes.api_resources()
@@ -401,6 +428,15 @@ async def test_subclass_registration():
     get_class("MyResource", "foo.kr8s.org/v1alpha1")
 
 
+async def test_new_class_registration():
+    with pytest.raises(KeyError):
+        get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
+
+    MyOtherResource = new_class("MyOtherResource.foo.kr8s.org/v1alpha1")  # noqa: F841
+
+    get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
+
+
 async def test_deployment_scale(example_deployment_spec):
     deployment = await Deployment(example_deployment_spec)
     await deployment.create()
@@ -440,7 +476,7 @@ async def test_pod_logs(example_pod_spec):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    log = await pod.logs(container="pause")
+    log = "\n".join([line async for line in pod.logs(container="pause")])
     assert isinstance(log, str)
     await pod.delete()
 
@@ -677,3 +713,21 @@ async def test_pod_exec(example_pod_spec):
     async with pod.exec(["date"]).run() as ex:
         assert str(datetime.datetime.now().year) in ex.stdout
     await pod.delete()
+
+
+async def test_configmap_data(ns):
+    [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
+    cm.namespace = ns
+    await cm.create()
+    assert "game.properties" in cm.data
+    assert cm.data.player_initial_lives == "3"
+    assert "color.good=purple" in cm.data["user-interface.properties"]
+    await cm.delete()
+
+
+async def test_secret_data(ns):
+    [secret] = await objects_from_files(CURRENT_DIR / "resources" / "secret.yaml")
+    secret.namespace = ns
+    await secret.create()
+    assert "tls.crt" in secret.data
+    await secret.delete()
