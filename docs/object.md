@@ -71,6 +71,10 @@ logs = [line for line in pod.logs()]
 # Check if Pod containers are ready
 pod.ready()
 # True
+
+# Exec a command in a Pod
+pod.exec(["uptime"])
+# CompletedExec(args=['uptime'], stdout=..., stderr=..., returncode=0)
 ```
 
 ## Client references
