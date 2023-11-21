@@ -738,6 +738,9 @@ async def test_pod_exec_error(ubuntu_pod):
     assert b"invalid date" in ex.stderr
     assert ex.returncode == 1
 
+    with pytest.raises(ExecError):
+        ex.check_returncode()
+
 
 async def test_pod_exec_to_file(ubuntu_pod):
     with tempfile.TemporaryFile(mode="w+b") as tmp:
