@@ -8,3 +8,7 @@ class ConnectionClosedError(Exception):
 
 class APITimeoutError(Exception):
     """A timeout has occurred while waiting for a response from the Kubernetes API server."""
+
+
+class ExecError(Exception):
+    """Internal error in the exec protocol."""

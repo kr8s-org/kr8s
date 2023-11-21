@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, BinaryIO, List, Union
 
 import aiohttp
 
+from kr8s._exceptions import ExecError
+
 if TYPE_CHECKING:
     from kr8s._objects import APIObject
 
@@ -16,10 +18,6 @@ STDOUT_CHANNEL = 1
 STDERR_CHANNEL = 2
 ERROR_CHANNEL = 3
 RESIZE_CHANNEL = 4
-
-
-class ExecError(Exception):
-    """Internal error in the exec protocol."""
 
 
 class Exec:
@@ -86,9 +84,6 @@ class Exec:
                                 self._stderr.write(message)
                         elif channel == ERROR_CHANNEL:
                             self.returncode = 1
-                            self.stderr += message
-                            if self._stderr:
-                                self._stderr.write(message)
                             if self.check:
                                 raise ExecError(message)
                         else:

@@ -1,9 +1,9 @@
+import sys
 from typing import List
 
 import typer
 from rich.console import Console
 
-import kr8s
 from kr8s.asyncio.objects import Pod
 
 console = Console()
@@ -29,5 +29,10 @@ async def kexec(
 ):
     """Execute a command in a container."""
     pod = await Pod.get(resource, namespace=namespace)
-    console.print(pod.name)
-    await pod.exec(command, container=container)
+    await pod.exec(
+        command,
+        container=container,
+        stdout=sys.stdout.buffer,
+        stderr=sys.stderr.buffer,
+        check=False,
+    )
