@@ -8,6 +8,7 @@ import typer
 from ._api_resources import api_resources
 from ._create import create
 from ._delete import delete
+from ._exec import kexec
 from ._get import get
 from ._version import version
 from ._wait import wait
@@ -21,10 +22,13 @@ def _typer_async(f):
     return wrapper
 
 
-def register(app, func):
+def register(app, func, alias=None):
     if asyncio.iscoroutinefunction(func):
         func = _typer_async(func)
-    app.command()(func)
+    if alias is not None:
+        app.command(alias)(func)
+    else:
+        app.command()(func)
 
 
 app = typer.Typer()
@@ -34,6 +38,7 @@ register(app, delete)
 register(app, get)
 register(app, version)
 register(app, wait)
+register(app, kexec, "exec")
 
 
 def go():

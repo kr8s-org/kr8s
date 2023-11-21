@@ -1,13 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import datetime
 import pathlib
+import tempfile
 import time
 
 import httpx
 import pytest
 
 import kr8s
+from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,
     Deployment,
@@ -63,6 +66,19 @@ async def nginx_pod(k8s_cluster, example_pod_spec, ns):
         await pod.delete()
     except kr8s.NotFoundError:
         pass
+
+
+@pytest.fixture
+async def ubuntu_pod(k8s_cluster, example_pod_spec, ns):
+    example_pod_spec["spec"]["containers"][0]["name"] = "ubuntu"
+    example_pod_spec["spec"]["containers"][0]["image"] = "ubuntu:latest"
+    example_pod_spec["spec"]["containers"][0]["command"] = ["sleep", "3600"]
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    yield pod
+    await pod.delete()
 
 
 @pytest.fixture
@@ -702,6 +718,47 @@ async def test_cast_to_from_pykube_ng(example_pod_spec):
     assert isinstance(pykube_pod, pykube.objects.Pod)
     assert pykube_pod.name == example_pod_spec["metadata"]["name"]
     assert pykube_pod.namespace == example_pod_spec["metadata"]["namespace"]
+
+
+async def test_pod_exec(ubuntu_pod):
+    ex = await ubuntu_pod.exec(["date"])
+    assert isinstance(ex, CompletedExec)
+    assert str(datetime.datetime.now().year) in ex.stdout.decode()
+    assert ex.args == ["date"]
+    assert ex.stderr == b""
+    assert ex.returncode == 0
+
+
+async def test_pod_exec_error(ubuntu_pod):
+    with pytest.raises(ExecError):
+        await ubuntu_pod.exec(["date", "foo"])
+
+    ex = await ubuntu_pod.exec(["date", "foo"], check=False)
+    assert ex.args == ["date", "foo"]
+    assert b"invalid date" in ex.stderr
+    assert ex.returncode == 1
+
+    with pytest.raises(ExecError):
+        ex.check_returncode()
+
+
+async def test_pod_exec_to_file(ubuntu_pod):
+    with tempfile.TemporaryFile(mode="w+b") as tmp:
+        await ubuntu_pod.exec(["date"], stdout=tmp)
+        tmp.seek(0)
+        assert str(datetime.datetime.now().year) in tmp.read().decode()
+
+    with tempfile.TemporaryFile(mode="w+b") as tmp:
+        with pytest.raises(ExecError):
+            await ubuntu_pod.exec(["date", "foo"], stderr=tmp)
+        tmp.seek(0)
+        assert b"invalid date" in tmp.read()
+
+
+@pytest.mark.skip("Closing stdin not supported so hangs forever")
+async def test_pod_exec_stdin(ubuntu_pod):
+    ex = await ubuntu_pod.exec(["cat"], stdin="foo")
+    assert b"foo" in ex.stdout
 
 
 async def test_configmap_data(ns):
