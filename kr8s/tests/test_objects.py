@@ -744,9 +744,10 @@ async def test_pod_exec_error(ubuntu_pod):
 
 async def test_pod_exec_to_file(ubuntu_pod):
     with tempfile.TemporaryFile(mode="w+b") as tmp:
-        await ubuntu_pod.exec(["date"], stdout=tmp)
+        exc = await ubuntu_pod.exec(["date"], stdout=tmp, capture_output=False)
         tmp.seek(0)
         assert str(datetime.datetime.now().year) in tmp.read().decode()
+        assert exc.stdout == b""
 
     with tempfile.TemporaryFile(mode="w+b") as tmp:
         with pytest.raises(ExecError):

@@ -32,6 +32,7 @@ class Exec:
         stdout: Union(str | BinaryIO) = None,
         stderr: Union(str | BinaryIO) = None,
         check: bool = True,
+        capture_output: bool = True,
     ) -> None:
         self._resource = resource
         self._container = container
@@ -39,6 +40,7 @@ class Exec:
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
+        self._capture_output = capture_output
 
         self.args = command
         self.stdout = b""
@@ -57,8 +59,8 @@ class Exec:
             params={
                 "command": self.args,
                 "container": self._container or self._resource.spec.containers[0].name,
-                "stdout": "true",
-                "stderr": "true",
+                "stdout": "true" if self._stdout or self._capture_output else "false",
+                "stderr": "true" if self._stderr or self._capture_output else "false",
                 "stdin": "true" if self._stdin is not None else "false",
             },
         ) as ws:
@@ -75,11 +77,13 @@ class Exec:
                     channel, message = int(message.data[0]), message.data[1:]
                     if message:
                         if channel == STDOUT_CHANNEL:
-                            self.stdout += message
+                            if self._capture_output:
+                                self.stdout += message
                             if self._stdout:
                                 self._stdout.write(message)
                         elif channel == STDERR_CHANNEL:
-                            self.stderr += message
+                            if self._capture_output:
+                                self.stderr += message
                             if self._stderr:
                                 self._stderr.write(message)
                         elif channel == ERROR_CHANNEL:
