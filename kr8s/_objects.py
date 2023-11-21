@@ -8,7 +8,7 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, AsyncGenerator, Dict, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Type, Union, BinaryIO
 
 import anyio
 import httpx
@@ -21,7 +21,7 @@ import kr8s.asyncio
 from kr8s._api import Api
 from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
-from kr8s._exec import Exec
+from kr8s._exec import Exec, CompletedExec
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -771,15 +771,40 @@ class Pod(APIObject):
             return AsyncPortForward(self, remote_port, local_port)
         return SyncPortForward(self, remote_port, local_port)
 
-    def exec(
+    async def _exec(
         self,
         command: List[str],
         *,
         container: str = None,
-        stdout: bool = True,
-        stderr: bool = True,
-    ) -> None:
-        """Execute a command in a container.
+        stdin: Union(str | BinaryIO) = None,
+        stdout: Union(str | BinaryIO) = None,
+        stderr: Union(str | BinaryIO) = None,
+        check: bool = True,
+    ):
+        ex = Exec(
+            self,
+            command,
+            container=container,
+            stdout=stdout,
+            stderr=stderr,
+            stdin=stdin,
+            check=check,
+        )
+        async with ex.run() as process:
+            await process.wait()
+            return process.as_completed()
+
+    async def exec(
+        self,
+        command: List[str],
+        *,
+        container: str = None,
+        stdin: Union(str | BinaryIO) = None,
+        stdout: Union(str | BinaryIO) = None,
+        stderr: Union(str | BinaryIO) = None,
+        check: bool = True,
+    ):
+        """Run a command in a container and wait until it completes.
 
         Args:
             command: Command to execute.
@@ -787,14 +812,15 @@ class Pod(APIObject):
             stdin: If True, pass stdin to the container.
             stdout: If True, capture stdout from the container.
             stderr: If True, capture stderr from the container.
-            tty: If True, allocate a pseudo-TTY for the container.
+            check: If True, raise an exception if the command fails.
         """
-        return Exec(
-            self,
+        return await self._exec(
             command,
             container=container,
+            stdin=stdin,
             stdout=stdout,
             stderr=stderr,
+            check=check,
         )
 
 
