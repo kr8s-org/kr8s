@@ -776,10 +776,11 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: str = None,
-        stdin: Union(str | BinaryIO) = None,
-        stdout: Union(str | BinaryIO) = None,
-        stderr: Union(str | BinaryIO) = None,
+        stdin: Union(str | bytes | BinaryIO) = None,
+        stdout: BinaryIO = None,
+        stderr: BinaryIO = None,
         check: bool = True,
+        capture_output: bool = True,
     ):
         ex = Exec(
             self,
@@ -789,6 +790,7 @@ class Pod(APIObject):
             stderr=stderr,
             stdin=stdin,
             check=check,
+            capture_output=capture_output,
         )
         async with ex.run() as process:
             await process.wait()
@@ -799,20 +801,22 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: str = None,
-        stdin: Union(str | BinaryIO) = None,
-        stdout: Union(str | BinaryIO) = None,
-        stderr: Union(str | BinaryIO) = None,
+        stdin: Union(str | bytes | BinaryIO) = None,
+        stdout: BinaryIO = None,
+        stderr: BinaryIO = None,
         check: bool = True,
+        capture_output: bool = True,
     ):
         """Run a command in a container and wait until it completes.
 
         Args:
             command: Command to execute.
             container: Container to execute the command in.
-            stdin: If True, pass stdin to the container.
-            stdout: If True, capture stdout from the container.
-            stderr: If True, capture stderr from the container.
+            stdin: If set, read stdin to the container.
+            stdout: If set, write stdout to the provided writable stream object.
+            stderr: If set, write stderr to the provided writable stream object.
             check: If True, raise an exception if the command fails.
+            capture_output: If True, store stdout and stderr from the container in an attribute.
         """
         return await self._exec(
             command,
@@ -821,6 +825,7 @@ class Pod(APIObject):
             stdout=stdout,
             stderr=stderr,
             check=check,
+            capture_output=capture_output,
         )
 
 
