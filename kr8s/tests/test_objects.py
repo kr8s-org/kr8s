@@ -10,6 +10,7 @@ import httpx
 import pytest
 
 import kr8s
+from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,
     Deployment,
@@ -23,7 +24,6 @@ from kr8s.asyncio.objects import (
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import get_class, new_class, object_from_spec
-from kr8s._exec import CompletedExec, ExecError
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
@@ -741,13 +741,13 @@ async def test_pod_exec_error(ubuntu_pod):
 
 async def test_pod_exec_to_file(ubuntu_pod):
     with tempfile.TemporaryFile(mode="w+b") as tmp:
-        ex = await ubuntu_pod.exec(["date"], stdout=tmp)
+        await ubuntu_pod.exec(["date"], stdout=tmp)
         tmp.seek(0)
         assert str(datetime.datetime.now().year) in tmp.read().decode()
 
     with tempfile.TemporaryFile(mode="w+b") as tmp:
         with pytest.raises(ExecError):
-            ex = await ubuntu_pod.exec(["date", "foo"], stderr=tmp)
+            await ubuntu_pod.exec(["date", "foo"], stderr=tmp)
         tmp.seek(0)
         assert b"invalid date" in tmp.read()
 

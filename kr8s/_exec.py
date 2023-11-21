@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
-from dataclasses import dataclass
-import sys
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, List, Union
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, BinaryIO, List, Union
 
 import aiohttp
 

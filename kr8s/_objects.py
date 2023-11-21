@@ -8,7 +8,7 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, AsyncGenerator, Dict, List, Optional, Type, Union, BinaryIO
+from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
 
 import anyio
 import httpx
@@ -21,7 +21,7 @@ import kr8s.asyncio
 from kr8s._api import Api
 from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
 from kr8s._exceptions import NotFoundError
-from kr8s._exec import Exec, CompletedExec
+from kr8s._exec import Exec
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
