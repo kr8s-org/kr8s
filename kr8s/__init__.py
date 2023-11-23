@@ -43,9 +43,53 @@ class Api(_AsyncApi):
     __doc__ = _AsyncApi.__doc__
 
 
+def get(*args, **kwargs):
+    """Get a resource by name.
+
+    Parameters
+    ----------
+    kind : str
+        The kind of resource to get
+    *names : List[str]
+        The names of the resources to get
+    namespace : str, optional
+        The namespace to get the resource from
+    label_selector : Union[str, Dict], optional
+        The label selector to filter the resources by
+    field_selector : Union[str, Dict], optional
+        The field selector to filter the resources by
+    as_object : object, optional
+        The object to populate with the resource data
+    api : Api, optional
+        The api to use to get the resource
+
+    Returns
+    -------
+    object
+        The populated object
+
+    Raises
+    ------
+    ValueError
+        If the resource is not found
+
+    Examples
+    --------
+
+        >>> import kr8s
+        >>> # All of these are equivalent
+        >>> ings = kr8s.get("ing")                           # Short name
+        >>> ings = kr8s.get("ingress")                       # Singular
+        >>> ings = kr8s.get("ingresses")                     # Plural
+        >>> ings = kr8s.get("Ingress")                       # Title
+        >>> ings = kr8s.get("ingress.networking.k8s.io")     # Full group name
+        >>> ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
+        >>> ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+    """
+    return _run_sync(partial(_get, _asyncio=False))(*args, **kwargs)
+
+
 api = _run_sync(partial(_api, _asyncio=False))
-get = _run_sync(partial(_get, _asyncio=False))
-update_wrapper(get, _get)
 version = _run_sync(partial(_k8s_version, _asyncio=False))
 update_wrapper(version, _k8s_version)
 watch = _run_sync(partial(_watch, _asyncio=False))

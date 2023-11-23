@@ -2,7 +2,7 @@
 
 ## Create a Pod
 
-Create a new Pod.
+Create a new {py:class}`Pod <kr8s.objects.Pod>`.
 
 `````{tab-set}
 
@@ -48,7 +48,7 @@ await pod.create()
 
 ## Create a Secret
 
-Create a Secret with several keys.
+Create a {py:class}`Secret <kr8s.objects.Secret>` with several keys.
 
 `````{tab-set}
 
