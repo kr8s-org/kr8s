@@ -2,7 +2,7 @@
 
 ## Reading Pod logs
 
-Print out the logs from a Pod.
+Print out the logs from a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.logs() <kr8s.objects.Pod.logs()>`.
 
 `````{tab-set}
 
@@ -31,7 +31,7 @@ async for line in pod.logs():
 
 ## Follow Pod logs until a timeout
 
-Print out all the logs from a Pod and keep following until a timeout or the Pod is deleted.
+Print out all the logs from a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.logs() <kr8s.objects.Pod.logs()>` and keep following until a timeout or the Pod is deleted.
 
 `````{tab-set}
 

@@ -2,7 +2,7 @@
 
 ## Exec a command
 
-Exec a command in a Pod.
+Exec a command in a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.exec() <kr8s.objects.Pod.exec()>`.
 
 `````{tab-set}
 
@@ -34,7 +34,7 @@ print(command.stdout.decode())
 
 ## Exec a command and redirect stdout/stderr
 
-Exec a command in a Pod and write the output to `sys.stdout` and `sys.stderr`.
+Run a command in a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.exec() <kr8s.objects.Pod.exec()>` and write the output to `sys.stdout` and `sys.stderr`.
 
 
 `````{tab-set}

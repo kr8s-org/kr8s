@@ -395,7 +395,23 @@ class APIObject:
         await self._patch({"metadata": {"annotations": annotations}})
 
     async def label(self, labels: dict = None, **kwargs) -> None:
-        """Label this object in Kubernetes."""
+        """Add labels to this object in Kubernetes.
+
+        Labels can be passed as a dictionary or as keyword arguments.
+
+        Args:
+            labels:
+                A dictionary of labels to set.
+            **kwargs:
+                Labels to set.
+
+        Example:
+            >>> from kr8s.objects import Deployment
+            >>> deployment = Deployment.get("my-deployment")
+            >>> # Both of these are equivalent
+            >>> deployment.label({"app": "my-app"})
+            >>> deployment.label(app="my-app")
+        """
         if labels is None:
             labels = kwargs
         if not labels:
@@ -609,9 +625,17 @@ class Node(APIObject):
         return False
 
     async def cordon(self) -> None:
+        """Cordon the node.
+
+        This will mark the node as unschedulable.
+        """
         await self._patch({"spec": {"unschedulable": True}})
 
     async def uncordon(self) -> None:
+        """Uncordon the node.
+
+        This will mark the node as schedulable.
+        """
         await self._patch({"spec": {"unschedulable": False}})
 
 
@@ -678,16 +702,26 @@ class Pod(APIObject):
         """Streams logs from a Pod.
 
         Args:
-            container: The container to get logs from. Defaults to the first container in the Pod.
-            pretty: If True, return pretty logs. Defaults to False.
-            previous: If True, return previous terminated container logs. Defaults to False.
-            since_seconds: If set, return logs since this many seconds ago.
-            since_time: If set, return logs since this time.
-            timestamps: If True, prepend each log line with a timestamp. Defaults to False.
-            tail_lines: If set, return this many lines from the end of the logs.
-            limit_bytes: If set, return this many bytes from the end of the logs.
-            follow: If True, follow the logs until the timeout is reached. Defaults to False.
-            timeout: If following timeout after this many seconds. Set to None to disable timeout.
+            container:
+                The container to get logs from. Defaults to the first container in the Pod.
+            pretty:
+                If True, return pretty logs. Defaults to False.
+            previous:
+                If True, return previous terminated container logs. Defaults to False.
+            since_seconds:
+                If set, return logs since this many seconds ago.
+            since_time:
+                If set, return logs since this time.
+            timestamps:
+                If True, prepend each log line with a timestamp. Defaults to False.
+            tail_lines:
+                If set, return this many lines from the end of the logs.
+            limit_bytes:
+                If set, return this many bytes from the end of the logs.
+            follow:
+                If True, follow the logs until the timeout is reached. Defaults to False.
+            timeout:
+                If following timeout after this many seconds. Set to None to disable timeout.
 
         Returns:
             An async generator yielding log lines.
@@ -809,14 +843,33 @@ class Pod(APIObject):
     ):
         """Run a command in a container and wait until it completes.
 
+        Behaves like :func:`subprocess.run`.
+
         Args:
-            command: Command to execute.
-            container: Container to execute the command in.
-            stdin: If set, read stdin to the container.
-            stdout: If set, write stdout to the provided writable stream object.
-            stderr: If set, write stderr to the provided writable stream object.
-            check: If True, raise an exception if the command fails.
-            capture_output: If True, store stdout and stderr from the container in an attribute.
+            command:
+                Command to execute.
+            container:
+                Container to execute the command in.
+            stdin:
+                If set, read stdin to the container.
+            stdout:
+                If set, write stdout to the provided writable stream object.
+            stderr:
+                If set, write stderr to the provided writable stream object.
+            check:
+                If True, raise an exception if the command fails.
+            capture_output:
+                If True, store stdout and stderr from the container in an attribute.
+
+        Returns:
+            A :class:`kr8s._exec.CompletedExec` object.
+
+        Example:
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> ex = await pod.exec(["ls", "-l"])
+            >>> print(ex.stdout)
+            >>> print(ex.stderr)
         """
         return await self._exec(
             command,

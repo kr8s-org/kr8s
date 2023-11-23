@@ -1,6 +1,6 @@
 # Labelling Operator
 
-Build an operator that periodically reconciles all Deployments and adds a label to any with a certain annotation.
+Build an operator that periodically reconciles all {py:class}`Deployments <kr8s.objects.Deployment>` and adds a label to any with a certain annotation.
 
 ```{warning}
 While you can build operators with `kr8s` we would recommend folks look at using [kopf](https://kopf.readthedocs.io/en/stable/) for building anything more complex than the below example.
@@ -9,6 +9,11 @@ While you can build operators with `kr8s` we would recommend folks look at using
 ## Controller
 
 First we need to create a Python script called `controller.py` containing the controller code that uses `kr8s`.
+
+This script runs a [reconciliation loop](https://developers.redhat.com/articles/2021/06/22/kubernetes-operators-101-part-2-how-operators-work)
+that periodically lists all {py:class}`Deployments <kr8s.objects.Deployment>` with {py:func}`kr8s.get()`.
+It then checks the {py:func}`Deployment.annotations <kr8s.objects.Deployment.annotations>` property and if it has the annotation `pykube-test-operator` it adds the label `foo=bar` using
+{py:func}`Deployment.label() <kr8s.objects.Deployment.label()>`.
 
 `````{tab-set}
 
