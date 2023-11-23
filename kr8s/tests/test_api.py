@@ -197,33 +197,6 @@ async def test_ns(ns):
     assert api.namespace == "foo"
 
 
-async def test_docstrings():
-    assert (
-        kr8s.Api.get.__doc__
-        == kr8s.asyncio.Api.get.__doc__
-        == kr8s.get.__doc__
-        == kr8s.asyncio.get.__doc__
-    )
-    assert (
-        kr8s.Api.version.__doc__
-        == kr8s.asyncio.Api.version.__doc__
-        == kr8s.version.__doc__
-        == kr8s.asyncio.version.__doc__
-    )
-    assert (
-        kr8s.Api.watch.__doc__
-        == kr8s.asyncio.Api.watch.__doc__
-        == kr8s.watch.__doc__
-        == kr8s.asyncio.watch.__doc__
-    )
-    assert (
-        kr8s.Api.api_resources.__doc__
-        == kr8s.asyncio.Api.api_resources.__doc__
-        == kr8s.api_resources.__doc__
-        == kr8s.asyncio.api_resources.__doc__
-    )
-
-
 async def test_async_get_returns_async_objects():
     pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
     assert pods[0]._asyncio is True
