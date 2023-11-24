@@ -1,6 +1,6 @@
 # Object API
 
-Responses from the Client API are usually objects from [](#kr8s.objects) which represent Kubernetes resources.
+Responses from the Client API are usually objects from {py:func}`kr8s.objects <kr8s.objects>` which represent Kubernetes resources.
 
 ```python
 import kr8s
@@ -11,18 +11,18 @@ print(type(pod))
 # <class 'kr8s.objects.Pod'>
 ```
 
-In the above example the `kr8s.get` function returns a list of [](#kr8s.objects.Pod) objects.
+In the above example the {py:func}`kr8s.get()` function returns a list of [](#kr8s.objects.Pod) objects.
 
 ## Attributes
 
-These objects contain the raw response at [`.raw`](#kr8s.objects.APIObject.raw).
+These objects contain the raw response at {py:func}`.raw <kr8s.objects.APIObject.raw>`.
 
 ```python
 print(pod.raw)
 # {'metadata': ..., 'spec': ..., 'status': ...}
 ```
 
-There are also a selection of other properties to make it convenient to access sections of this raw data.
+There are also a selection of other properties including {py:func}`.name <kr8s.objects.APIObject.name>`, {py:func}`.namespace <kr8s.objects.APIObject.namespace>`, {py:func}`.metadata <kr8s.objects.APIObject.metadata>`, {py:func}`.labels <kr8s.objects.APIObject.labels>`, {py:func}`.annotations <kr8s.objects.APIObject.annotations>` and more to make it convenient to access sections of this raw data.
 
 ```python
 print(pod.name)
@@ -45,7 +45,7 @@ print(pod.annotations)
 
 ## Methods
 
-Objects also have helper methods for interacting with Kubernetes resources.
+Objects also have helper methods like {py:func}`.patch() <kr8s.objects.APIObject.patch()>`, {py:func}`.exists() <kr8s.objects.APIObject.exists()>`, {py:func}`.refresh() <kr8s.objects.APIObject.refresh()>` and {py:func}`.delete() <kr8s.objects.APIObject.delete()>` for interacting with Kubernetes resources.
 
 ```python
 # Patch the Pod
@@ -62,7 +62,7 @@ pod.refresh()
 pod.delete()
 ```
 
-Some objects also have additional methods that are unique to them.
+Some objects also have additional methods that are unique to them. For example {py:class}`Pod <kr8s.objects.Pod>` has {py:func}`.logs() <kr8s.objects.Pod.logs()>`, {py:func}`.ready() <kr8s.objects.Pod.ready()>` and {py:func}`.exec() <kr8s.objects.Pod.exec()>`.
 
 ```python
 # Get Pod logs
@@ -81,7 +81,9 @@ pod.exec(["uptime"])
 
 All objects returned by `kr8s` will have a reference to the API client that created it at `Object.api`.
 
-You can also create objects yourself from a spec or get existing ones by name. Methods on objects that require communicating with Kubernetes will create an API client or retrieve one from the cache automatically.
+You can also create objects yourself from a spec or get existing ones by name with {py:func}`.create() <kr8s.objects.APIObject.create()>`. 
+
+Methods on objects that require communicating with Kubernetes will create an API client or retrieve one from the cache automatically.
 
 ```python
 # Create a new Pod
@@ -101,7 +103,7 @@ pod = Pod({
 pod.create()
 ```
 
-Get a Pod reference by name.
+Get a {py:class}`Pod <kr8s.objects.Pod>` reference by name with {py:func}`.get() <kr8s.objects.APIObject.get()>`.
 
 ```python
 from kr8s.object import Pod
