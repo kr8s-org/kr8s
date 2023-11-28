@@ -113,7 +113,14 @@ class PortForward:
         self._bg_task = None
 
     async def run_forever(self) -> None:
-        """Run the port forward forever."""
+        """Run the port forward forever.
+
+        Example:
+            >>> pf = pod.portforward(remote_port=8888, local_port=8889)
+            >>> # or
+            >>> pf = PortForward(pod, remote_port=8888, local_port=8889)
+            >>> await pf.run_forever()
+        """
         async with self:
             await self.server.serve_forever()
 
