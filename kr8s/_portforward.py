@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import random
 import socket
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, BinaryIO
 
 import aiohttp
@@ -61,11 +61,12 @@ class PortForward:
     def __init__(
         self, resource: APIObject, remote_port: int, local_port: int = None
     ) -> None:
-        if sniffio.current_async_library() != "asyncio":
-            raise RuntimeError(
-                "PortForward only works with asyncio, "
-                "see https://github.com/kr8s-org/kr8s/issues/104"
-            )
+        with suppress(sniffio.AsyncLibraryNotFoundError):
+            if sniffio.current_async_library() != "asyncio":
+                raise RuntimeError(
+                    "PortForward only works with asyncio, "
+                    "see https://github.com/kr8s-org/kr8s/issues/104"
+                )
         self.server = None
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
@@ -101,7 +102,7 @@ class PortForward:
                 self.local_port = port
                 await self._bg_future
 
-        self._bg_task = asyncio.create_task(f())
+        self._bg_task = self._loop.create_task(f())
         while self.local_port == 0:
             await asyncio.sleep(0.1)
         return self.local_port
@@ -110,6 +111,18 @@ class PortForward:
         """Stop the background task."""
         self._bg_future.set_result(None)
         self._bg_task = None
+
+    async def run_forever(self) -> None:
+        """Run the port forward forever.
+
+        Example:
+            >>> pf = pod.portforward(remote_port=8888, local_port=8889)
+            >>> # or
+            >>> pf = PortForward(pod, remote_port=8888, local_port=8889)
+            >>> await pf.run_forever()
+        """
+        async with self:
+            await self.server.serve_forever()
 
     @asynccontextmanager
     async def _run(self) -> int:
