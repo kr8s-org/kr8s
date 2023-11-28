@@ -71,10 +71,6 @@ await pod.exec(["ls", "/"], stdout=sys.stdout.buffer, stderr=sys.stderr.buffer, 
 
 Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.port_forward() <kr8s.objects.Pod.port_forward()>` and communicate with the application on the other side.
 
-```{tip}
-This also works with {py:class}`Service <kr8s.objects.Service>` objects.
-```
-
 `````{tab-set}
 
 ````{tab-item} Sync
@@ -107,13 +103,13 @@ async with pod.portforward(remote_port=1234) as local_port, httpx.AsyncClient() 
 
 `````
 
-## Open a port forward permanently
-
-Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.port_forward() <kr8s.objects.Pod.port_forward()>` and block. This is useful when you need to access the port forward from another process, like you would with `kubectl`.
-
 ```{tip}
 This also works with {py:class}`Service <kr8s.objects.Service>` objects.
 ```
+
+## Open a port forward permanently
+
+Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.port_forward() <kr8s.objects.Pod.port_forward()>` and block. This is useful when you need to access the port forward from another process, like you would with `kubectl`.
 
 `````{tab-set}
 
@@ -136,3 +132,7 @@ await pod.portforward(1234, local_port=5678).run_forever()
 ````
 
 `````
+
+```{tip}
+This also works with {py:class}`Service <kr8s.objects.Service>` objects.
+```
