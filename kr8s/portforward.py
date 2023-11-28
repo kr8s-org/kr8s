@@ -17,4 +17,3 @@ class PortForward(_PortForward):
     def stop(self):
         """Stop the background thread."""
         self.server.close()
-        self.server = None
