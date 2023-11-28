@@ -69,7 +69,7 @@ await pod.exec(["ls", "/"], stdout=sys.stdout.buffer, stderr=sys.stderr.buffer, 
 
 ## Open a port forward and communicate with the Pod
 
-Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.port_forward() <kr8s.objects.Pod.port_forward()>` and communicate with the application on the other side.
+Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.portforward() <kr8s.objects.Pod.portforward()>` and communicate with the application on the other side.
 
 `````{tab-set}
 
@@ -109,7 +109,7 @@ This also works with {py:class}`Service <kr8s.objects.Service>` objects.
 
 ## Open a port forward permanently
 
-Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.port_forward() <kr8s.objects.Pod.port_forward()>` and block. This is useful when you need to access the port forward from another process, like you would with `kubectl`.
+Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.portforward() <kr8s.objects.Pod.portforward()>` and block. This is useful when you need to access the port forward from another process, like you would with `kubectl`.
 
 `````{tab-set}
 
