@@ -136,3 +136,50 @@ await pod.portforward(1234, local_port=5678).run_forever()
 ```{tip}
 This also works with {py:class}`Service <kr8s.objects.Service>` objects.
 ```
+
+## Open a port forward in the background
+
+Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.portforward() <kr8s.objects.Pod.portforward()>` as a background task/thread.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+from kr8s.objects import Pod
+
+pod = Pod.get("my-pod")
+pf = pod.portforward(remote_port=1234, local_port=5678)
+
+# Starts the port forward in a background thread
+pf.start()
+
+# Your other code goes here
+
+# Optionally stop the port forward thread (it will exit with Python anyway)
+pf.stop()
+```
+````
+
+````{tab-item} Async
+```python
+from kr8s.asyncio.objects import Pod
+
+pod = await Pod.get("my-pod")
+pf = pod.portforward(remote_port=1234, local_port=5678)
+
+# Starts the port forward in a background task
+await pf.start()
+
+# Your other code goes here
+# WARNING: Your code must be async and non-blocking as the port forward and your code are sharing the same event loop
+
+# Optionally stop the port forward task (it will exit with Python anyway)
+await pf.stop()
+```
+````
+
+`````
+
+```{tip}
+This also works with {py:class}`Service <kr8s.objects.Service>` objects.
+```
