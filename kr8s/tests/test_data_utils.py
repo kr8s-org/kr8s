@@ -38,6 +38,8 @@ def test_xdict():
     assert xdict({"foo": "bar", "baz": "qux"}) == {"foo": "bar", "baz": "qux"}
     assert xdict({"foo": "bar", "baz": None}) == {"foo": "bar"}
     with pytest.raises(ValueError):
+        xdict({}, {})
+    with pytest.raises(ValueError):
         assert xdict({}, quux=None) == {
             "foo": "bar",
             "baz": "qux",
