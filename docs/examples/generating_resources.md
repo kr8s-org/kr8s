@@ -6,6 +6,8 @@ In `kr8s` we aim to provide similar functionality with a `.gen()` method on some
 
 ## Generating a Pod
 
+Generate a simple {py:class}`Pod <kr8s.objects.Pod>` with a couple of keyword arguments using {py:func}`Pod.gen() <kr8s.objects.Pod.gen()>` and create it.
+
 `````{tab-set}
 
 ````{tab-item} Sync
