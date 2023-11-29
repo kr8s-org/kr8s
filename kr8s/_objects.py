@@ -19,7 +19,12 @@ from box import Box
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
+from kr8s._data_utils import (
+    dict_to_selector,
+    dot_to_nested_dict,
+    list_dict_unpack,
+    xdict,
+)
 from kr8s._exceptions import NotFoundError
 from kr8s._exec import Exec
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
@@ -522,6 +527,10 @@ class APIObject:
             )
         return pykube_cls(api, self.raw)
 
+    @classmethod
+    def gen(cls, *args, **kwargs):
+        raise NotImplementedError("gen is not implemented for this object")
+
 
 ## v1 objects
 
@@ -879,6 +888,69 @@ class Pod(APIObject):
             stderr=stderr,
             check=check,
             capture_output=capture_output,
+        )
+
+    @classmethod
+    def gen(
+        cls,
+        *,
+        name,
+        image,
+        namespace=None,
+        annotations=None,
+        command=None,
+        env=None,
+        image_pull_policy=None,
+        labels=None,
+        ports=None,
+        restart="Always",
+    ):
+        """Generate a pod definition.
+
+        Args:
+            name (str): The name of the pod.
+            namespace (str): The namespace of the pod.
+            image (str): The image to use.
+            annotations (dict): Annotations to add to the pod.
+            command (list): Command to run in the container.
+            env (dict): Environment variables to set in the container.
+            image_pull_policy (str): Image pull policy to use.
+            labels (dict): Labels to add to the pod.
+            ports (list): Ports to expose.
+            restart (str): Restart policy to use.
+
+        Returns:
+            A :class:`kr8s.objects.Pod` object.
+
+        Example:
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="my-pod", image="my-image")
+            >>> pod.create()
+        """
+        return cls(
+            xdict(
+                apiVersion="v1",
+                kind="Pod",
+                metadata=xdict(
+                    name=name,
+                    namespace=namespace,
+                    annotations=annotations,
+                    labels=labels,
+                ),
+                spec=xdict(
+                    containers=[
+                        xdict(
+                            name=name,
+                            image=image,
+                            command=command,
+                            env=env,
+                            imagePullPolicy=image_pull_policy,
+                            ports=ports,
+                        )
+                    ],
+                    restartPolicy=restart,
+                ),
+            )
         )
 
 
