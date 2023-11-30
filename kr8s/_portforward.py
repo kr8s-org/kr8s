@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import random
 import socket
 from contextlib import asynccontextmanager, suppress
@@ -122,7 +123,8 @@ class PortForward:
             >>> await pf.run_forever()
         """
         async with self:
-            await self.server.serve_forever()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.server.serve_forever()
 
     @asynccontextmanager
     async def _run(self) -> int:
