@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, BinaryIO, List, Union
 
-import aiohttp
+import httpx_ws
 
 from kr8s._exceptions import ExecError
 
@@ -72,28 +72,31 @@ class Exec:
                 # Ideally we need to close stdin at some point but that's not possible
                 # with the current websocket implementation in Kubernetes
                 # https://github.com/kubernetes/kubernetes/issues/89899
-            async for message in ws:
-                if message.type == aiohttp.WSMsgType.BINARY:
-                    channel, message = int(message.data[0]), message.data[1:]
-                    if message:
-                        if channel == STDOUT_CHANNEL:
-                            if self._capture_output:
-                                self.stdout += message
-                            if self._stdout:
-                                self._stdout.write(message)
-                        elif channel == STDERR_CHANNEL:
-                            if self._capture_output:
-                                self.stderr += message
-                            if self._stderr:
-                                self._stderr.write(message)
-                        elif channel == ERROR_CHANNEL:
-                            self.returncode = 1
-                            if self.check:
-                                raise ExecError(message)
-                        else:
-                            raise ExecError(
-                                f"Unhandled message on channel {channel}: {message}"
-                            )
+            while True:
+                try:
+                    message = await ws.receive_bytes()
+                except httpx_ws.WebSocketDisconnect:
+                    break
+                channel, message = int(message[0]), message[1:]
+                if message:
+                    if channel == STDOUT_CHANNEL:
+                        if self._capture_output:
+                            self.stdout += message
+                        if self._stdout:
+                            self._stdout.write(message)
+                    elif channel == STDERR_CHANNEL:
+                        if self._capture_output:
+                            self.stderr += message
+                        if self._stderr:
+                            self._stderr.write(message)
+                    elif channel == ERROR_CHANNEL:
+                        self.returncode = 1
+                        if self.check:
+                            raise ExecError(message)
+                    else:
+                        raise ExecError(
+                            f"Unhandled message on channel {channel}: {message}"
+                        )
             if self.returncode is None:
                 self.returncode = 0
             yield self
