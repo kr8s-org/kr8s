@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import random
 import socket
 from contextlib import asynccontextmanager
@@ -95,7 +96,7 @@ class PortForward:
                 self.local_port = port
                 await self._bg_future
 
-        self._bg_task = asyncio.create_task(f())
+        self._bg_task = self._loop.create_task(f())
         while self.local_port == 0:
             await asyncio.sleep(0.1)
         return self.local_port
@@ -104,6 +105,19 @@ class PortForward:
         """Stop the background task."""
         self._bg_future.set_result(None)
         self._bg_task = None
+
+    async def run_forever(self) -> None:
+        """Run the port forward forever.
+
+        Example:
+            >>> pf = pod.portforward(remote_port=8888, local_port=8889)
+            >>> # or
+            >>> pf = PortForward(pod, remote_port=8888, local_port=8889)
+            >>> await pf.run_forever()
+        """
+        async with self:
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.server.serve_forever()
 
     @asynccontextmanager
     async def _run(self) -> int:

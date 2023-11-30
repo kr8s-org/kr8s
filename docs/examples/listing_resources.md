@@ -2,7 +2,7 @@
 
 ## List Nodes
 
-Print out all of the node names in the cluster.
+Print out all of the {py:class}`Node <kr8s.objects.Node>` names in the cluster using {py:func}`kr8s.get()`.
 
 `````{tab-set}
 
@@ -28,7 +28,7 @@ for node in await kr8s.asyncio.get("nodes"):
 
 ## List Pods in all Namespaces
 
-List all Pods in all namespaces and print their IP, namespace and name.
+List all Pods in all namespaces with {py:func}`kr8s.get()` and print their IP, namespace and name.
 
 `````{tab-set}
 
@@ -52,9 +52,46 @@ for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL):
 
 `````
 
+## List Ingresses (all styles)
+
+List all {py:class}`Ingresses <kr8s.objects.Ingress>` in the current namespace with {py:func}`kr8s.get()` using all styles from shorthand to explicit group and version naming.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+import kr8s
+
+# All of these are equivalent
+ings = kr8s.get("ing")                           # Short name
+ings = kr8s.get("ingress")                       # Singular
+ings = kr8s.get("ingresses")                     # Plural
+ings = kr8s.get("Ingress")                       # Title
+ings = kr8s.get("ingress.networking.k8s.io")     # Full group name
+ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
+ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+```
+````
+
+````{tab-item} Async
+```python
+import kr8s.asyncio
+
+# All of these are equivalent
+ings = await kr8s.asyncio.get("ing")                           # Short name
+ings = await kr8s.asyncio.get("ingress")                       # Singular
+ings = await kr8s.asyncio.get("ingresses")                     # Plural
+ings = await kr8s.asyncio.get("Ingress")                       # Title
+ings = await kr8s.asyncio.get("ingress.networking.k8s.io")     # Full group name
+ings = await kr8s.asyncio.get("ingress.v1.networking.k8s.io")  # Full with explicit version
+ings = await kr8s.asyncio.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+```
+````
+
+`````
 ## List Ready Pods
 
-Get a list of Pod resources that have the `Ready=True` condition.
+Get a list of {py:class}`Pod <kr8s.objects.Pod>` resources that have the `Ready=True` condition using {py:func}`kr8s.get()`.
 
 `````{tab-set}
 
@@ -82,7 +119,7 @@ for pod in await kr8s.asyncio.get("pods", namespace="kube-system"):
 
 ## List Pods by label selector
 
-Starting from a dictionary containing a label selector get all Pods from all Namespaces matching that label.
+Starting from a dictionary containing a label selector get all {py:class}`Pods <kr8s.objects.Pod>` from all Namespaces matching that label with {py:func}`kr8s.get()`.
 
 `````{tab-set}
 
@@ -112,7 +149,7 @@ for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL, label_selector=sel
 
 ## List Running Pods
 
-Get a list of Pod resources that have `status.phase=Running` using a field selector.
+Get a list of {py:class}`Pod <kr8s.objects.Pod>` resources that have `status.phase=Running` using a field selector in {py:func}`kr8s.get()`.
 
 `````{tab-set}
 
@@ -138,7 +175,7 @@ for pod in await kr8s.asyncio.get("pods", namespace="kube-system", field_selecto
 
 ## List Pods sorted by restart count
 
-List Pods and sort them by their restart count.
+List {py:class}`Pods <kr8s.objects.Pod>` with {py:func}`kr8s.get()` and sort them by their restart count.
 
 `````{tab-set}
 

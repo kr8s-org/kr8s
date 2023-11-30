@@ -8,7 +8,7 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
 
 import anyio
 import httpx
@@ -19,8 +19,14 @@ from box import Box
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._data_utils import dict_to_selector, dot_to_nested_dict, list_dict_unpack
+from kr8s._data_utils import (
+    dict_to_selector,
+    dot_to_nested_dict,
+    list_dict_unpack,
+    xdict,
+)
 from kr8s._exceptions import NotFoundError
+from kr8s._exec import Exec
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -108,6 +114,11 @@ class APIObject:
             return self.raw.get("metadata", {}).get("namespace", self.api.namespace)
         return None
 
+    @namespace.setter
+    def namespace(self, value: str) -> None:
+        if self.namespaced:
+            self.raw["metadata"]["namespace"] = value
+
     @property
     def metadata(self) -> Box:
         """Metadata of the Kubernetes resource."""
@@ -167,7 +178,7 @@ class APIObject:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
             else:
-                api = kr8s.api()
+                api = await kr8s.asyncio.api(_asyncio=False)
         namespace = namespace if namespace else api.namespace
         start = time.time()
         backoff = 0.1
@@ -276,13 +287,17 @@ class APIObject:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
-    async def patch(self, patch, *, subresource=None) -> None:
+    async def patch(self, patch, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
-        await self._patch(patch, subresource=subresource)
+        await self._patch(patch, subresource=subresource, type=type)
 
-    async def _patch(self, patch: Dict, *, subresource=None) -> None:
+    async def _patch(self, patch: Dict, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
+        if type == "json":
+            headers = {"Content-Type": "application/json-patch+json"}
+        else:
+            headers = {"Content-Type": "application/merge-patch+json"}
         if subresource:
             url = f"{url}/{subresource}"
         try:
@@ -292,7 +307,7 @@ class APIObject:
                 url=url,
                 namespace=self.namespace,
                 data=json.dumps(patch),
-                headers={"Content-Type": "application/merge-patch+json"},
+                headers=headers,
             ) as resp:
                 self.raw = resp.json()
         except httpx.HTTPStatusError as e:
@@ -385,7 +400,23 @@ class APIObject:
         await self._patch({"metadata": {"annotations": annotations}})
 
     async def label(self, labels: dict = None, **kwargs) -> None:
-        """Label this object in Kubernetes."""
+        """Add labels to this object in Kubernetes.
+
+        Labels can be passed as a dictionary or as keyword arguments.
+
+        Args:
+            labels:
+                A dictionary of labels to set.
+            **kwargs:
+                Labels to set.
+
+        Example:
+            >>> from kr8s.objects import Deployment
+            >>> deployment = Deployment.get("my-deployment")
+            >>> # Both of these are equivalent
+            >>> deployment.label({"app": "my-app"})
+            >>> deployment.label(app="my-app")
+        """
         if labels is None:
             labels = kwargs
         if not labels:
@@ -496,6 +527,10 @@ class APIObject:
             )
         return pykube_cls(api, self.raw)
 
+    @classmethod
+    def gen(cls, *args, **kwargs):
+        raise NotImplementedError("gen is not implemented for this object")
+
 
 ## v1 objects
 
@@ -531,6 +566,11 @@ class ConfigMap(APIObject):
     plural = "configmaps"
     singular = "configmap"
     namespaced = True
+
+    @property
+    def data(self) -> Box:
+        """Data of the ConfigMap."""
+        return Box(self.raw["data"])
 
 
 class Endpoints(APIObject):
@@ -594,9 +634,17 @@ class Node(APIObject):
         return False
 
     async def cordon(self) -> None:
+        """Cordon the node.
+
+        This will mark the node as unschedulable.
+        """
         await self._patch({"spec": {"unschedulable": True}})
 
     async def uncordon(self) -> None:
+        """Uncordon the node.
+
+        This will mark the node as schedulable.
+        """
         await self._patch({"spec": {"unschedulable": False}})
 
 
@@ -657,8 +705,58 @@ class Pod(APIObject):
         timestamps=False,
         tail_lines=None,
         limit_bytes=None,
-    ) -> str:
+        follow=False,
+        timeout=3600,
+    ) -> AsyncGenerator[str, None, None]:
+        """Streams logs from a Pod.
+
+        Args:
+            container:
+                The container to get logs from. Defaults to the first container in the Pod.
+            pretty:
+                If True, return pretty logs. Defaults to False.
+            previous:
+                If True, return previous terminated container logs. Defaults to False.
+            since_seconds:
+                If set, return logs since this many seconds ago.
+            since_time:
+                If set, return logs since this time.
+            timestamps:
+                If True, prepend each log line with a timestamp. Defaults to False.
+            tail_lines:
+                If set, return this many lines from the end of the logs.
+            limit_bytes:
+                If set, return this many bytes from the end of the logs.
+            follow:
+                If True, follow the logs until the timeout is reached. Defaults to False.
+            timeout:
+                If following timeout after this many seconds. Set to None to disable timeout.
+
+        Returns:
+            An async generator yielding log lines.
+
+
+        Example:
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> for line in pod.logs():
+            ...     print(line)
+
+            We can also follow logs as they are generated, the generator will yield a new log line as
+            it is generated by the Pod. This blocks indefinitely so we can set a timeout to break
+            after some period of time, the default is ``3600`` (1hr) but can be set to ``None`` to
+            disable the timeout.
+
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod", namespace="ns")
+            >>> for line in pod.logs(follow=True, timeout=60):
+            ...     # Will continue streaming logs until 60 seconds or the Pod is terminated
+            ...     print(line)
+
+        """
         params = {}
+        if follow:
+            params["follow"] = "true"
         if container is not None:
             params["container"] = container
         if pretty is not None:
@@ -676,14 +774,18 @@ class Pod(APIObject):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
 
-        async with self.api.call_api(
-            "GET",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}/log",
-            namespace=self.namespace,
-            params=params,
-        ) as resp:
-            return resp.text
+        with contextlib.suppress(httpx.ReadTimeout):
+            async with self.api.call_api(
+                "GET",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}/log",
+                namespace=self.namespace,
+                params=params,
+                stream=True,
+                timeout=timeout,
+            ) as resp:
+                async for line in resp.aiter_lines():
+                    yield line
 
     def portforward(self, remote_port: int, local_port: int = None) -> int:
         """Port forward a pod.
@@ -711,6 +813,145 @@ class Pod(APIObject):
         if self._asyncio:
             return AsyncPortForward(self, remote_port, local_port)
         return SyncPortForward(self, remote_port, local_port)
+
+    async def _exec(
+        self,
+        command: List[str],
+        *,
+        container: str = None,
+        stdin: Union(str | bytes | BinaryIO) = None,
+        stdout: BinaryIO = None,
+        stderr: BinaryIO = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ):
+        ex = Exec(
+            self,
+            command,
+            container=container,
+            stdout=stdout,
+            stderr=stderr,
+            stdin=stdin,
+            check=check,
+            capture_output=capture_output,
+        )
+        async with ex.run() as process:
+            await process.wait()
+            return process.as_completed()
+
+    async def exec(
+        self,
+        command: List[str],
+        *,
+        container: str = None,
+        stdin: Union(str | bytes | BinaryIO) = None,
+        stdout: BinaryIO = None,
+        stderr: BinaryIO = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ):
+        """Run a command in a container and wait until it completes.
+
+        Behaves like :func:`subprocess.run`.
+
+        Args:
+            command:
+                Command to execute.
+            container:
+                Container to execute the command in.
+            stdin:
+                If set, read stdin to the container.
+            stdout:
+                If set, write stdout to the provided writable stream object.
+            stderr:
+                If set, write stderr to the provided writable stream object.
+            check:
+                If True, raise an exception if the command fails.
+            capture_output:
+                If True, store stdout and stderr from the container in an attribute.
+
+        Returns:
+            A :class:`kr8s._exec.CompletedExec` object.
+
+        Example:
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> ex = await pod.exec(["ls", "-l"])
+            >>> print(ex.stdout)
+            >>> print(ex.stderr)
+        """
+        return await self._exec(
+            command,
+            container=container,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            check=check,
+            capture_output=capture_output,
+        )
+
+    @classmethod
+    def gen(
+        cls,
+        *,
+        name,
+        image,
+        namespace=None,
+        annotations=None,
+        command=None,
+        env=None,
+        image_pull_policy=None,
+        labels=None,
+        ports=None,
+        restart="Always",
+    ):
+        """Generate a pod definition.
+
+        Args:
+            name (str): The name of the pod.
+            namespace (str): The namespace of the pod.
+            image (str): The image to use.
+            annotations (dict): Annotations to add to the pod.
+            command (list): Command to run in the container.
+            env (dict): Environment variables to set in the container.
+            image_pull_policy (str): Image pull policy to use.
+            labels (dict): Labels to add to the pod.
+            ports (list): Ports to expose.
+            restart (str): Restart policy to use.
+
+        Returns:
+            A :class:`kr8s.objects.Pod` object.
+
+        Example:
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="my-pod", image="my-image")
+            >>> pod.create()
+        """
+        return cls(
+            xdict(
+                apiVersion="v1",
+                kind="Pod",
+                metadata=xdict(
+                    name=name,
+                    namespace=namespace,
+                    annotations=annotations,
+                    labels=labels,
+                ),
+                spec=xdict(
+                    containers=[
+                        xdict(
+                            name=name,
+                            image=image,
+                            command=command,
+                            env=env,
+                            imagePullPolicy=image_pull_policy,
+                            ports=ports,
+                        )
+                    ],
+                    restartPolicy=restart,
+                ),
+            )
+        )
 
 
 class PodTemplate(APIObject):
@@ -765,6 +1006,11 @@ class Secret(APIObject):
     plural = "secrets"
     singular = "secret"
     namespaced = True
+
+    @property
+    def data(self) -> Box:
+        """Data of the Secret."""
+        return Box(self.raw["data"])
 
 
 class ServiceAccount(APIObject):
@@ -1149,13 +1395,15 @@ class Table(APIObject):
 
 
 def get_class(
-    kind: str, version: Optional[str] = None, _asyncio: bool = True
+    kind: str,
+    version: Optional[str] = None,
+    _asyncio: bool = True,
 ) -> Type[APIObject]:
     """Get an APIObject subclass by kind and version.
 
     Args:
         kind: The Kubernetes resource kind.
-        version: The Kubernetes API version.
+        version: The Kubernetes API group/version.
 
     Returns:
         An APIObject subclass.
@@ -1163,6 +1411,16 @@ def get_class(
     Raises:
         KeyError: If no object is registered for the given kind and version.
     """
+    group = None
+    if "/" in kind:
+        kind, version = kind.split("/", 1)
+    if "." in kind:
+        kind, group = kind.split(".", 1)
+    if version and "/" in version:
+        if group:
+            raise ValueError("Cannot specify group in both kind and version")
+        group, version = version.split("/", 1)
+    kind = kind.lower()
 
     def _walk_subclasses(cls):
         yield cls
@@ -1170,18 +1428,34 @@ def get_class(
             yield from _walk_subclasses(subcls)
 
     for cls in _walk_subclasses(APIObject):
+        if not hasattr(cls, "version"):
+            continue
+        if "/" in cls.version:
+            cls_group, cls_version = cls.version.split("/")
+        else:
+            cls_group, cls_version = None, cls.version
         if (
             hasattr(cls, "kind")
-            and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
-            and (version is None or cls.version == version)
             and cls._asyncio == _asyncio
+            and (cls.kind == kind or cls.singular == kind or cls.plural == kind)
         ):
-            return cls
-    raise KeyError(f"No object registered for {version}/{kind}")
+            if (group is None or cls_group == group) and (
+                version is None or cls_version == version
+            ):
+                return cls
+            if (
+                not version
+                and "." in group
+                and cls_group == group.split(".", 1)[1]
+                and cls_version == group.split(".", 1)[0]
+            ):
+                return cls
+
+    raise KeyError(f"No object registered for {kind}{'.' + group if group else ''}")
 
 
 def new_class(
-    kind: str, version: str = None, asyncio: bool = True, namespaced=True
+    kind: str, version: Optional[str] = None, asyncio: bool = True, namespaced=True
 ) -> Type[APIObject]:
     """Create a new APIObject subclass.
 
@@ -1194,6 +1468,8 @@ def new_class(
     Returns:
         A new APIObject subclass.
     """
+    if "." in kind:
+        kind, version = kind.split(".", 1)
     if version is None:
         version = "v1"
     return type(
@@ -1212,12 +1488,14 @@ def new_class(
 
 
 def object_from_spec(
-    spec: dict, api: Api = None, allow_unknown_type: bool = False
+    spec: dict, api: Api = None, allow_unknown_type: bool = False, _asyncio: bool = True
 ) -> APIObject:
     """Create an APIObject from a Kubernetes resource spec.
 
     Args:
         spec: A Kubernetes resource spec.
+        allow_unknown_type: Whether to allow unknown resource types.
+        _asyncio: Whether to use asyncio or not.
 
     Returns:
         A corresponding APIObject subclass instance.
@@ -1226,7 +1504,7 @@ def object_from_spec(
         ValueError: If the resource kind or API version is not supported.
     """
     try:
-        cls = get_class(spec["kind"], spec["apiVersion"])
+        cls = get_class(spec["kind"], spec["apiVersion"], _asyncio=_asyncio)
     except KeyError:
         if allow_unknown_type:
             cls = new_class(spec["kind"], spec["apiVersion"])
@@ -1236,12 +1514,15 @@ def object_from_spec(
 
 
 async def object_from_name_type(
-    name: str, namespace: str = None, api: Api = None
+    name: str, namespace: str = None, api: Api = None, _asyncio: bool = True
 ) -> APIObject:
     """Create an APIObject from a Kubernetes resource name.
 
     Args:
         name: A Kubernetes resource name.
+        namespace: The namespace of the resource.
+        api: An optional API instance to use.
+        _asyncio: Whether to use asyncio or not.
 
     Returns:
         A corresponding APIObject subclass instance.
@@ -1258,12 +1539,15 @@ async def object_from_name_type(
     else:
         kind = resource_type
         version = None
-    cls = get_class(kind, version)
+    cls = get_class(kind, version, _asyncio=_asyncio)
     return await cls.get(name, namespace=namespace, api=api)
 
 
 async def objects_from_files(
-    path: Union[str, pathlib.Path], api: Api = None, recursive: bool = False
+    path: Union[str, pathlib.Path],
+    api: Api = None,
+    recursive: bool = False,
+    _asyncio: bool = True,
 ) -> List[APIObject]:
     """Create APIObjects from Kubernetes resource files.
 
@@ -1271,6 +1555,7 @@ async def objects_from_files(
         path: A path to a Kubernetes resource file or directory of resource files.
         api: An optional API instance to use.
         recursive: Whether to recursively search for resource files in subdirectories.
+        _asyncio: Whether to use asyncio or not.
 
     Returns:
         A list of APIObject subclass instances.
@@ -1289,7 +1574,10 @@ async def objects_from_files(
         with open(file, "r") as f:
             for doc in yaml.safe_load_all(f):
                 if doc is not None:
-                    objects.append(
-                        object_from_spec(doc, api=api, allow_unknown_type=True)
+                    obj = object_from_spec(
+                        doc, api=api, allow_unknown_type=True, _asyncio=_asyncio
                     )
+                    if _asyncio:
+                        await obj
+                    objects.append(obj)
     return objects

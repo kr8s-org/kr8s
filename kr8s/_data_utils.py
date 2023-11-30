@@ -66,3 +66,41 @@ def dict_to_selector(selector_dict: Dict) -> str:
         A Kubernetes selector string.
     """
     return ",".join(f"{k}={v}" for k, v in selector_dict.items())
+
+
+def xdict(*in_dict, **kwargs):
+    """Dictionary constructor that ignores None values.
+
+    Args:
+        in_dict : Dict
+            A dict to convert. Only one is allowed.
+        **kwargs
+            Keyword arguments to be converted to a dict.
+
+    Returns:
+        Dict
+            A dict with None values removed.
+
+    Raises:
+        ValueError
+            If more than one positional argument is passed, or if both a positional
+            argument and keyword arguments are passed.
+
+    Examples:
+        >>> xdict(foo="bar", baz=None)
+        {"foo": "bar"}
+
+        >>> xdict({"foo": "bar", "baz": None})
+        {"foo": "bar"}
+    """
+    if len(in_dict) > 1:
+        raise ValueError(
+            f"xdict expected at most 1 positional argument, got {len(in_dict)}"
+        )
+    if len(in_dict) == 1 and kwargs:
+        raise ValueError(
+            "xdict expected at most 1 positional argument, or multiple keyword arguments, got both"
+        )
+    if len(in_dict) == 1:
+        [kwargs] = in_dict
+    return {k: v for k, v in kwargs.items() if v is not None}

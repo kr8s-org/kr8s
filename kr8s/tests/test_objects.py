@@ -1,13 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import datetime
 import pathlib
+import tempfile
 import time
 
 import httpx
 import pytest
 
 import kr8s
+from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,
     Deployment,
@@ -20,7 +23,7 @@ from kr8s.asyncio.objects import (
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
-from kr8s.objects import get_class, object_from_spec
+from kr8s.objects import get_class, new_class, object_from_spec
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
@@ -63,6 +66,19 @@ async def nginx_pod(k8s_cluster, example_pod_spec, ns):
         await pod.delete()
     except kr8s.NotFoundError:
         pass
+
+
+@pytest.fixture
+async def ubuntu_pod(k8s_cluster, example_pod_spec, ns):
+    example_pod_spec["spec"]["containers"][0]["name"] = "ubuntu"
+    example_pod_spec["spec"]["containers"][0]["image"] = "ubuntu:latest"
+    example_pod_spec["spec"]["containers"][0]["command"] = ["sleep", "3600"]
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.ready():
+        await asyncio.sleep(0.1)
+    yield pod
+    await pod.delete()
 
 
 @pytest.fixture
@@ -223,6 +239,21 @@ async def test_pod_get(example_pod_spec):
         await pod2.delete()
 
 
+def test_pod_get_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    with pytest.raises(kr8s.NotFoundError):
+        SyncPod.get(f"{pod.name}-foo", namespace=pod.namespace, timeout=0.1)
+    pod2 = SyncPod.get(pod.name, namespace=pod.namespace)
+    assert pod2.name == pod.name
+    assert pod2.namespace == pod.namespace
+    pod.delete()
+    while pod.exists():
+        time.sleep(0.1)
+    with pytest.raises(kr8s.NotFoundError):
+        pod2.delete()
+
+
 async def test_pod_from_name(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
@@ -353,6 +384,18 @@ async def test_patch_pod(example_pod_spec):
     await pod.delete()
 
 
+async def test_patch_pod_json(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    assert "patched" not in pod.labels
+    await pod.patch(
+        [{"op": "replace", "path": "/metadata/labels", "value": {"patched": "true"}}],
+        type="json",
+    )
+    assert set(pod.labels) == {"patched"}
+    await pod.delete()
+
+
 async def test_all_v1_objects_represented():
     kubernetes = await kr8s.asyncio.api()
     k8s_objects = await kubernetes.api_resources()
@@ -400,6 +443,15 @@ async def test_subclass_registration():
     get_class("MyResource", "foo.kr8s.org/v1alpha1")
 
 
+async def test_new_class_registration():
+    with pytest.raises(KeyError):
+        get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
+
+    MyOtherResource = new_class("MyOtherResource.foo.kr8s.org/v1alpha1")  # noqa: F841
+
+    get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
+
+
 async def test_deployment_scale(example_deployment_spec):
     deployment = await Deployment(example_deployment_spec)
     await deployment.create()
@@ -439,7 +491,7 @@ async def test_pod_logs(example_pod_spec):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    log = await pod.logs(container="pause")
+    log = "\n".join([line async for line in pod.logs(container="pause")])
     assert isinstance(log, str)
     await pod.delete()
 
@@ -666,3 +718,63 @@ async def test_cast_to_from_pykube_ng(example_pod_spec):
     assert isinstance(pykube_pod, pykube.objects.Pod)
     assert pykube_pod.name == example_pod_spec["metadata"]["name"]
     assert pykube_pod.namespace == example_pod_spec["metadata"]["namespace"]
+
+
+async def test_pod_exec(ubuntu_pod):
+    ex = await ubuntu_pod.exec(["date"])
+    assert isinstance(ex, CompletedExec)
+    assert str(datetime.datetime.now().year) in ex.stdout.decode()
+    assert ex.args == ["date"]
+    assert ex.stderr == b""
+    assert ex.returncode == 0
+
+
+async def test_pod_exec_error(ubuntu_pod):
+    with pytest.raises(ExecError):
+        await ubuntu_pod.exec(["date", "foo"])
+
+    ex = await ubuntu_pod.exec(["date", "foo"], check=False)
+    assert ex.args == ["date", "foo"]
+    assert b"invalid date" in ex.stderr
+    assert ex.returncode == 1
+
+    with pytest.raises(ExecError):
+        ex.check_returncode()
+
+
+async def test_pod_exec_to_file(ubuntu_pod):
+    with tempfile.TemporaryFile(mode="w+b") as tmp:
+        exc = await ubuntu_pod.exec(["date"], stdout=tmp, capture_output=False)
+        tmp.seek(0)
+        assert str(datetime.datetime.now().year) in tmp.read().decode()
+        assert exc.stdout == b""
+
+    with tempfile.TemporaryFile(mode="w+b") as tmp:
+        with pytest.raises(ExecError):
+            await ubuntu_pod.exec(["date", "foo"], stderr=tmp)
+        tmp.seek(0)
+        assert b"invalid date" in tmp.read()
+
+
+@pytest.mark.skip("Closing stdin not supported so hangs forever")
+async def test_pod_exec_stdin(ubuntu_pod):
+    ex = await ubuntu_pod.exec(["cat"], stdin="foo")
+    assert b"foo" in ex.stdout
+
+
+async def test_configmap_data(ns):
+    [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
+    cm.namespace = ns
+    await cm.create()
+    assert "game.properties" in cm.data
+    assert cm.data.player_initial_lives == "3"
+    assert "color.good=purple" in cm.data["user-interface.properties"]
+    await cm.delete()
+
+
+async def test_secret_data(ns):
+    [secret] = await objects_from_files(CURRENT_DIR / "resources" / "secret.yaml")
+    secret.namespace = ns
+    await secret.create()
+    assert "tls.crt" in secret.data
+    await secret.delete()

@@ -31,6 +31,7 @@ class KubeAuth:
         self.password = None
         self.namespace = namespace
         self.active_context = None
+        self._insecure_skip_tls_verify = False
         self._use_context = context
         self._context = None
         self._cluster = None
@@ -64,6 +65,8 @@ class KubeAuth:
                 raise ValueError("Unable to find valid credentials")
 
     async def ssl_context(self):
+        if self._insecure_skip_tls_verify:
+            return False
         async with self.__auth_lock:
             if (
                 not self.client_key_file
@@ -122,6 +125,12 @@ class KubeAuth:
 
         self.server = self._cluster["server"]
 
+        if (
+            "insecure-skip-tls-verify" in self._cluster
+            and self._cluster["insecure-skip-tls-verify"]
+        ):
+            self._insecure_skip_tls_verify = True
+
         if "exec" in self._user:
             if (
                 self._user["exec"]["apiVersion"]
@@ -163,6 +172,14 @@ class KubeAuth:
                     base64.b64decode(self._cluster["certificate-authority-data"])
                 )
                 self.server_ca_file = str(ca_file)
+        if "certificate-authority" in self._cluster:
+            if os.path.isfile(self._cluster["certificate-authority"]):
+                self.server_ca_file = self._cluster["certificate-authority"]
+            else:
+                self.server_ca_file = os.path.join(
+                    os.path.dirname(self._kubeconfig),
+                    self._cluster["certificate-authority"],
+                )
         if "token" in self._user:
             self.token = self._user["token"]
         if "username" in self._user:

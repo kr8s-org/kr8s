@@ -197,33 +197,6 @@ async def test_ns(ns):
     assert api.namespace == "foo"
 
 
-async def test_docstrings():
-    assert (
-        kr8s.Api.get.__doc__
-        == kr8s.asyncio.Api.get.__doc__
-        == kr8s.get.__doc__
-        == kr8s.asyncio.get.__doc__
-    )
-    assert (
-        kr8s.Api.version.__doc__
-        == kr8s.asyncio.Api.version.__doc__
-        == kr8s.version.__doc__
-        == kr8s.asyncio.version.__doc__
-    )
-    assert (
-        kr8s.Api.watch.__doc__
-        == kr8s.asyncio.Api.watch.__doc__
-        == kr8s.watch.__doc__
-        == kr8s.asyncio.watch.__doc__
-    )
-    assert (
-        kr8s.Api.api_resources.__doc__
-        == kr8s.asyncio.Api.api_resources.__doc__
-        == kr8s.api_resources.__doc__
-        == kr8s.asyncio.api_resources.__doc__
-    )
-
-
 async def test_async_get_returns_async_objects():
     pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
     assert pods[0]._asyncio is True
@@ -247,3 +220,19 @@ def test_api_client_reuse_between_event_loops():
     asyncio.run(get_api())
     asyncio.set_event_loop(asyncio.new_event_loop())
     asyncio.run(get_api())
+
+
+async def test_api_names(example_pod_spec, ns):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    assert pod in await kr8s.asyncio.get("pods", namespace=ns)
+    assert pod in await kr8s.asyncio.get("pods/v1", namespace=ns)
+    assert pod in await kr8s.asyncio.get("Pod", namespace=ns)
+    assert pod in await kr8s.asyncio.get("pod", namespace=ns)
+    assert pod in await kr8s.asyncio.get("po", namespace=ns)
+    await pod.delete()
+
+    await kr8s.asyncio.get("roles", namespace=ns)
+    await kr8s.asyncio.get("roles.rbac.authorization.k8s.io", namespace=ns)
+    await kr8s.asyncio.get("roles.v1.rbac.authorization.k8s.io", namespace=ns)
+    await kr8s.asyncio.get("roles.rbac.authorization.k8s.io/v1", namespace=ns)

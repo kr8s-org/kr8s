@@ -25,25 +25,49 @@ def get_versions():
         data = [
             {
                 "cycle": x["cycle"],
-                "version": x["latest"],
+                "latest_version": x["latest"],
                 "eol": datetime.strptime(x["eol"], DATE_FORMAT),
             }
             for x in data
             if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
-        return data
+
+    print("Loading Kubernetes tags from https://hub.docker.com/r/kindest/node/tags...")
+    with urllib.request.urlopen(
+        "https://hub.docker.com/v2/repositories/kindest/node/tags"
+    ) as url:
+        container_tags = json.load(url)
+
+    for version in data:
+        try:
+            version["latest_kind_container"] = [
+                x["name"]
+                for x in container_tags["results"]
+                if version["cycle"] in x["name"]
+            ][0][1:]
+        except IndexError:
+            version["latest_kind_container"] = None
+
+    before_length = len(data)
+    print("Pruning versions that do not have a kind release yet...")
+    data[:] = [x for x in data if x["latest_kind_container"] is not None]
+    print(f"Pruned {before_length - len(data)} versions")
+    return data
 
 
 def update_test_workflow(versions):
     workflow = yaml.load(Path(".github/workflows/test.yaml"))
     workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][0] = versions[
         0
-    ]["version"]
+    ]["latest_kind_container"]
     workflow["jobs"]["test"]["strategy"]["matrix"]["include"] = []
     for version in versions[1:]:
         workflow["jobs"]["test"]["strategy"]["matrix"]["include"].append(
-            {"python-version": "3.10", "kubernetes-version": version["version"]}
+            {
+                "python-version": "3.10",
+                "kubernetes-version": version["latest_kind_container"],
+            }
         )
     yaml.dump(workflow, Path(".github/workflows/test.yaml"))
 
@@ -64,10 +88,12 @@ def update_badges(filename, versions):
 
 def main():
     versions = get_versions()
-    print(f"Latest version: {versions[0]['version']}")
+    print(f"Latest version: {versions[0]['cycle']}")
     print("Supported versions:")
     for version in versions:
-        print(f"{version['version']} until {version['eol']}")
+        print(
+            f"For {version['cycle']} using kindest/node {version['latest_kind_container']} until {version['eol']}"
+        )
 
     update_test_workflow(versions)
     update_badges("README.md", versions)
