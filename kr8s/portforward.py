@@ -1,4 +1,5 @@
 import threading
+import time
 
 from ._io import sync
 from ._portforward import PortForward as _PortForward
@@ -16,4 +17,6 @@ class PortForward(_PortForward):
 
     def stop(self):
         """Stop the background thread."""
+        while self.server is None:
+            time.sleep(0.1)
         self.server.close()
