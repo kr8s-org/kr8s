@@ -14,7 +14,7 @@ import httpx
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
-from ._exceptions import APITimeoutError
+from ._exceptions import APITimeoutError, ServerError
 
 ALL = "all"
 
@@ -143,6 +143,11 @@ class Api(object):
                     await self._create_session()
                     continue
                 else:
+                    if e.response.status_code >= 400 and e.response.status_code < 500:
+                        error = e.response.json()
+                        raise ServerError(
+                            error["message"], status=error, response=e.response
+                        ) from e
                     raise
             except ssl.SSLCertVerificationError:
                 # In some rare edge cases the SSL verification fails, so we try again

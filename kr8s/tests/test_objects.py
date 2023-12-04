@@ -793,24 +793,14 @@ async def test_validate_pod(example_pod_spec):
     kubernetes_validate.validate(pod.raw, "1.28", strict=True)
 
 
-async def test_validate_pod_fail():
+async def test_validate_pod_fail(bad_pod_spec):
     kubernetes_validate = pytest.importorskip("kubernetes_validate")
-    pod = await Pod(
-        {
-            "apiVersion": "v1",
-            "kind": "Pod",
-            "metadata": {
-                "name": "my-pod",
-            },
-            "spec": {
-                "containers": [
-                    {
-                        "name1": "pause",
-                        "image": "gcr.io/google_containers/pause",
-                    }
-                ]
-            },
-        }
-    )
+    pod = await Pod(bad_pod_spec)
     with pytest.raises(kubernetes_validate.ValidationError):
         kubernetes_validate.validate(pod.raw, "1.28", strict=True)
+
+
+async def test_pod_errors(bad_pod_spec):
+    pod = await Pod(bad_pod_spec)
+    with pytest.raises(kr8s.ServerError, match="Required value"):
+        await pod.create()
