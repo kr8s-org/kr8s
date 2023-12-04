@@ -11,6 +11,7 @@ from ._exceptions import (
     ConnectionClosedError,  # noqa
     ExecError,  # noqa
     NotFoundError,  # noqa
+    ServerError,  # noqa
 )
 from ._io import run_sync as _run_sync
 from ._io import sync as _sync  # noqa

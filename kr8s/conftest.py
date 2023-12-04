@@ -41,6 +41,27 @@ async def example_pod_spec(ns):
 
 
 @pytest.fixture
+async def bad_pod_spec(ns):
+    name = "example-" + uuid.uuid4().hex[:10]
+    return {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+            "name": name,
+            "namespace": ns,
+        },
+        "spec": {
+            "containers": [
+                {
+                    "name1": "pause",  # This is bad
+                    "image": "gcr.io/google_containers/pause",
+                }
+            ]
+        },
+    }
+
+
+@pytest.fixture
 async def example_service_spec(ns):
     name = "example-" + uuid.uuid4().hex[:10]
     return {
