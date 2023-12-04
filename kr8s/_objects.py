@@ -423,17 +423,6 @@ class APIObject:
             raise ValueError("No labels provided")
         await self._patch({"metadata": {"labels": labels}})
 
-    async def validate(self, desired_version: str, strict: bool = False):
-        try:
-            import kubernetes_validate
-        except ImportError:
-            raise ImportError(
-                f"{self.__class__.__name__}.validate() requires kubernetes-validate to be installed"
-            )
-        return kubernetes_validate.validate(
-            self.raw, desired_version=desired_version, strict=strict
-        )
-
     def keys(self) -> list:
         """Return the keys of this object."""
         return self.raw.keys()

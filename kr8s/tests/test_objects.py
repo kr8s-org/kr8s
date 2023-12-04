@@ -788,9 +788,9 @@ async def test_secret_data(ns):
 
 
 async def test_validate_pod(example_pod_spec):
-    pytest.importorskip("kubernetes_validate")
+    kubernetes_validate = pytest.importorskip("kubernetes_validate")
     pod = await Pod(example_pod_spec)
-    await pod.validate("1.28", strict=True)
+    kubernetes_validate.validate(pod.raw, "1.28", strict=True)
 
 
 async def test_validate_pod_fail():
@@ -813,4 +813,4 @@ async def test_validate_pod_fail():
         }
     )
     with pytest.raises(kubernetes_validate.ValidationError):
-        await pod.validate("1.28", strict=True)
+        kubernetes_validate.validate(pod.raw, "1.28", strict=True)
