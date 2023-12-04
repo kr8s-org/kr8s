@@ -720,6 +720,13 @@ async def test_cast_to_from_pykube_ng(example_pod_spec):
     assert pykube_pod.namespace == example_pod_spec["metadata"]["namespace"]
 
 
+async def test_to_dict(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    to_spec = pod.to_dict()
+    assert to_spec == example_pod_spec
+    assert isinstance(to_spec, dict)
+
+
 async def test_pod_exec(ubuntu_pod):
     ex = await ubuntu_pod.exec(["date"])
     assert isinstance(ex, CompletedExec)
