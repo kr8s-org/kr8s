@@ -19,7 +19,7 @@ A simple, extensible Python client library for Kubernetes that feels familiar fo
 - No swagger generated code, human readable code only.
 - Also has an [asynchronous API](https://docs.kr8s.org/en/stable/asyncio.html) that can be used with `asyncio` and `trio`.
 - [Client caching](https://docs.kr8s.org/en/stable/client.html#client-caching) to reduce passing API objects around.
-- Batteries included by providing useful utilities and methods inspired by `kubectl`.
+- Batteries included by providing [useful utilities and methods](https://docs.kr8s.org/en/stable/examples/pod_operations.html) inspired by `kubectl`.
 
 ## Quickstart
 
