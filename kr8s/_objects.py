@@ -25,7 +25,7 @@ from kr8s._data_utils import (
     list_dict_unpack,
     xdict,
 )
-from kr8s._exceptions import NotFoundError
+from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import Exec
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
@@ -188,7 +188,7 @@ class APIObject:
                     resources = await api._get(
                         cls.endpoint, name, namespace=namespace, **kwargs
                     )
-                except httpx.HTTPStatusError as e:
+                except ServerError as e:
                     if e.response.status_code == 404:
                         continue
                     raise e
@@ -263,7 +263,7 @@ class APIObject:
                 data=json.dumps(data),
             ) as resp:
                 self.raw = resp.json()
-        except httpx.HTTPStatusError as e:
+        except ServerError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
@@ -282,7 +282,7 @@ class APIObject:
                 namespace=self.namespace,
             ) as resp:
                 self.raw = resp.json()
-        except httpx.HTTPStatusError as e:
+        except ServerError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
@@ -310,7 +310,7 @@ class APIObject:
                 headers=headers,
             ) as resp:
                 self.raw = resp.json()
-        except httpx.HTTPStatusError as e:
+        except ServerError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e

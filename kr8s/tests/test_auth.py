@@ -4,7 +4,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import httpx
 import pytest
 import yaml
 
@@ -104,7 +103,7 @@ async def test_bad_auth(serviceaccount):
         serviceaccount=serviceaccount, kubeconfig="/no/file/here"
     )
     serviceaccount = Path(serviceaccount)
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(kr8s.ServerError, match="Unauthorized"):
         await kubernetes.version()
 
 
