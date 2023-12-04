@@ -785,3 +785,32 @@ async def test_secret_data(ns):
     await secret.create()
     assert "tls.crt" in secret.data
     await secret.delete()
+
+
+async def test_validate_pod(example_pod_spec):
+    pytest.importorskip("kubernetes_validate")
+    pod = await Pod(example_pod_spec)
+    await pod.validate("1.28", strict=True)
+
+
+async def test_validate_pod_fail():
+    kubernetes_validate = pytest.importorskip("kubernetes_validate")
+    pod = await Pod(
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "my-pod",
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name1": "pause",
+                        "image": "gcr.io/google_containers/pause",
+                    }
+                ]
+            },
+        }
+    )
+    with pytest.raises(kubernetes_validate.ValidationError):
+        await pod.validate("1.28", strict=True)

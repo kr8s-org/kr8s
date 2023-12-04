@@ -38,6 +38,7 @@ dependencies = [
     "kubernetes>=26.1.0",
     "pykube-ng>=23.6.0",
     "kubernetes-asyncio>=24.2.3",
+    "kubernetes-validate>=1.28.0",
 ]
 
 [tool.hatch.envs.test.scripts]
