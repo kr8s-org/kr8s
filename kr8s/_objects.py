@@ -485,6 +485,10 @@ class APIObject:
         """
         await child._set_owner(self)
 
+    def to_dict(self) -> dict:
+        """Return a dictionary representation of this object."""
+        return self.raw
+
     def to_lightkube(self) -> Any:
         """Return a lightkube representation of this object."""
         try:
