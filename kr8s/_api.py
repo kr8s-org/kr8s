@@ -149,6 +149,10 @@ class Api(object):
                         raise ServerError(
                             error["message"], status=error, response=e.response
                         ) from e
+                    elif e.response.status_code >= 500:
+                        raise ServerError(
+                            str(e), status=e.response.status_code, response=e.response
+                        ) from e
                     raise
             except ssl.SSLCertVerificationError:
                 # In some rare edge cases the SSL verification fails, so we try again
