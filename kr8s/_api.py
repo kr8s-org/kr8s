@@ -6,6 +6,7 @@ import contextlib
 import json
 import ssl
 import threading
+import warnings
 import weakref
 from typing import Dict, List, Tuple, Union
 
@@ -252,11 +253,14 @@ class Api(object):
         if watch:
             params["watch"] = "true" if watch else "false"
             kwargs["stream"] = True
-        resources = await self._api_resources()
-        for resource in resources:
-            if "shortNames" in resource and kind in resource["shortNames"]:
-                kind = resource["name"]
-                break
+        try:
+            resources = await self._api_resources()
+            for resource in resources:
+                if "shortNames" in resource and kind in resource["shortNames"]:
+                    kind = resource["name"]
+                    break
+        except ServerError as e:
+            warnings.warn(str(e))
         params = params or None
         obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
