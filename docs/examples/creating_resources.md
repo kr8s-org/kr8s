@@ -103,7 +103,7 @@ await secret.create()
 Validate the schema of a {py:class}`Pod <kr8s.objects.Pod>` before creating it.
 
 ```{hint}
-`kr8s` does not perform client-side validation of object schemas, instead it behaves like `kubectl` and relies on server-side validation. However, if you have the [`kubernetes-validate`](https://pypi.org/project/kubernetes-validate/) package installed you can easily check it yourself.
+`kr8s` does not perform client-side validation of object schemas, instead it behaves like `kubectl` and relies on server-side validation. However, if you have the [`kubernetes-validate>=1.28.1`](https://pypi.org/project/kubernetes-validate/) package installed you can easily check it yourself.
 ```
 
 `````{tab-set}
@@ -124,7 +124,7 @@ pod = Pod({
         },
     })
 
-kubernetes_validate.validate(pod.raw, "1.28")
+kubernetes_validate.validate(pod, "1.28")
 pod.create()
 ```
 ````
@@ -145,14 +145,9 @@ pod = await Pod({
         },
     })
 
-kubernetes_validate.validate(pod.raw, "1.28")
+kubernetes_validate.validate(pod, "1.28")
 await pod.create()
 ```
 ````
 
 `````
-
-
-```{seealso}
-If [willthames/kubernetes-validate#23](https://github.com/willthames/kubernetes-validate/pull/23) is accepted we can pass the Pod directly to `kubernetes_validate.validate()`.
-```
