@@ -24,6 +24,15 @@ When reading from a kube config file the following authentication methods are su
 Support for the legacy `auth-provider` methods is not planned.
 ```
 
+````{tip}
+To find out which user `kr8s` is currently authenticated with you can call `client.whoami()`.
+
+```python
+>>> print(client.whoami())
+'kubernetes-admin'
+```
+````
+
 ## Manual configuration
 
 You can also manually specify authentication information when you create your kr8s client object.
