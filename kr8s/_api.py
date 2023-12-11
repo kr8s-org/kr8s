@@ -12,6 +12,7 @@ from typing import Dict, List, Tuple, Union
 
 import aiohttp
 import httpx
+from cryptography import x509
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
@@ -225,6 +226,36 @@ class Api(object):
     async def reauthenticate(self) -> None:
         """Reauthenticate the API."""
         await self.auth.reauthenticate()
+
+    async def whoami(self):
+        """Retrieve the subject that's currently authenticated.
+
+        Inspired by `kubectl whoami`.
+
+        Returns:
+            str: The subject that's currently authenticated.
+        """
+        if self.auth.token:
+            payload = {
+                "apiVersion": "authentication.k8s.io/v1",
+                "kind": "TokenReview",
+                "spec": {"token": self.auth.token},
+            }
+            async with self.call_api(
+                "POST",
+                version="authentication.k8s.io/v1",
+                url="tokenreviews",
+                data=json.dumps(payload),
+            ) as r:
+                data = r.json()
+                return data["status"]["user"]["username"]
+        elif self.auth.username:
+            return f"kubecfg:basicauth:{self.auth.username}"
+        elif self.auth.client_cert_file:
+            with open(self.auth.client_cert_file, "rb") as f:
+                cert = x509.load_pem_x509_certificate(f.read())
+                [name] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
+                return name.value
 
     @contextlib.asynccontextmanager
     async def _get_kind(

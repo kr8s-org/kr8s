@@ -65,6 +65,7 @@ async def test_kubeconfig(k8s_cluster):
     kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     version = await kubernetes.version()
     assert "major" in version
+    assert await kubernetes.whoami() == "kubernetes-admin"
 
 
 async def test_kubeconfig_context(kubeconfig_with_second_context):
@@ -140,5 +141,6 @@ async def test_exec(kubeconfig_with_exec):
 
 async def test_token(kubeconfig_with_token):
     kubernetes = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
+    assert await kubernetes.whoami() == "system:serviceaccount:default:pytest"
     version = await kubernetes.version()
     assert "major" in version
