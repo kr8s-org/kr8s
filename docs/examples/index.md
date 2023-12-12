@@ -10,4 +10,5 @@ modifying_resources
 generating_resources
 pod_operations
 labelling_operator
+kopf_operator
 ```
