@@ -305,18 +305,18 @@ Instead we have focused on making the API extensible so that if there isn't a bu
 
 ### Extending the objects API
 
-To create your own objects you can subclass [](#kr8s.objects.APIObject) and at a minimum set the API `version`, API `endpoint`, the `kind` and whether it is `namespaced`. These will be used when constructing API calls by the API client.
+To create your own objects you can subclass [](#kr8s.objects.APIObject), however we recommend you use the {py:func}`new_class <kr8s.objects.new_class>` class factory to ensure all of the required attributes are set. These will be used when constructing API calls by the API client.
 
 ```python
-from kr8s.objects import APIObject
+from kr8s.objects import new_class
 
-class CustomObject(APIObject):
-    """A Kubernetes CustomObject."""
+CustomObject = new_class(
+        kind="CustomObject",
+        version="example.org",
+        namespaced=True,
+        asyncio=False,
+    )
 
-    version = "example.org"
-    endpoint = "customobject"
-    kind = "CustomObject"
-    namespaced = True
 ```
 
 The [](#kr8s.objects.APIObject) base class contains helper methods such as `.create()`, `.delete()`, `.patch()`, `.exists()`, etc.
@@ -324,20 +324,17 @@ The [](#kr8s.objects.APIObject) base class contains helper methods such as `.cre
 There are also optional helpers that can be enabled for resources that support them. For example you can enable `.scale()` for resources which support updating the number of replicas.
 
 ```python
-from kr8s.objects import APIObject
+from kr8s.objects import new_class
 
-class CustomScalableObject(APIObject):
-    """A Kubernetes CustomScalableObject."""
-
-    version = "example.org"
-    endpoint = "customscalableobject"
-    kind = "CustomScalableObject"
-    namespaced = True
-    scalable = True
-    scalable_spec = "replicas"  # The spec key to patch when scaling
+CustomScalableObject = new_class(
+        kind="CustomObject",
+        version="example.org",
+        namespaced=True,
+        scalable=True,
+        scalable_spec="replicas",  # The spec key to patch when scaling
+        asyncio=False,
+    )
 ```
-
-Some objects such as `Pod`, `Node`, `Service` and `Deployment` have additional custom methods such as `Pod.logs()` and `Deployment.ready()` which have been implemented for convenience. It might make sense for you to implement your own utilities on your custom classes.
 
 ### Using custom objects with other `kr8s` functions
 
@@ -347,15 +344,14 @@ When you create your own custom objects that subclass [`APIObject`](#kr8s.object
 
 ```python
 import kr8s
-from kr8s.objects import APIObject
+from kr8s.objects import new_class
 
-class CustomObject(APIObject):
-    """A Kubernetes CustomObject."""
-
-    version = "example.org"
-    endpoint = "customobject"
-    kind = "CustomObject"
-    namespaced = True
+CustomObject = new_class(
+        kind="CustomObject",
+        version="example.org",
+        namespaced=True,
+        asyncio=False,
+    )
 
 cos = kr8s.get("customobjects")  # Will return a list of CustomObject instances
 ```
