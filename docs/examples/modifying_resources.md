@@ -105,8 +105,6 @@ from kr8s.objects import Node
 node = Node("k8s-node-1")
 
 node.cordon()
-# Is equivalent to
-# node.patch({"spec": {"unschedulable": True}})
 ```
 ````
 
@@ -118,8 +116,6 @@ from kr8s.asyncio.objects import Node
 node = await Node("k8s-node-1")
 
 await node.cordon()
-# Is equivalent to
-# await node.patch({"spec": {"unschedulable": True}})
 ```
 ````
 
