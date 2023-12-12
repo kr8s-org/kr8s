@@ -118,6 +118,21 @@ async def test_concurrent_api_creation():
     assert len(set(apis)) == 1
 
 
+async def test_both_api_creation_methods_together():
+    async_api = await kr8s.asyncio.api()
+    api = kr8s.api()
+
+    assert await kr8s.asyncio.api() is async_api
+    assert kr8s.api() is api
+    assert async_api is not api
+
+    assert await async_api.version() == api.version()
+    assert await async_api.whoami() == api.whoami()
+
+    assert (await async_api.get("ns"))[0]._asyncio is True
+    assert api.get("ns")[0]._asyncio is False
+
+
 async def test_bad_api_version():
     kubernetes = await kr8s.asyncio.api()
     with pytest.raises(ValueError):
