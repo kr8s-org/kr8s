@@ -7,6 +7,7 @@ Create a new {py:class}`Pod <kr8s.objects.Pod>`.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -26,6 +27,7 @@ pod.create()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -53,6 +55,7 @@ Create a new {py:class}`Pod <kr8s.objects.Pod>` and wait for it to be ready. The
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -70,6 +73,7 @@ while not pod.ready():
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -95,6 +99,7 @@ Create a {py:class}`Secret <kr8s.objects.Secret>` with several keys.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from base64 import b64encode
 from kr8s.objects import Secret
@@ -117,6 +122,7 @@ secret.create()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from base64 import b64encode
 from kr8s.asyncio.objects import Secret
@@ -151,6 +157,7 @@ Validate the schema of a {py:class}`Pod <kr8s.objects.Pod>` before creating it.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kubernetes_validate
 from kr8s.objects import Pod
@@ -172,6 +179,7 @@ pod.create()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kubernetes_validate
 from kr8s.asyncio.objects import Pod

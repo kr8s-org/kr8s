@@ -7,6 +7,7 @@ Print out the logs from a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -17,6 +18,7 @@ for line in pod.logs():
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -36,6 +38,7 @@ Print out all the logs from a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -46,6 +49,7 @@ for line in pod.logs(follow=True, timeout=3600):
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 

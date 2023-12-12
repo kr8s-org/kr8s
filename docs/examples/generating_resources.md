@@ -11,6 +11,7 @@ Generate a simple {py:class}`Pod <kr8s.objects.Pod>` with a couple of keyword ar
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -20,6 +21,7 @@ pod.create()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 

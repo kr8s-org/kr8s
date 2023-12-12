@@ -8,6 +8,7 @@ in the Namespace `kube-system` to `1` replica.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Deployment
 
@@ -17,6 +18,7 @@ deploy.scale(1)
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Deployment
 
@@ -34,6 +36,7 @@ Add the label `foo` with the value `bar` to an existing {py:class}`Pod <kr8s.obj
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -43,6 +46,7 @@ pod.label({"foo": "bar"})
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -60,6 +64,7 @@ Using the [JSON 6902](https://jsonpatch.com/) style patching replace all {py:cla
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -72,6 +77,7 @@ pod.patch(
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -92,6 +98,7 @@ Cordon a {py:class}`Node <kr8s.objects.Node>` to mark it as unschedulable with {
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Node
 
@@ -104,6 +111,7 @@ node.cordon()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Node
 
