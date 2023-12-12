@@ -177,8 +177,8 @@ def test_pod_create_and_delete_sync(example_pod_spec):
 
 
 async def test_list_and_ensure():
-    kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get("pods", namespace=kr8s.ALL)
+    api = await kr8s.asyncio.api()
+    pods = await api.get("pods", namespace=kr8s.ALL)
     assert len(pods) > 0
     for pod in pods:
         await pod.refresh()
@@ -300,8 +300,8 @@ async def test_label_selector(example_pod_spec, selector):
     pod = await Pod(example_pod_spec)
     await pod.create()
 
-    kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get("pods", namespace=kr8s.ALL, label_selector=selector)
+    api = await kr8s.asyncio.api()
+    pods = await api.get("pods", namespace=kr8s.ALL, label_selector=selector)
     assert len(pods) >= 0
 
     await pod.delete()
@@ -311,13 +311,13 @@ async def test_field_selector(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
 
-    kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get(
+    api = await kr8s.asyncio.api()
+    pods = await api.get(
         "pods", namespace=kr8s.ALL, field_selector={"metadata.name": pod.name}
     )
     assert len(pods) == 1
 
-    pods = await kubernetes.get(
+    pods = await api.get(
         "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + "foo-bar-baz"
     )
     assert len(pods) == 0
@@ -397,8 +397,8 @@ async def test_patch_pod_json(example_pod_spec):
 
 
 async def test_all_v1_objects_represented():
-    kubernetes = await kr8s.asyncio.api()
-    k8s_objects = await kubernetes.api_resources()
+    api = await kr8s.asyncio.api()
+    k8s_objects = await api.api_resources()
     supported_apis = (
         "v1",
         "apps/v1",
@@ -468,8 +468,8 @@ async def test_deployment_scale(example_deployment_spec):
 
 
 async def test_node():
-    kubernetes = await kr8s.asyncio.api()
-    nodes = await kubernetes.get("nodes")
+    api = await kr8s.asyncio.api()
+    nodes = await api.get("nodes")
     assert len(nodes) > 0
     for node in nodes:
         assert node.unschedulable is False
@@ -479,8 +479,8 @@ async def test_node():
 
 
 async def test_service_proxy():
-    kubernetes = await kr8s.asyncio.api()
-    [service] = await kubernetes.get("services", "kubernetes")
+    api = await kr8s.asyncio.api()
+    [service] = await api.get("services", "kubernetes")
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
     assert isinstance(data, httpx.Response)

@@ -62,10 +62,10 @@ async def kubeconfig_with_second_context(k8s_cluster):
 
 
 async def test_kubeconfig(k8s_cluster):
-    kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
-    version = await kubernetes.version()
+    api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    version = await api.version()
     assert "major" in version
-    assert await kubernetes.whoami() == "kubernetes-admin"
+    assert await api.whoami() == "kubernetes-admin"
 
 
 async def test_kubeconfig_context(kubeconfig_with_second_context):
@@ -77,17 +77,16 @@ async def test_kubeconfig_context(kubeconfig_with_second_context):
 
 
 async def test_default_service_account(k8s_cluster):
-    kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     assert (
-        str(kubernetes.auth._serviceaccount)
-        == "/var/run/secrets/kubernetes.io/serviceaccount"
+        str(api.auth._serviceaccount) == "/var/run/secrets/kubernetes.io/serviceaccount"
     )
 
 
 async def test_reauthenticate(k8s_cluster):
-    kubernetes = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
-    await kubernetes.reauthenticate()
-    version = await kubernetes.version()
+    api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    await api.reauthenticate()
+    version = await api.version()
     assert "major" in version
 
 
@@ -100,17 +99,17 @@ def test_reauthenticate_sync(k8s_cluster):
 
 async def test_bad_auth(serviceaccount):
     (Path(serviceaccount) / "token").write_text("abc123")
-    kubernetes = await kr8s.asyncio.api(
+    api = await kr8s.asyncio.api(
         serviceaccount=serviceaccount, kubeconfig="/no/file/here"
     )
     serviceaccount = Path(serviceaccount)
     with pytest.raises(kr8s.ServerError, match="Unauthorized"):
-        await kubernetes.version()
+        await api.version()
 
 
 async def test_url(kubectl_proxy):
-    kubernetes = await kr8s.asyncio.api(url=kubectl_proxy)
-    version = await kubernetes.version()
+    api = await kr8s.asyncio.api(url=kubectl_proxy)
+    version = await api.version()
     assert "major" in version
 
 
@@ -120,27 +119,27 @@ def test_no_config():
 
 
 async def test_service_account(serviceaccount):
-    kubernetes = await kr8s.asyncio.api(
+    api = await kr8s.asyncio.api(
         serviceaccount=serviceaccount, kubeconfig="/no/file/here"
     )
-    await kubernetes.version()
+    await api.version()
 
     serviceaccount = Path(serviceaccount)
-    assert kubernetes.auth.server
-    assert kubernetes.auth.token == (serviceaccount / "token").read_text()
-    assert str(serviceaccount) in kubernetes.auth.server_ca_file
-    assert "BEGIN CERTIFICATE" in Path(kubernetes.auth.server_ca_file).read_text()
-    assert kubernetes.auth.namespace == (serviceaccount / "namespace").read_text()
+    assert api.auth.server
+    assert api.auth.token == (serviceaccount / "token").read_text()
+    assert str(serviceaccount) in api.auth.server_ca_file
+    assert "BEGIN CERTIFICATE" in Path(api.auth.server_ca_file).read_text()
+    assert api.auth.namespace == (serviceaccount / "namespace").read_text()
 
 
 async def test_exec(kubeconfig_with_exec):
-    kubernetes = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
-    version = await kubernetes.version()
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
+    version = await api.version()
     assert "major" in version
 
 
 async def test_token(kubeconfig_with_token):
-    kubernetes = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
-    assert await kubernetes.whoami() == "system:serviceaccount:default:pytest"
-    version = await kubernetes.version()
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
+    assert await api.whoami() == "system:serviceaccount:default:pytest"
+    version = await api.version()
     assert "major" in version
