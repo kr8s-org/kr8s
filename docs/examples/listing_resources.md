@@ -7,6 +7,7 @@ Print out all of the {py:class}`Node <kr8s.objects.Node>` names in the cluster u
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -16,6 +17,7 @@ for node in kr8s.get("nodes"):
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s.asyncio
 
@@ -33,6 +35,7 @@ List all Pods in all namespaces with {py:func}`kr8s.get()` and print their IP, n
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -42,6 +45,7 @@ for pod in kr8s.get("pods", namespace=kr8s.ALL):
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s
 
@@ -59,6 +63,7 @@ List all {py:class}`Ingresses <kr8s.objects.Ingress>` in the current namespace w
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -74,6 +79,7 @@ ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version al
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s.asyncio
 
@@ -96,6 +102,7 @@ Get a list of {py:class}`Pod <kr8s.objects.Pod>` resources that have the `Ready=
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -106,6 +113,7 @@ for pod in kr8s.get("pods", namespace="kube-system"):
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s
 
@@ -124,6 +132,7 @@ Starting from a dictionary containing a label selector get all {py:class}`Pods <
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -135,6 +144,7 @@ for pod in kr8s.get("pods", namespace=kr8s.ALL, label_selector=selector):
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s
 
@@ -154,6 +164,7 @@ Get a list of {py:class}`Pod <kr8s.objects.Pod>` resources that have `status.pha
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -163,6 +174,7 @@ for pod in kr8s.get("pods", namespace="kube-system", field_selector="status.phas
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s
 
@@ -180,6 +192,7 @@ List {py:class}`Pods <kr8s.objects.Pod>` with {py:func}`kr8s.get()` and sort the
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import kr8s
 
@@ -192,6 +205,7 @@ for pod in pods:
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import kr8s
 

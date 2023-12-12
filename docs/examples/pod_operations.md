@@ -7,6 +7,7 @@ Exec a command in a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.exec(
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -19,6 +20,7 @@ print(command.stdout.decode())
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -40,6 +42,7 @@ Run a command in a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.exec()
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import sys
 from kr8s.objects import Pod
@@ -53,6 +56,7 @@ pod.exec(["ls", "/"], stdout=sys.stdout.buffer, stderr=sys.stderr.buffer, check=
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import sys
 from kr8s.asyncio.objects import Pod
@@ -74,6 +78,7 @@ Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 import requests
 from kr8s.objects import Pod
@@ -88,6 +93,7 @@ with pod.portforward(remote_port=1234) as local_port:
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 import httpx
 from kr8s.asyncio.objects import Pod
@@ -114,6 +120,7 @@ Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -123,6 +130,7 @@ pod.portforward(1234, local_port=5678).run_forever()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 
@@ -144,6 +152,7 @@ Open a port forward with {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 from kr8s.objects import Pod
 
@@ -161,6 +170,7 @@ pf.stop()
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 from kr8s.asyncio.objects import Pod
 

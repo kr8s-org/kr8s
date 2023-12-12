@@ -18,6 +18,7 @@ It then checks the {py:func}`Deployment.annotations <kr8s.objects.Deployment.ann
 `````{tab-set}
 
 ````{tab-item} Sync
+:sync: sync
 ```python
 # controller.py
 import time
@@ -36,6 +37,7 @@ if __name__ == "__main__":
 ````
 
 ````{tab-item} Async
+:sync: async
 ```python
 # controller.py
 import asyncio
