@@ -30,7 +30,7 @@ CURRENT_DIR = pathlib.Path(__file__).parent
 
 
 @pytest.fixture
-async def nginx_pod(k8s_cluster, example_pod_spec, ns):
+async def nginx_pod(k8s_cluster, example_pod_spec):
     example_pod_spec["metadata"]["name"] = (
         "nginx-" + example_pod_spec["metadata"]["name"]
     )
@@ -48,18 +48,14 @@ async def nginx_pod(k8s_cluster, example_pod_spec, ns):
     await pod.create()
     while not await pod.ready():
         await asyncio.sleep(0.1)
-    # TODO replace with pod.exec() once implemented
-    k8s_cluster.kubectl(
-        "exec",
-        example_pod_spec["metadata"]["name"],
-        "-n",
-        ns,
-        "--",
-        "dd",
-        "if=/dev/random",
-        "of=/usr/share/nginx/html/foo.dat",
-        "bs=4M",
-        "count=10",
+    await pod.exec(
+        [
+            "dd",
+            "if=/dev/random",
+            "of=/usr/share/nginx/html/foo.dat",
+            "bs=4M",
+            "count=10",
+        ]
     )
     yield pod
     try:
