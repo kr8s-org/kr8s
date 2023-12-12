@@ -57,10 +57,10 @@ class KubeAuth:
     async def reauthenticate(self) -> None:
         """Reauthenticate with the server."""
         async with self.__auth_lock:
-            if self._serviceaccount and not self.server:
-                await self._load_service_account()
             if self._kubeconfig is not False and not self.server:
                 await self._load_kubeconfig()
+            if self._serviceaccount and not self.server:
+                await self._load_service_account()
             if not self.server:
                 raise ValueError("Unable to find valid credentials")
 
