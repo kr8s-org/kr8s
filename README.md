@@ -14,7 +14,7 @@ A simple, extensible Python client library for Kubernetes that feels familiar fo
 
 ## Highlights
 
-- API inspired by `kubectl` to reduce developer learning curve.
+- API inspired by `kubectl` for a shallow learning curve.
 - [Sensible defaults](https://docs.kr8s.org/en/stable/authentication.html) to reduce boiler plate.
 - No swagger generated code, human readable code only.
 - Also has an [asynchronous API](https://docs.kr8s.org/en/stable/asyncio.html) that can be used with `asyncio` and `trio`.
