@@ -46,6 +46,48 @@ await pod.create()
 
 `````
 
+## Create a Pod and wait for it to be ready
+
+Create a new {py:class}`Pod <kr8s.objects.Pod>` and wait for it to be ready. There are two common patterns for implementing this.
+
+`````{tab-set}
+
+````{tab-item} Sync
+```python
+from kr8s.objects import Pod
+
+pod = Pod(...)
+pod.create()
+
+# Option 1: Block until ready, similar to kubectl wait
+pod.wait("condition=Ready")
+
+# Option 2: Poll readiness
+import time
+while not pod.ready():
+    time.sleep(1)
+```
+````
+
+````{tab-item} Async
+```python
+from kr8s.asyncio.objects import Pod
+
+pod = await Pod(...)
+await pod.create()
+
+# Option 1: Block until ready, similar to kubectl wait
+await pod.wait("condition=Ready")
+
+# Option 2: Poll readiness
+import asyncio
+while not await pod.ready():
+    await asyncio.sleep(1)
+```
+````
+
+`````
+
 ## Create a Secret
 
 Create a {py:class}`Secret <kr8s.objects.Secret>` with several keys.
