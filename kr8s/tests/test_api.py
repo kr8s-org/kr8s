@@ -86,20 +86,20 @@ async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
 
 
 def test_version_sync():
-    kubernetes = kr8s.api()
-    version = kubernetes.version()
+    api = kr8s.api()
+    version = api.version()
     assert "major" in version
 
 
 async def test_version_sync_in_async():
-    kubernetes = kr8s.api()
-    version = kubernetes.version()
+    api = kr8s.api()
+    version = api.version()
     assert "major" in version
 
 
 async def test_version():
-    kubernetes = await kr8s.asyncio.api()
-    version = await kubernetes.version()
+    api = await kr8s.asyncio.api()
+    version = await api.version()
     assert "major" in version
 
 
@@ -118,10 +118,25 @@ async def test_concurrent_api_creation():
     assert len(set(apis)) == 1
 
 
+async def test_both_api_creation_methods_together():
+    async_api = await kr8s.asyncio.api()
+    api = kr8s.api()
+
+    assert await kr8s.asyncio.api() is async_api
+    assert kr8s.api() is api
+    assert async_api is not api
+
+    assert await async_api.version() == api.version()
+    assert await async_api.whoami() == api.whoami()
+
+    assert (await async_api.get("ns"))[0]._asyncio is True
+    assert api.get("ns")[0]._asyncio is False
+
+
 async def test_bad_api_version():
-    kubernetes = await kr8s.asyncio.api()
+    api = await kr8s.asyncio.api()
     with pytest.raises(ValueError):
-        async with kubernetes.call_api("GET", version="foo"):
+        async with api.call_api("GET", version="foo"):
             pass  # pragma: no cover
 
 
@@ -134,8 +149,8 @@ async def test_get_pods(namespace):
 
 
 async def test_get_pods_as_table():
-    kubernetes = await kr8s.asyncio.api()
-    pods = await kubernetes.get("pods", namespace="kube-system", as_object=Table)
+    api = await kr8s.asyncio.api()
+    pods = await api.get("pods", namespace="kube-system", as_object=Table)
     assert isinstance(pods, Table)
     assert len(pods.rows) > 0
     assert not await pods.exists()  # Cannot exist in the Kubernetes API
@@ -161,8 +176,8 @@ async def test_watch_pods(example_pod_spec, ns):
 
 
 async def test_get_deployments():
-    kubernetes = await kr8s.asyncio.api()
-    deployments = await kubernetes.get("deployments")
+    api = await kr8s.asyncio.api()
+    deployments = await api.get("deployments")
     assert isinstance(deployments, list)
 
 
