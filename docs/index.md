@@ -349,17 +349,16 @@ examples/index
 :caption: Foundations
 :hidden: true
 authentication
-client
 object
+client
 asyncio
 ```
 
 ```{toctree}
 :maxdepth: 2
-:caption: Development
+:caption: API Reference
 :hidden: true
-contributing
-releasing
+autoapi/kr8s/index
 ```
 
 ```{toctree}
@@ -371,11 +370,10 @@ branding
 history
 ```
 
-
 ```{toctree}
 :maxdepth: 2
-:caption: API Reference
+:caption: Development
 :hidden: true
-autoapi/kr8s/index
+contributing
+releasing
 ```
-
