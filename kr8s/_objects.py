@@ -8,7 +8,7 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union, Self
 
 import anyio
 import httpx
@@ -171,7 +171,7 @@ class APIObject:
         field_selector: Union[str, Dict[str, str]] = None,
         timeout: int = 2,
         **kwargs,
-    ) -> APIObject:
+    ) -> Self:
         """Get a Kubernetes resource by name or via selectors."""
 
         if api is None:
