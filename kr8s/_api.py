@@ -263,7 +263,7 @@ class Api(object):
     @contextlib.asynccontextmanager
     async def _get_kind(
         self,
-        kind: str,
+        kind: Union[str, type],
         namespace: str = None,
         label_selector: Union[str, Dict] = None,
         field_selector: Union[str, Dict] = None,
@@ -291,16 +291,19 @@ class Api(object):
         if watch:
             params["watch"] = "true" if watch else "false"
             kwargs["stream"] = True
-        try:
-            resources = await self._api_resources()
-            for resource in resources:
-                if "shortNames" in resource and kind in resource["shortNames"]:
-                    kind = resource["name"]
-                    break
-        except ServerError as e:
-            warnings.warn(str(e))
+        if isinstance(kind, type):
+            obj_cls = kind
+        else:
+            try:
+                resources = await self._api_resources()
+                for resource in resources:
+                    if "shortNames" in resource and kind in resource["shortNames"]:
+                        kind = resource["name"]
+                        break
+            except ServerError as e:
+                warnings.warn(str(e))
+            obj_cls = get_class(kind, _asyncio=self._asyncio)
         params = params or None
-        obj_cls = get_class(kind, _asyncio=self._asyncio)
         async with self.call_api(
             method="GET",
             url=obj_cls.endpoint,
@@ -313,7 +316,7 @@ class Api(object):
 
     async def get(
         self,
-        kind: str,
+        kind: Union[str, type],
         *names: List[str],
         namespace: str = None,
         label_selector: Union[str, Dict] = None,
@@ -326,7 +329,7 @@ class Api(object):
 
         Parameters
         ----------
-        kind : str
+        kind : str, type
             The kind of resource to get.
         *names : List[str], optional
             The names of specific resources to get.
@@ -358,7 +361,7 @@ class Api(object):
 
     async def _get(
         self,
-        kind: str,
+        kind: Union[str, type],
         *names: List[str],
         namespace: str = None,
         label_selector: Union[str, Dict] = None,

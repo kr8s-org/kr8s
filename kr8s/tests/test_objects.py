@@ -800,3 +800,13 @@ async def test_pod_errors(bad_pod_spec):
     pod = await Pod(bad_pod_spec)
     with pytest.raises(kr8s.ServerError, match="Required value"):
         await pod.create()
+
+
+async def test_pod_list():
+    pods1 = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+    pods2 = await Pod.list(namespace=kr8s.ALL)
+    assert pods1 and pods2
+    assert len(pods1) == len(pods2)
+    assert all(isinstance(p, Pod) for p in pods1)
+    assert all(isinstance(p, Pod) for p in pods2)
+    assert {p.name for p in pods1} == {p.name for p in pods2}

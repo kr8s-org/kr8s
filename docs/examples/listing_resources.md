@@ -66,6 +66,7 @@ List all {py:class}`Ingresses <kr8s.objects.Ingress>` in the current namespace w
 :sync: sync
 ```python
 import kr8s
+from kr8s.objects import Ingress
 
 # All of these are equivalent
 ings = kr8s.get("ing")                           # Short name
@@ -75,6 +76,7 @@ ings = kr8s.get("Ingress")                       # Title
 ings = kr8s.get("ingress.networking.k8s.io")     # Full group name
 ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
 ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+ings = kr8s.get(Ingress)                         # Class
 ```
 ````
 
@@ -82,6 +84,7 @@ ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version al
 :sync: async
 ```python
 import kr8s.asyncio
+from kr8s.asyncio.objects import Ingress
 
 # All of these are equivalent
 ings = await kr8s.asyncio.get("ing")                           # Short name
@@ -91,6 +94,7 @@ ings = await kr8s.asyncio.get("Ingress")                       # Title
 ings = await kr8s.asyncio.get("ingress.networking.k8s.io")     # Full group name
 ings = await kr8s.asyncio.get("ingress.v1.networking.k8s.io")  # Full with explicit version
 ings = await kr8s.asyncio.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+ings = await kr8s.asyncio.get(Ingress)                         # Class
 ```
 ````
 
