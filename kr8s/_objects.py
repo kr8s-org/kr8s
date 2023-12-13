@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
-import sys
 import asyncio
 import contextlib
 import json
 import pathlib
 import re
+import sys
 import time
 from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
 
