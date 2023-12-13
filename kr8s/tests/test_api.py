@@ -181,6 +181,14 @@ async def test_get_deployments():
     assert isinstance(deployments, list)
 
 
+async def test_get_class():
+    api = await kr8s.asyncio.api()
+    pods = await api.get(Pod)
+    assert isinstance(pods, list)
+    assert len(pods) > 0
+    assert isinstance(pods[0], Pod)
+
+
 async def test_api_resources():
     resources = await kr8s.asyncio.api_resources()
 
