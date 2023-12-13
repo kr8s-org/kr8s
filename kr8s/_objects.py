@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
+import sys
 import asyncio
 import contextlib
 import json
 import pathlib
 import re
 import time
-from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union, Self
+from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
 
 import anyio
 import httpx
@@ -31,6 +32,13 @@ from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
 JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+
+    APIObjectType = Self
+else:
+    APIObjectType = "APIObject"
 
 
 class APIObject:
@@ -171,7 +179,7 @@ class APIObject:
         field_selector: Union[str, Dict[str, str]] = None,
         timeout: int = 2,
         **kwargs,
-    ) -> Self:
+    ) -> APIObjectType:
         """Get a Kubernetes resource by name or via selectors."""
 
         if api is None:
