@@ -8,7 +8,17 @@ import json
 import pathlib
 import re
 import time
-from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union, Self
+from typing import (
+    Any,
+    AsyncGenerator,
+    BinaryIO,
+    Dict,
+    List,
+    Optional,
+    Self,
+    Type,
+    Union,
+)
 
 import anyio
 import httpx
