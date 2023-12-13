@@ -1459,7 +1459,12 @@ def get_class(
 
 
 def new_class(
-    kind: str, version: Optional[str] = None, asyncio: bool = True, namespaced=True
+    kind: str,
+    version: Optional[str] = None,
+    asyncio: bool = True,
+    namespaced=True,
+    scalable: Optional[bool] = None,
+    scalable_spec: Optional[str] = None,
 ) -> Type[APIObject]:
     """Create a new APIObject subclass.
 
@@ -1487,6 +1492,8 @@ def new_class(
             "plural": kind.lower() + "s",
             "singular": kind.lower(),
             "namespaced": namespaced,
+            "scalable": scalable or False,
+            "scalable_spec": scalable_spec or "replicas",
         },
     )
 

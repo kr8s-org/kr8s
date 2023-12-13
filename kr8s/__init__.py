@@ -90,7 +90,52 @@ def get(*args, **kwargs):
     return _run_sync(partial(_get, _asyncio=False))(*args, **kwargs)
 
 
-api = _run_sync(partial(_api, _asyncio=False))
+def api(
+    url: str = None,
+    kubeconfig: str = None,
+    serviceaccount: str = None,
+    namespace: str = None,
+    context: str = None,
+) -> Api:
+    """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
+
+    If a kr8s object already exists with the same arguments in this thread, it will be returned.
+
+    Parameters
+    ----------
+    url : str, optional
+        The URL of the Kubernetes API server
+    kubeconfig : str, optional
+        The path to a kubeconfig file to use
+    serviceaccount : str, optional
+        The path of a service account to use
+    namespace : str, optional
+        The namespace to use
+    context : str, optional
+        The context to use
+
+    Returns
+    -------
+    Api
+        The API object
+
+    Examples
+    --------
+
+        >>> import kr8s
+        >>> api = kr8s.api()  # Uses the default kubeconfig
+        >>> print(api.version())  # Get the Kubernetes version
+    """
+    return _run_sync(_api)(
+        url=url,
+        kubeconfig=kubeconfig,
+        serviceaccount=serviceaccount,
+        namespace=namespace,
+        context=context,
+        _asyncio=False,
+    )
+
+
 version = _run_sync(partial(_k8s_version, _asyncio=False))
 update_wrapper(version, _k8s_version)
 watch = _run_sync(partial(_watch, _asyncio=False))
