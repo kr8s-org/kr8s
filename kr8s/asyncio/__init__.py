@@ -3,4 +3,4 @@
 from kr8s._api import Api  # noqa
 
 from ._api import api  # noqa
-from ._helpers import api_resources, get, version, watch  # noqa
+from ._helpers import api_resources, get, version, watch, whoami  # noqa
