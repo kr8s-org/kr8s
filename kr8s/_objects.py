@@ -350,6 +350,19 @@ class APIObject:
         async for event, obj in self._watch():
             yield event, obj
 
+    @classmethod
+    async def list(cls, **kwargs) -> List[APIObjectType]:
+        """List objects in Kubernetes.
+
+        Args:
+            **kwargs: Keyword arguments to pass to :func:`kr8s.get`.
+
+        Returns:
+            A list of objects.
+        """
+        api = await kr8s.asyncio.api()
+        return await api._get(kind=cls, **kwargs)
+
     async def _test_conditions(self, conditions: list) -> bool:
         """Test if conditions are met."""
         for condition in conditions:
