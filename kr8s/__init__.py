@@ -30,6 +30,9 @@ from .asyncio import (
 from .asyncio import (
     watch as _watch,
 )
+from .asyncio import (
+    whoami as _whoami,
+)
 
 try:
     from ._version import version as __version__  # noqa
@@ -134,6 +137,23 @@ def api(
         context=context,
         _asyncio=False,
     )
+
+
+def whoami():
+    """Get the current user's identity.
+
+    Returns
+    -------
+    str
+        The user's identity
+
+    Examples
+    --------
+
+        >>> import kr8s
+        >>> print(kr8s.whoami())
+    """
+    return _run_sync(_whoami)(_asyncio=False)
 
 
 version = _run_sync(partial(_k8s_version, _asyncio=False))

@@ -235,6 +235,9 @@ class Api(object):
         Returns:
             str: The subject that's currently authenticated.
         """
+        return await self._whoami()
+
+    async def _whoami(self):
         if self.auth.token:
             payload = {
                 "apiVersion": "authentication.k8s.io/v1",

@@ -106,7 +106,14 @@ async def api_resources(api=None, _asyncio=True):
     return await api._api_resources()
 
 
+async def whoami(api=None, _asyncio=True):
+    if api is None:
+        api = await _api(_asyncio=_asyncio)
+    return await api._whoami()
+
+
 get.__doc__ = Api.get.__doc__
 version.__doc__ = Api.version.__doc__
 watch.__doc__ = Api.watch.__doc__
 api_resources.__doc__ = Api.api_resources.__doc__
+whoami.__doc__ = Api.whoami.__doc__
