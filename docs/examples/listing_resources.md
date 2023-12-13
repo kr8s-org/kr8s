@@ -1,4 +1,4 @@
-# Listing resources
+# Listing Resources
 
 ## List Nodes
 

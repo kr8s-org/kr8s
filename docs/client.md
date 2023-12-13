@@ -122,6 +122,8 @@ async with api.call_api("GET", base="/version", version="") as r:
 print(version)
 ```
 
+(client-caching)=
+
 ## Client caching
 
 It is always recommended to create client objects via the {py:func}`kr8s.api() <kr8s.api>` or {py:func}`kr8s.asyncio.api() <kr8s.asyncio.api>` factory functions. In most use cases where you are interacting with a single Kubernetes cluster you can think of them as a singleton.

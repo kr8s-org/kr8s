@@ -1,6 +1,6 @@
-# Inspecting resources
+# Inspecting Resources
 
-## Reading Pod logs
+## Read Pod logs
 
 Print out the logs from a {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.logs() <kr8s.objects.Pod.logs()>`.
 

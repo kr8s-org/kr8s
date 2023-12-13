@@ -29,7 +29,7 @@ await deploy.scale(1)
 
 `````
 
-## Add a label to a Pod
+## Add Pod label
 
 Add the label `foo` with the value `bar` to an existing {py:class}`Pod <kr8s.objects.Pod>` using {py:func}`Pod.label() <kr8s.objects.Pod.label()>`.
 
