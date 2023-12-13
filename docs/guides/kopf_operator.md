@@ -1,8 +1,8 @@
-# Kopf Operator
+# Build an operator with `kopf`
 
-Build a controller using `kr8s` and [`kopf`](https://kopf.readthedocs.io/en/stable/) to read the operating system information from a {py:class}`Pod <kr8s.objects.Pod>` and add that metadata as labels.
+In this guide we will build a controller using `kr8s` and [`kopf`](https://kopf.readthedocs.io/en/stable/) to read the operating system information from a {py:class}`Pod <kr8s.objects.Pod>` and add that metadata as labels.
 
-Kopf is an excellent framework for building event driven controllers and it can work hand-in-hand with `kr8s` when you want to interact with Kubernetes resources directly.
+[Kopf](https://kopf.readthedocs.io/en/stable/) is an excellent framework for building event driven controllers and it can work hand-in-hand with `kr8s` when you want to interact with Kubernetes resources directly.
 
 ## Controller
 

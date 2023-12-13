@@ -1,6 +1,6 @@
-# Labelling Operator
+# Build a simple operator
 
-Build an operator that periodically reconciles all {py:class}`Deployments <kr8s.objects.Deployment>` and adds a label to any with a certain annotation.
+In this guide we will build a controller that periodically reconciles all {py:class}`Deployments <kr8s.objects.Deployment>` and adds a label to any with a certain annotation.
 
 ```{warning}
 While you can build operators with `kr8s` we would recommend folks look at using [kopf](https://kopf.readthedocs.io/en/stable/) for building anything more complex than the below example.
