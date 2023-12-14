@@ -193,16 +193,14 @@ class APIObject:
         while start + timeout > time.time():
             if name:
                 try:
-                    resources = await api._get(
-                        cls.endpoint, name, namespace=namespace, **kwargs
-                    )
+                    resources = await api._get(cls, name, namespace=namespace, **kwargs)
                 except ServerError as e:
                     if e.response.status_code == 404:
                         continue
                     raise e
             elif label_selector or field_selector:
                 resources = await api._get(
-                    cls.endpoint,
+                    cls,
                     namespace=namespace,
                     label_selector=label_selector,
                     field_selector=field_selector,
