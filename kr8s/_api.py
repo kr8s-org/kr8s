@@ -445,8 +445,8 @@ class Api(object):
         """Get the Kubernetes API resources."""
         return await self._api_resources()
 
-    # Cache for 10 minutes because kubectl does
-    # https://github.com/kubernetes/kubernetes/blob/0fb71846df9babb6012a7fce22e2533e9d795baa/staging/src/k8s.io/cli-runtime/pkg/genericclioptions/config_flags.go#L253
+    # Cache for 6 hours because kubectl does
+    # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
     @cached(TTLCache(1, 600))
     async def _api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
