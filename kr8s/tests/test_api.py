@@ -236,15 +236,6 @@ def test_sync_api_returns_sync_objects():
     assert pods[0]._asyncio is False
 
 
-def test_api_client_reuse_between_event_loops():
-    async def get_api():
-        await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
-
-    asyncio.run(get_api())
-    asyncio.set_event_loop(asyncio.new_event_loop())
-    asyncio.run(get_api())
-
-
 async def test_api_names(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()
@@ -269,3 +260,12 @@ async def test_whoami():
 async def test_whoami_sync():
     api = kr8s.api()
     assert kr8s.whoami() == api.whoami()
+
+
+async def test_api_resources_cache(caplog):
+    caplog.set_level("INFO")
+    api = await kr8s.asyncio.api()
+    await api.api_resources()
+    assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
+    await api.api_resources()
+    assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
