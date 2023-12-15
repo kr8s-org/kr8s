@@ -14,6 +14,8 @@ def test_trio_runs():
         api = await kr8s.asyncio.api()
         version = await api.version()
         assert "major" in version
+        api_resources = await api.api_resources()
+        assert api_resources
 
     trio.run(main)
 

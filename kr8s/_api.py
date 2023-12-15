@@ -12,6 +12,8 @@ from typing import Dict, List, Tuple, Union
 
 import aiohttp
 import httpx
+from asyncache import cached
+from cachetools import TTLCache
 from cryptography import x509
 
 from ._auth import KubeAuth
@@ -443,6 +445,9 @@ class Api(object):
         """Get the Kubernetes API resources."""
         return await self._api_resources()
 
+    # Cache for 10 minutes because kubectl does
+    # https://github.com/kubernetes/kubernetes/blob/0fb71846df9babb6012a7fce22e2533e9d795baa/staging/src/k8s.io/cli-runtime/pkg/genericclioptions/config_flags.go#L253
+    @cached(TTLCache(1, 600))
     async def _api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
