@@ -447,7 +447,7 @@ class Api(object):
 
     # Cache for 6 hours because kubectl does
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
-    @cached(TTLCache(1, 600))
+    @cached(TTLCache(1, 60 * 60 * 6))
     async def _api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
