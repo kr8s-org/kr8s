@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import random
 import socket
+import sys
 from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -17,6 +18,11 @@ from ._exceptions import ConnectionClosedError
 
 if TYPE_CHECKING:
     from .objects import APIObject
+
+if sys.version_info < (3, 12, 1):
+    # contextlib.supress() in Python 3.12.1 supprts ExceptionGroups
+    # For older versions, we use the exceptiongroup backport
+    from exceptiongroup import suppress  # noqa: F811
 
 
 class PortForward:
@@ -183,11 +189,10 @@ class PortForward:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
             async with self._connect_websocket() as ws:
-                async with anyio.create_task_group() as tg:
-                    tg.start_soon(self._tcp_to_ws, ws, reader)
-                    tg.start_soon(self._ws_to_tcp, ws, writer)
-        except ConnectionClosedError:
-            pass
+                with suppress(ConnectionClosedError):
+                    async with anyio.create_task_group() as tg:
+                        tg.start_soon(self._tcp_to_ws, ws, reader)
+                        tg.start_soon(self._ws_to_tcp, ws, writer)
         finally:
             writer.close()
 
