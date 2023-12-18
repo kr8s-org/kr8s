@@ -19,7 +19,7 @@ from ._exceptions import ConnectionClosedError
 if TYPE_CHECKING:
     from .objects import APIObject
 
-if sys.version_info >= (3, 12):
+if sys.version_info > (3, 12):
     # contextlib.supress() in Python 3.12 supprts ExceptionGroups
     # For older versions, we use the exceptiongroup backport
     from exceptiongroup import suppress  # noqa: F811
