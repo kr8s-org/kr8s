@@ -19,17 +19,8 @@ dependencies = [
     "httpx>=0.24.1",
     "python-box>=7.0.1",
 ]
-
-[tool.pytest.ini_options]
-addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
-timeout = 300
-xfail_strict = true
-reruns = 3
-reruns_delay = 1
-asyncio_mode = "auto"
-
-[tool.hatch.envs.test]
-dependencies = [
+[project.optional-dependencies]
+test = [
     "pytest>=7.2.2",
     "pytest-asyncio>=0.20.3",
     "pytest-kind@git+https://codeberg.org/hjacobs/pytest-kind.git",
@@ -43,12 +34,7 @@ dependencies = [
     "kubernetes-asyncio>=24.2.3",
     "kubernetes-validate>=1.28.0",
 ]
-
-[tool.hatch.envs.test.scripts]
-run = "pytest kr8s"
-
-[tool.hatch.envs.docs]
-dependencies = [
+docs = [
     "sphinx>=5.3.0",
     "sphinx-autobuild>=2021.3.14",
     "myst-parser>=1.0.0",
@@ -58,6 +44,24 @@ dependencies = [
     "sphinxcontrib-mermaid>=0.8.1",
     "sphinx-autoapi>=2.1.0",
 ]
+
+[tool.pytest.ini_options]
+addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
+timeout = 300
+xfail_strict = true
+reruns = 3
+reruns_delay = 1
+asyncio_mode = "auto"
+
+[tool.hatch.envs.test]
+features = ["test"]
+
+[tool.hatch.envs.test.scripts]
+default = "pytest kr8s"
+run = "pytest kr8s"
+
+[tool.hatch.envs.docs]
+features = ["docs"]
 
 [tool.hatch.envs.docs.scripts]
 build = "sphinx-build docs/ docs/_build/"
