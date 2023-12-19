@@ -27,8 +27,6 @@ class KubeAuth:
         self.client_key_file = None
         self.server_ca_file = None
         self.token = None
-        self.username = None
-        self.password = None
         self.namespace = namespace
         self.active_context = None
         self._insecure_skip_tls_verify = False
@@ -182,10 +180,6 @@ class KubeAuth:
                 )
         if "token" in self._user:
             self.token = self._user["token"]
-        if "username" in self._user:
-            self.username = self._user["username"]
-        if "password" in self._user:
-            self.password = self._user["password"]
         if self.namespace is None:
             self.namespace = self._context.get("namespace", "default")
         if "auth-provider" in self._user:

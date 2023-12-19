@@ -75,13 +75,9 @@ class Api(object):
             with contextlib.suppress(RuntimeError):
                 await self._session.aclose()
             self._session = None
-        userauth = None
-        if self.auth.username and self.auth.password:
-            userauth = httpx.BasicAuth(self.auth.username, self.auth.password)
         self._session = httpx.AsyncClient(
             base_url=self.auth.server,
             headers=headers,
-            auth=userauth,
             verify=await self.auth.ssl_context(),
         )
 
@@ -187,8 +183,6 @@ class Api(object):
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         userauth = None
-        if self.auth.username and self.auth.password:
-            userauth = aiohttp.BasicAuth(self.auth.username, self.auth.password)
         url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url, ssl=await self.auth.ssl_context())
         auth_attempts = 0
@@ -197,7 +191,6 @@ class Api(object):
                 async with aiohttp.ClientSession(
                     base_url=self.auth.server,
                     headers=headers,
-                    auth=userauth,
                 ) as session:
                     async with session.ws_connect(**kwargs) as response:
                         yield response
@@ -254,8 +247,6 @@ class Api(object):
             ) as r:
                 data = r.json()
                 return data["status"]["user"]["username"]
-        elif self.auth.username:
-            return f"kubecfg:basicauth:{self.auth.username}"
         elif self.auth.client_cert_file:
             with open(self.auth.client_cert_file, "rb") as f:
                 cert = x509.load_pem_x509_certificate(f.read())
