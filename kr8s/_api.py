@@ -182,7 +182,6 @@ class Api(object):
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
         if self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
-        userauth = None
         url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url, ssl=await self.auth.ssl_context())
         auth_attempts = 0

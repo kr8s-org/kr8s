@@ -180,6 +180,11 @@ class KubeAuth:
                 )
         if "token" in self._user:
             self.token = self._user["token"]
+        if "username" in self._user or "password" in self._user:
+            raise ValueError(
+                "username/password authentication was removed in Kubernetes 1.19, "
+                "kr8s doesn't not support this Kubernetes version"
+            )
         if self.namespace is None:
             self.namespace = self._context.get("namespace", "default")
         if "auth-provider" in self._user:
