@@ -759,7 +759,7 @@ async def test_pod_exec_to_file(ubuntu_pod):
         assert b"invalid date" in tmp.read()
 
 
-@pytest.mark.skip("Closing stdin not supported so hangs forever")
+@pytest.mark.xfail(reason="Exec protocol v5.channel.k8s.io not available")
 async def test_pod_exec_stdin(ubuntu_pod):
     ex = await ubuntu_pod.exec(["cat"], stdin="foo")
     assert b"foo" in ex.stdout
