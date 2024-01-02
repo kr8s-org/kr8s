@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA
 # SPDX-License-Identifier: BSD 3-Clause License
+import base64
 import sys
 import tempfile
 from pathlib import Path
@@ -61,19 +62,37 @@ async def kubeconfig_with_second_context(k8s_cluster):
         yield f.name, kubeconfig["contexts"][1]["name"]
 
 
+@pytest.fixture
+async def kubeconfig_with_certs_on_disk(k8s_cluster):
+    # Open kubeconfig and dump certs to disk, then write new kubeconfig with paths to certs
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    user = kubeconfig["users"][0]["user"]
+    with tempfile.TemporaryDirectory() as d:
+        kubeconfig["users"][0]["user"] = {
+            "client-certificate": f"{d}/client.crt",
+            "client-key": f"{d}/client.key",
+        }
+        with open(f"{d}/client.crt", "wb") as f:
+            f.write(base64.b64decode(user["client-certificate-data"]))
+        with open(f"{d}/client.key", "wb") as f:
+            f.write(base64.b64decode(user["client-key-data"]))
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(yaml.safe_dump(kubeconfig).encode())
+            f.flush()
+            yield f.name
+
+
 async def test_kubeconfig(k8s_cluster):
     api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
-    version = await api.version()
-    assert "major" in version
+    assert await api.get("pods", namespace=kr8s.ALL)
     assert await api.whoami() == "kubernetes-admin"
 
 
 async def test_kubeconfig_context(kubeconfig_with_second_context):
     kubeconfig_path, context_name = kubeconfig_with_second_context
-    client = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
-    assert client.auth.active_context == context_name
-    version = await client.version()
-    assert "major" in version
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
+    assert api.auth.active_context == context_name
+    assert await api.get("pods", namespace=kr8s.ALL)
 
 
 async def test_default_service_account(k8s_cluster):
@@ -86,15 +105,13 @@ async def test_default_service_account(k8s_cluster):
 async def test_reauthenticate(k8s_cluster):
     api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     await api.reauthenticate()
-    version = await api.version()
-    assert "major" in version
+    assert await api.get("pods", namespace=kr8s.ALL)
 
 
 def test_reauthenticate_sync(k8s_cluster):
-    client = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
-    client.reauthenticate()
-    version = client.version()
-    assert "major" in version
+    api = kr8s.api(kubeconfig=k8s_cluster.kubeconfig_path)
+    api.reauthenticate()
+    assert api.get("pods", namespace=kr8s.ALL)
 
 
 async def test_bad_auth(serviceaccount):
@@ -134,12 +151,15 @@ async def test_service_account(serviceaccount):
 
 async def test_exec(kubeconfig_with_exec):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
-    version = await api.version()
-    assert "major" in version
+    assert await api.get("pods", namespace=kr8s.ALL)
 
 
 async def test_token(kubeconfig_with_token):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
     assert await api.whoami() == "system:serviceaccount:default:pytest"
-    version = await api.version()
-    assert "major" in version
+    assert await api.get("pods", namespace=kr8s.ALL)
+
+
+async def test_certs_on_disk(kubeconfig_with_certs_on_disk):
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_certs_on_disk)
+    assert await api.get("pods", namespace=kr8s.ALL)
