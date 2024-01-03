@@ -23,7 +23,7 @@ dependencies = [
 test = [
     "pytest>=7.2.2",
     "pytest-asyncio>=0.20.3",
-    "pytest-kind@git+https://codeberg.org/hjacobs/pytest-kind.git",
+    "pytest-kind>=22.11.1",
     "pytest-timeout>=2.1.0",
     "pytest-rerunfailures>=11.1.2",
     "pytest-cov>=4.0.0",
