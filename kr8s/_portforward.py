@@ -65,7 +65,7 @@ class PortForward:
         >>> await pf.stop()
 
         Explict bind address:
-        
+
         >>> async with PortForward(pod, 8888, address=["127.0.0.1", "10.20.0.1"]) as port:
         ...     print(f"Forwarding to port {port}")
         ...     # Do something with port 8888 on the Pod, port will be bind to 127.0.0.1 and 10.20.0.1
@@ -73,7 +73,11 @@ class PortForward:
     """
 
     def __init__(
-        self, resource: APIObject, remote_port: int, local_port: int = None, address: List[str] = ["127.0.0.1"] 
+        self,
+        resource: APIObject,
+        remote_port: int,
+        local_port: int = None,
+        address: List[str] = ["127.0.0.1"],
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":
@@ -146,7 +150,7 @@ class PortForward:
     async def _run(self) -> int:
         """Start the port forward for multiple bind addresses and yield the local port."""
         self.servers = []
-        for address in self.address: 
+        for address in self.address:
             server = await asyncio.start_server(
                 self._sync_sockets, port=self.local_port, host=address
             )
