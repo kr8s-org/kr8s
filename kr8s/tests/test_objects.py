@@ -567,6 +567,24 @@ async def test_unsupported_port_forward():
         await PortForward(pv, 80).start()
 
 
+async def test_multiple_bind_addresses_port_forward(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+
+    # Example multiple addresses
+    multiple_addresses = ["127.0.0.2", "127.0.0.3"]
+
+    pf = nginx_pod.portforward(80, local_port=None, address=multiple_addresses)
+
+    # Start the port forwarding
+    await pf.start()
+    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        for address in multiple_addresses:
+            resp = await session.get(f"http://{address}:{pf.local_port}/")
+            assert resp.status_code == 200
+
+    # Stop the port forwarding
+    await pf.stop()
+
 async def test_scalable_dot_notation():
     class Foo(APIObject):
         version = "foo.kr8s.org/v1alpha1"

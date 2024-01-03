@@ -44,7 +44,7 @@ class PortForward:
 
         ``local_port`` (int, optional): The local port to listen on. Defaults to 0, which will choose a random port.
 
-        ``address``(List[str], optional): List of addresses to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1
+        ``address``(List[str] | str, optional): List of addresses or address to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1
 
     Example:
         This class can be used as a an async context manager or with explicit start/stop methods.
@@ -73,8 +73,9 @@ class PortForward:
     """
 
     def __init__(
-        self, resource: APIObject, remote_port: int, local_port: int = None, address: List[str] = ["127.0.0.1"] 
+        self, resource: APIObject, remote_port: int, local_port: int = None, address: List[str] | str = "127.0.0.1"
     ) -> None:
+
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":
                 raise RuntimeError(
@@ -85,6 +86,8 @@ class PortForward:
         self.servers = []
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
+        if isinstance(address, str):
+            address = [address]
         self.address = address
         from ._objects import Pod
 
@@ -145,7 +148,9 @@ class PortForward:
     @asynccontextmanager
     async def _run(self) -> int:
         """Start the port forward for multiple bind addresses and yield the local port."""
-        self.servers = []
+        if self.local_port == 0:
+            self.local_port = self._find_available_port()
+
         for address in self.address: 
             server = await asyncio.start_server(
                 self._sync_sockets, port=self.local_port, host=address
@@ -160,9 +165,11 @@ class PortForward:
                         if sock.family == socket.AF_INET:
                             yield sock.getsockname()[1]
         finally:
-            for server in self.servers:
-                server.close()
-                await server.wait_closed()
+            # Ensure all servers are closed properly
+                self.servers[0].close()
+                await self.servers[0].wait_closed()
+                for server in self.servers:
+                    self.servers.remove(server)
 
     async def _select_pod(self) -> object:
         """Select a Pod to forward to."""
@@ -246,3 +253,28 @@ class PortForward:
                         raise ConnectionClosedError(message.data[1:].decode())
                     writer.write(message.data[1:])
                     await writer.drain()
+
+    def _is_port_in_use(self, port: int, host: str = '127.0.0.1'):
+        """
+        Check if a given port is in use on a specified host.
+
+        :param port: Port number to check.
+        :param host: Host address to check the port on. Default is localhost.
+        :return: True if the port is in use, False otherwise.
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex((host, port)) == 0
+
+
+    def _find_available_port(self):
+        """
+        Find a random port that is not in use on any of the given addresses.
+
+        :param address_list: List of addresses to check the port against.
+        :return: An available port number.
+        """
+        while True:
+            port = random.randint(10000, 60000)
+            print(port)
+            if not any(self._is_port_in_use(port, address) for address in self.address):
+                return port
