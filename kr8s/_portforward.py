@@ -73,9 +73,12 @@ class PortForward:
     """
 
     def __init__(
-        self, resource: APIObject, remote_port: int, local_port: int = None, address: List[str] | str = "127.0.0.1"
+        self,
+        resource: APIObject,
+        remote_port: int,
+        local_port: int = None,
+        address: List[str] | str = "127.0.0.1",
     ) -> None:
-
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":
                 raise RuntimeError(
@@ -151,7 +154,7 @@ class PortForward:
         if self.local_port == 0:
             self.local_port = self._find_available_port()
 
-        for address in self.address: 
+        for address in self.address:
             server = await asyncio.start_server(
                 self._sync_sockets, port=self.local_port, host=address
             )
@@ -166,10 +169,10 @@ class PortForward:
                             yield sock.getsockname()[1]
         finally:
             # Ensure all servers are closed properly
-                self.servers[0].close()
-                await self.servers[0].wait_closed()
-                for server in self.servers:
-                    self.servers.remove(server)
+            self.servers[0].close()
+            await self.servers[0].wait_closed()
+            for server in self.servers:
+                self.servers.remove(server)
 
     async def _select_pod(self) -> object:
         """Select a Pod to forward to."""
@@ -254,7 +257,7 @@ class PortForward:
                     writer.write(message.data[1:])
                     await writer.drain()
 
-    def _is_port_in_use(self, port: int, host: str = '127.0.0.1'):
+    def _is_port_in_use(self, port: int, host: str = "127.0.0.1"):
         """
         Check if a given port is in use on a specified host.
 
@@ -264,7 +267,6 @@ class PortForward:
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex((host, port)) == 0
-
 
     def _find_available_port(self):
         """

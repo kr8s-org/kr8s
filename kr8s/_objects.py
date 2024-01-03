@@ -810,7 +810,12 @@ class Pod(APIObject):
                 async for line in resp.aiter_lines():
                     yield line
 
-    def portforward(self, remote_port: int, local_port: int = None, address: List[str] | str = "127.0.0.1" ) -> int:
+    def portforward(
+        self,
+        remote_port: int,
+        local_port: int = None,
+        address: List[str] | str = "127.0.0.1",
+    ) -> int:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
@@ -834,12 +839,12 @@ class Pod(APIObject):
             >>> await pf.stop()
 
             Explict bind address:
-            
+
             >>> async with pod.PortForward(8888, address=["127.0.0.1", "10.20.0.1"]) as port:
             ...     print(f"Forwarding to port {port}")
             ...     # Do something with port 8888 on the Pod, port will be bind to 127.0.0.1 and 10.20.0.1
 
-            """
+        """
         if isinstance(address, str):
             address = [address]
         if self._asyncio:
@@ -1142,8 +1147,12 @@ class Service(APIObject):
         pods = await self._ready_pods()
         return len(pods) > 0
 
-    def portforward(self, remote_port: int, local_port: int = None, address: str | List[str] = "127.0.0.1") -> int:
-
+    def portforward(
+        self,
+        remote_port: int,
+        local_port: int = None,
+        address: str | List[str] = "127.0.0.1",
+    ) -> int:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.

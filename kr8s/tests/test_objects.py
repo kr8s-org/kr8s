@@ -585,6 +585,7 @@ async def test_multiple_bind_addresses_port_forward(nginx_service):
     # Stop the port forwarding
     await pf.stop()
 
+
 async def test_scalable_dot_notation():
     class Foo(APIObject):
         version = "foo.kr8s.org/v1alpha1"
