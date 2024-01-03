@@ -810,7 +810,7 @@ class Pod(APIObject):
                 async for line in resp.aiter_lines():
                     yield line
 
-    def portforward(self, remote_port: int, local_port: int = None) -> int:
+    def portforward(self, remote_port: int, local_port: int = None, bind_address: str = "0.0.0.0" ) -> int:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
@@ -834,8 +834,8 @@ class Pod(APIObject):
             >>> await pf.stop()
         """
         if self._asyncio:
-            return AsyncPortForward(self, remote_port, local_port)
-        return SyncPortForward(self, remote_port, local_port)
+            return AsyncPortForward(self, remote_port, local_port, bind_address)
+        return SyncPortForward(self, remote_port, local_port, bind_address)
 
     async def _exec(
         self,

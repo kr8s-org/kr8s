@@ -66,7 +66,7 @@ class PortForward:
     """
 
     def __init__(
-        self, resource: APIObject, remote_port: int, local_port: int = None
+        self, resource: APIObject, remote_port: int, local_port: int = None, bind_address: str = "0.0.0.0" 
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":
@@ -77,6 +77,7 @@ class PortForward:
         self.server = None
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
+        self.bind_address = bind_address
         from ._objects import Pod
 
         if not isinstance(resource, Pod) and not hasattr(resource, "ready_pods"):
@@ -136,7 +137,7 @@ class PortForward:
     async def _run(self) -> int:
         """Start the port forward and yield the local port."""
         self.server = await asyncio.start_server(
-            self._sync_sockets, port=self.local_port, host="0.0.0.0"
+            self._sync_sockets, port=self.local_port, host=self.bind_address
         )
         async with self.server:
             await self.server.start_serving()
