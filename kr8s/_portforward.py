@@ -44,6 +44,8 @@ class PortForward:
 
         ``local_port`` (int, optional): The local port to listen on. Defaults to 0, which will choose a random port.
 
+        ``address``(List[str], optional): List of addresses to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1
+
     Example:
         This class can be used as a an async context manager or with explicit start/stop methods.
 
@@ -62,15 +64,16 @@ class PortForward:
         >>> # Do something with port 8888 on the Pod
         >>> await pf.stop()
 
+        Explict bind address:
+        
+        >>> async with PortForward(pod, 8888, address=["127.0.0.1", "10.20.0.1"]) as port:
+        ...     print(f"Forwarding to port {port}")
+        ...     # Do something with port 8888 on the Pod, port will be bind to 127.0.0.1 and 10.20.0.1
 
     """
 
     def __init__(
-        self,
-        resource: APIObject,
-        remote_port: int,
-        local_port: int = None,
-        bind_address: str = "0.0.0.0",
+        self, resource: APIObject, remote_port: int, local_port: int = None, address: List[str] = ["127.0.0.1"] 
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":
@@ -79,9 +82,10 @@ class PortForward:
                     "see https://github.com/kr8s-org/kr8s/issues/104"
                 )
         self.server = None
+        self.servers = []
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
-        self.bind_address = bind_address
+        self.address = address
         from ._objects import Pod
 
         if not isinstance(resource, Pod) and not hasattr(resource, "ready_pods"):
@@ -135,21 +139,30 @@ class PortForward:
         """
         async with self:
             with contextlib.suppress(asyncio.CancelledError):
-                await self.server.serve_forever()
+                for server in self.servers:
+                    await server.serve_forever()
 
     @asynccontextmanager
     async def _run(self) -> int:
-        """Start the port forward and yield the local port."""
-        self.server = await asyncio.start_server(
-            self._sync_sockets, port=self.local_port, host=self.bind_address
-        )
-        async with self.server:
-            await self.server.start_serving()
-            for sock in self.server.sockets:
-                if sock.family == socket.AF_INET:
-                    yield sock.getsockname()[1]
-            self.server.close()
-            await self.server.wait_closed()
+        """Start the port forward for multiple bind addresses and yield the local port."""
+        self.servers = []
+        for address in self.address: 
+            server = await asyncio.start_server(
+                self._sync_sockets, port=self.local_port, host=address
+            )
+            self.servers.append(server)
+
+        try:
+            for server in self.servers:
+                async with server:
+                    await server.start_serving()
+                    for sock in server.sockets:
+                        if sock.family == socket.AF_INET:
+                            yield sock.getsockname()[1]
+        finally:
+            for server in self.servers:
+                server.close()
+                await server.wait_closed()
 
     async def _select_pod(self) -> object:
         """Select a Pod to forward to."""

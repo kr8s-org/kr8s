@@ -811,7 +811,7 @@ class Pod(APIObject):
                     yield line
 
     def portforward(
-        self, remote_port: int, local_port: int = None, bind_address: str = "0.0.0.0"
+        self, remote_port: int, local_port: int = None, address: List[str] = ["127.0.0.1"]
     ) -> int:
         """Port forward a pod.
 
@@ -836,8 +836,8 @@ class Pod(APIObject):
             >>> await pf.stop()
         """
         if self._asyncio:
-            return AsyncPortForward(self, remote_port, local_port, bind_address)
-        return SyncPortForward(self, remote_port, local_port, bind_address)
+            return AsyncPortForward(self, remote_port, local_port, address)
+        return SyncPortForward(self, remote_port, local_port, address)
 
     async def _exec(
         self,
@@ -1135,7 +1135,7 @@ class Service(APIObject):
         pods = await self._ready_pods()
         return len(pods) > 0
 
-    def portforward(self, remote_port: int, local_port: int = None) -> int:
+    def portforward(self, remote_port: int, local_port: int = None, address: List[str] = ["127.0.0.1"]) -> int:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
