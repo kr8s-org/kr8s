@@ -152,32 +152,48 @@ class KubeAuth:
             else:
                 raise KeyError(f"Did not find credentials in {command} output.")
 
+        if "client-key" in self._user:
+            client_key_path = anyio.Path(self._user["client-key"])
+            if await client_key_path.exists():
+                self.client_key_file = self._user["client-key"]
+            else:
+                self.client_key_file = (
+                    anyio.Path(self._kubeconfig).parent / client_key_path
+                )
         if "client-key-data" in self._user:
             async with NamedTemporaryFile(delete=False) as key_file:
                 await key_file.write_bytes(
                     base64.b64decode(self._user["client-key-data"])
                 )
                 self.client_key_file = str(key_file)
+        if "client-certificate" in self._user:
+            client_cert_path = anyio.Path(self._user["client-certificate"])
+            if await client_key_path.exists():
+                self.client_cert_file = self._user["client-certificate"]
+            else:
+                self.client_cert_file = (
+                    anyio.Path(self._kubeconfig).parent / client_cert_path
+                )
         if "client-certificate-data" in self._user:
             async with NamedTemporaryFile(delete=False) as cert_file:
                 await cert_file.write_bytes(
                     base64.b64decode(self._user["client-certificate-data"])
                 )
                 self.client_cert_file = str(cert_file)
+        if "certificate-authority" in self._user:
+            server_ca_path = anyio.Path(self._user["certificate-authority"])
+            if await client_key_path.exists():
+                self.server_ca_file = self._user["certificate-authority"]
+            else:
+                self.server_ca_file = (
+                    anyio.Path(self._kubeconfig).parent / server_ca_path
+                )
         if "certificate-authority-data" in self._cluster:
             async with NamedTemporaryFile(delete=False) as ca_file:
                 await ca_file.write_bytes(
                     base64.b64decode(self._cluster["certificate-authority-data"])
                 )
                 self.server_ca_file = str(ca_file)
-        if "certificate-authority" in self._cluster:
-            if os.path.isfile(self._cluster["certificate-authority"]):
-                self.server_ca_file = self._cluster["certificate-authority"]
-            else:
-                self.server_ca_file = os.path.join(
-                    os.path.dirname(self._kubeconfig),
-                    self._cluster["certificate-authority"],
-                )
         if "token" in self._user:
             self.token = self._user["token"]
         if "username" in self._user or "password" in self._user:
