@@ -3,6 +3,7 @@
 import base64
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -64,22 +65,26 @@ async def kubeconfig_with_second_context(k8s_cluster):
 
 @pytest.fixture
 async def kubeconfig_with_certs_on_disk(k8s_cluster):
-    # Open kubeconfig and dump certs to disk, then write new kubeconfig with paths to certs
-    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
-    user = kubeconfig["users"][0]["user"]
-    with tempfile.TemporaryDirectory() as d:
-        kubeconfig["users"][0]["user"] = {
-            "client-certificate": f"{d}/client.crt",
-            "client-key": f"{d}/client.key",
-        }
-        with open(f"{d}/client.crt", "wb") as f:
-            f.write(base64.b64decode(user["client-certificate-data"]))
-        with open(f"{d}/client.key", "wb") as f:
-            f.write(base64.b64decode(user["client-key-data"]))
-        with tempfile.NamedTemporaryFile() as f:
-            f.write(yaml.safe_dump(kubeconfig).encode())
-            f.flush()
-            yield f.name
+    @contextmanager
+    def f(absolute=True):
+        # Open kubeconfig and dump certs to disk, then write new kubeconfig with paths to certs
+        kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+        user = kubeconfig["users"][0]["user"]
+        with tempfile.TemporaryDirectory() as d:
+            kubeconfig["users"][0]["user"] = {
+                "client-certificate": f"{d}/client.crt" if absolute else "client.crt",
+                "client-key": f"{d}/client.key" if absolute else "client.key",
+            }
+            with open(f"{d}/client.crt", "wb") as f:
+                f.write(base64.b64decode(user["client-certificate-data"]))
+            with open(f"{d}/client.key", "wb") as f:
+                f.write(base64.b64decode(user["client-key-data"]))
+            with open(f"{d}/config", "wb") as f:
+                f.write(yaml.safe_dump(kubeconfig).encode())
+                f.flush()
+            yield f"{d}/config"
+
+    return f
 
 
 async def test_kubeconfig(k8s_cluster):
@@ -160,6 +165,8 @@ async def test_token(kubeconfig_with_token):
     assert await api.get("pods", namespace=kr8s.ALL)
 
 
-async def test_certs_on_disk(kubeconfig_with_certs_on_disk):
-    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_certs_on_disk)
-    assert await api.get("pods", namespace=kr8s.ALL)
+@pytest.mark.parametrize("absolute", [True, False])
+async def test_certs_on_disk(kubeconfig_with_certs_on_disk, absolute):
+    with kubeconfig_with_certs_on_disk(absolute=absolute) as kubeconfig:
+        api = await kr8s.asyncio.api(kubeconfig=kubeconfig)
+        assert await api.get("pods", namespace=kr8s.ALL)

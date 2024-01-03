@@ -157,7 +157,9 @@ class KubeAuth:
             if await client_key_path.exists():
                 self.client_key_file = self._user["client-key"]
             else:
-                self.client_key_file = anyio.Path(self._kubeconfig) / client_key_path
+                self.client_key_file = (
+                    anyio.Path(self._kubeconfig).parent / client_key_path
+                )
         if "client-key-data" in self._user:
             async with NamedTemporaryFile(delete=False) as key_file:
                 await key_file.write_bytes(
@@ -169,7 +171,9 @@ class KubeAuth:
             if await client_key_path.exists():
                 self.client_cert_file = self._user["client-certificate"]
             else:
-                self.client_cert_file = anyio.Path(self._kubeconfig) / client_cert_path
+                self.client_cert_file = (
+                    anyio.Path(self._kubeconfig).parent / client_cert_path
+                )
         if "client-certificate-data" in self._user:
             async with NamedTemporaryFile(delete=False) as cert_file:
                 await cert_file.write_bytes(
@@ -181,7 +185,9 @@ class KubeAuth:
             if await client_key_path.exists():
                 self.server_ca_file = self._user["certificate-authority"]
             else:
-                self.server_ca_file = anyio.Path(self._kubeconfig) / server_ca_path
+                self.server_ca_file = (
+                    anyio.Path(self._kubeconfig).parent / server_ca_path
+                )
         if "certificate-authority-data" in self._cluster:
             async with NamedTemporaryFile(delete=False) as ca_file:
                 await ca_file.write_bytes(
