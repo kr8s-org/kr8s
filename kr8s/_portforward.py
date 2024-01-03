@@ -66,7 +66,11 @@ class PortForward:
     """
 
     def __init__(
-        self, resource: APIObject, remote_port: int, local_port: int = None, bind_address: str = "0.0.0.0" 
+        self,
+        resource: APIObject,
+        remote_port: int,
+        local_port: int = None,
+        bind_address: str = "0.0.0.0",
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":

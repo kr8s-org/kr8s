@@ -810,7 +810,9 @@ class Pod(APIObject):
                 async for line in resp.aiter_lines():
                     yield line
 
-    def portforward(self, remote_port: int, local_port: int = None, bind_address: str = "0.0.0.0" ) -> int:
+    def portforward(
+        self, remote_port: int, local_port: int = None, bind_address: str = "0.0.0.0"
+    ) -> int:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
