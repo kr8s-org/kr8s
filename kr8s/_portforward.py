@@ -65,7 +65,7 @@ class PortForward:
         >>> await pf.stop()
 
         Explict bind address:
-        
+
         >>> async with PortForward(pod, 8888, address=["127.0.0.1", "10.20.0.1"]) as port:
         ...     print(f"Forwarding to port {port}")
         ...     # Do something with port 8888 on the Pod, port will be bind to 127.0.0.1 and 10.20.0.1

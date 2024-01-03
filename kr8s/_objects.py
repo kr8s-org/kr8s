@@ -1143,6 +1143,7 @@ class Service(APIObject):
         return len(pods) > 0
 
     def portforward(self, remote_port: int, local_port: int = None, address: str | List[str] = "127.0.0.1") -> int:
+
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
