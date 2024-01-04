@@ -8,7 +8,7 @@ import random
 import socket
 import sys
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, List
 
 import aiohttp
 import anyio
@@ -44,7 +44,8 @@ class PortForward:
 
         ``local_port`` (int, optional): The local port to listen on. Defaults to 0, which will choose a random port.
 
-        ``address``(List[str] | str, optional): List of addresses or address to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1
+        ``address``(List[str] | str, optional): List of addresses or address to listen on. Defaults to ["127.0.0.1"],
+         will listen only on 127.0.0.1
 
     Example:
         This class can be used as a an async context manager or with explicit start/stop methods.
