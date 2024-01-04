@@ -273,11 +273,9 @@ class PortForward:
         """
         Find a random port that is not in use on any of the given addresses.
 
-        :param address_list: List of addresses to check the port against.
         :return: An available port number.
         """
         while True:
             port = random.randint(10000, 60000)
-            print(port)
             if not any(self._is_port_in_use(port, address) for address in self.address):
                 return port
