@@ -759,10 +759,15 @@ async def test_pod_exec_to_file(ubuntu_pod):
         assert b"invalid date" in tmp.read()
 
 
-@pytest.mark.xfail(reason="Exec protocol v5.channel.k8s.io not available")
 async def test_pod_exec_stdin(ubuntu_pod):
-    ex = await ubuntu_pod.exec(["cat"], stdin="foo")
-    assert b"foo" in ex.stdout
+    api = await kr8s.asyncio.api()
+    version = await api.version()
+    if int(version["major"]) == 1 and int(version["minor"]) < 29:
+        with pytest.raises(ExecError):
+            await ubuntu_pod.exec(["cat"], stdin="foo")
+    else:
+        ex = await ubuntu_pod.exec(["cat"], stdin="foo")
+        assert b"foo" in ex.stdout
 
 
 async def test_configmap_data(ns):
