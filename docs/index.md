@@ -302,11 +302,6 @@ pod = Pod.get("my-pod")
 # Listen on port 5678 on 127.0.0.1, forwarding to 5000 in the pod
 pf = pod.portforward(remote_port=5000, local_port=5678)
 
-# Listen on port 8888 on all addresses, forwarding to 5000 in the pod
-pf = pod.portforward(remote_port=5000, local_port=8888, address=["0.0.0.0"])
-  
-# Listen on port 8888 on localhost and selected IP, forwarding to 5000 in the pod
-pf = pod.portforward(port=5000, local_port=8888, address=["127.0.0.1", "10.19.21.23"])
 
 # Starts the port forward in a background thread
 pf.start()
