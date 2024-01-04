@@ -165,7 +165,8 @@ class PortForward:
             for server in self.servers:
                 async with server:
                     await server.start_serving()
-            yield self.local_port
+                    yield self.local_port
+
         finally:
             # Ensure all servers are closed properly
             self.servers[0].close()
