@@ -20,7 +20,6 @@ STDERR_CHANNEL = 2
 ERROR_CHANNEL = 3
 RESIZE_CHANNEL = 4
 CLOSE_CHANNEL = 255
-EXEC_PROTOCOL = "v4.channel.k8s.io"
 
 
 class Exec:
@@ -55,10 +54,15 @@ class Exec:
     async def run(
         self,
     ) -> None:
+        version = await self._resource.api.version()
+        if int(version["major"]) > 1 or int(version["minor"]) > 28:
+            exec_protocol = "v5.channel.k8s.io"
+        else:
+            exec_protocol = "v4.channel.k8s.io"
         async with self._resource.api.open_websocket(
             version=self._resource.version,
             url=f"{self._resource.endpoint}/{self._resource.name}/exec",
-            protocols=(EXEC_PROTOCOL,),
+            protocols=(exec_protocol,),
             namespace=self._resource.namespace,
             params={
                 "command": self.args,
@@ -72,7 +76,7 @@ class Exec:
                 if ws.protocol != "v5.channel.k8s.io":
                     raise ExecError(
                         "Stdin is not supported with protocol "
-                        f"{ws.protocol}, only with v5.channel.k8s.io"
+                        f"{ws.protocol}, only with v5.channel.k8s.io from Kubernetes 1.29+"
                     )
                 if isinstance(self._stdin, str):
                     await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.encode())
