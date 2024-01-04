@@ -165,9 +165,7 @@ class PortForward:
             for server in self.servers:
                 async with server:
                     await server.start_serving()
-                    for sock in server.sockets:
-                        if sock.family == socket.AF_INET:
-                            yield sock.getsockname()[1]
+            yield self.local_port
         finally:
             # Ensure all servers are closed properly
             self.servers[0].close()
