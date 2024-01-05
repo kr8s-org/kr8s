@@ -21,4 +21,3 @@ class PortForward(_PortForward):
             while server is None:
                 time.sleep(0.1)
             server.close()
-
