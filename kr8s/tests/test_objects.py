@@ -495,6 +495,8 @@ async def test_pod_logs(example_pod_spec):
 async def test_pod_port_forward_context_manager(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80) as port:
+        print("STARTING PF")
+        print(port)
         async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
             resp = await session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200

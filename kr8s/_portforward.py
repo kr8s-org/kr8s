@@ -163,15 +163,15 @@ class PortForward:
 
         try:
             for server in self.servers:
-                async with server:
-                    await server.start_serving()
-                    yield self.local_port
+                await server.start_serving()
+            yield self.local_port
+
 
         finally:
             # Ensure all servers are closed properly
-            self.servers[0].close()
-            await self.servers[0].wait_closed()
             for server in self.servers:
+                server.close()
+                await server.wait_closed()
                 self.servers.remove(server)
 
     async def _select_pod(self) -> object:
