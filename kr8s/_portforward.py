@@ -166,7 +166,6 @@ class PortForward:
                 await server.start_serving()
             yield self.local_port
 
-
         finally:
             # Ensure all servers are closed properly
             for server in self.servers:
