@@ -299,7 +299,9 @@ Open a port forward to a Pod as a background task/thread.
 from kr8s.objects import Pod
 
 pod = Pod.get("my-pod")
-pf = pod.portforward(remote_port=1234, local_port=5678)
+# Listen on port 5678 on 127.0.0.1, forwarding to 5000 in the pod
+pf = pod.portforward(remote_port=5000, local_port=5678)
+
 
 # Starts the port forward in a background thread
 pf.start()

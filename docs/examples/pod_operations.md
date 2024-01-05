@@ -89,6 +89,19 @@ with pod.portforward(remote_port=1234) as local_port:
     # Make an API request
     resp = requests.get(f"http://localhost:{local_port}")
     # Do something with the response
+
+# Listen on port 8888 on all addresses, forwarding to 5000 in the pod
+with pod.portforward(remote_port=5000, local_port=8888, address=["0.0.0.0"])
+    # Make an API request
+    resp = requests.get(f"http://0.0.0.0:{local_port}")
+    # Do something with the response
+  
+# Listen on port 8888 on localhost and selected IP, forwarding to 5000 in the pod
+pf = pod.portforward(port=5000, local_port=8888, address=["127.0.0.1", "10.19.21.1"])
+    # Make an API request
+    resp = requests.get(f"http://10.19.21.1:{local_port}")
+    # Do something with the response
+    
 ```
 ````
 
