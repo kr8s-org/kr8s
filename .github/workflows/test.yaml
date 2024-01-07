@@ -4,12 +4,12 @@ on:
     paths:
       - ".github/workflows/test.yaml"
       - "kr8s/**"
-      - "pyproject.toml"
+      - "./pyproject.toml"
   push:
     paths:
       - ".github/workflows/.yaml"
       - "kr8s/**"
-      - "pyproject.toml"
+      - "./pyproject.toml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
