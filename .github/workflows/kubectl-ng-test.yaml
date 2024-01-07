@@ -58,4 +58,6 @@ jobs:
           pytest examples/kubectl-ng
       - name: Debug k8s resources
         if: always()
-        run: kubectl get all -A
+        run: |
+          cat ${KUBECONFIG}
+          kubectl get all -A
