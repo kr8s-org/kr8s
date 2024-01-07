@@ -631,6 +631,8 @@ def test_objects_from_file_sync():
     assert len(objects) == 2
     assert isinstance(objects[0], Pod)
     assert isinstance(objects[1], Service)
+    assert not objects[0]._asyncio
+    assert not objects[0].api._asyncio
     assert len(objects[1].spec.ports) == 1
 
 
