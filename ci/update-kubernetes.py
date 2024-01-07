@@ -56,8 +56,8 @@ def get_versions():
     return data
 
 
-def update_test_workflow(versions):
-    workflow = yaml.load(Path(".github/workflows/test.yaml"))
+def update_workflow(versions, workflow):
+    workflow = yaml.load(Path(workflow))
     workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][0] = versions[
         0
     ]["latest_kind_container"]
@@ -69,7 +69,7 @@ def update_test_workflow(versions):
                 "kubernetes-version": version["latest_kind_container"],
             }
         )
-    yaml.dump(workflow, Path(".github/workflows/test.yaml"))
+    yaml.dump(workflow, Path(workflow))
 
 
 def update_badges(filename, versions):
@@ -95,7 +95,8 @@ def main():
             f"For {version['cycle']} using kindest/node {version['latest_kind_container']} until {version['eol']}"
         )
 
-    update_test_workflow(versions)
+    update_workflow(versions, ".github/workflows/test.yaml")
+    update_workflow(versions, ".github/workflows/kubectl-ng-test.yaml")
     update_badges("README.md", versions)
     update_badges("docs/index.md", versions)
 
