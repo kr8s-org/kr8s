@@ -24,6 +24,7 @@ from kr8s.asyncio.objects import (
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import get_class, new_class, object_from_spec
+from kr8s.objects import objects_from_files as sync_objects_from_files
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
@@ -620,6 +621,18 @@ async def test_objects_from_file():
     assert len(objects) == 2
     assert isinstance(objects[0], Pod)
     assert isinstance(objects[1], Service)
+    assert len(objects[1].spec.ports) == 1
+
+
+def test_objects_from_file_sync():
+    objects = sync_objects_from_files(
+        CURRENT_DIR / "resources" / "simple" / "nginx_pod_service.yaml"
+    )
+    assert len(objects) == 2
+    assert isinstance(objects[0], Pod)
+    assert isinstance(objects[1], Service)
+    assert not objects[0]._asyncio
+    assert not objects[0].api._asyncio
     assert len(objects[1].spec.ports) == 1
 
 

@@ -1620,6 +1620,8 @@ async def objects_from_files(
         files = [f for f in path.glob(pattern) if f.is_file()]
     else:
         files = [path]
+    if not api:
+        api = await kr8s.asyncio.api(_asyncio=_asyncio)
     objects = []
     for file in files:
         with open(file, "r") as f:
