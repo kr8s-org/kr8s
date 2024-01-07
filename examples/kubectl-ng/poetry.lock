@@ -1153,14 +1153,14 @@ yaml = ["ruamel.yaml (>=0.17)"]
 
 [[package]]
 name = "python-jsonpath"
-version = "0.7.1"
-description = "Another JSONPath implementation for Python."
+version = "0.10.3"
+description = "JSONPath, JSON Pointer and JSON Patch for Python."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "python_jsonpath-0.7.1-py3-none-any.whl", hash = "sha256:12d2ec1d38547e495d7746fc185abc9f462369f9a7b2c1c66de92242e84eb362"},
-    {file = "python_jsonpath-0.7.1.tar.gz", hash = "sha256:5099d88e55d71314eac5d8b7acc528cb47d53783ba9685940da8fb63a7674b54"},
+    {file = "python_jsonpath-0.10.3-py3-none-any.whl", hash = "sha256:2af2f897d30190e53097eb0f3e93031c058bd6facf998517b6dfc77af367ecf4"},
+    {file = "python_jsonpath-0.10.3.tar.gz", hash = "sha256:15704ab755883acb6ec85c63b687b2a8cff1902cd293d4509f9e673423b431ee"},
 ]
 
 [[package]]
@@ -1619,4 +1619,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "456d7c14bb0f4495083a83432922dac02ad7bd48a5e5b9c4a48957deb66c592e"
+content-hash = "ffff5e9dcc12d57f41dbe90aec14f632ed656267c427047354aeed037c53dc50"
