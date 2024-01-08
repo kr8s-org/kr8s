@@ -2,12 +2,12 @@ name: "Test kr8s"
 on:
   pull_request:
     paths:
-      - ".github/workflows/test.yaml"
+      - ".github/workflows/test-kr8s.yaml"
       - "kr8s/**"
       - "./pyproject.toml"
   push:
     paths:
-      - ".github/workflows/.yaml"
+      - ".github/workflows/test-kr8s.yaml"
       - "kr8s/**"
       - "./pyproject.toml"
 

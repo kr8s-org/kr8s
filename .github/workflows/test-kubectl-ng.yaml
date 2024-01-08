@@ -2,11 +2,11 @@ name: "Test kubectl-ng"
 on:
   pull_request:
     paths:
-      - ".github/workflows/kubectl-ng-test.yaml"
+      - ".github/workflows/test-kubectl-ng.yaml"
       - "examples/kubectl-ng/**"
   push:
     paths:
-      - ".github/workflows/kubectl-ng-test.yaml"
+      - ".github/workflows/test-kubectl-ng.yaml"
       - "examples/kubectl-ng/**"
 
 concurrency:
