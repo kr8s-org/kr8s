@@ -1,4 +1,4 @@
-name: "Test kubectl-ng" 
+name: "Test kubectl-ng"
 on:
   pull_request:
     paths:
@@ -30,7 +30,7 @@ jobs:
           - python-version: '3.10'
             kubernetes-version: 1.26.6
     env:
-      KUBECONFIG: examples/kubectl-ng/.pytest-kind/pytest-kind/kubeconfig
+      KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
 
     steps:
       - uses: actions/checkout@v3
