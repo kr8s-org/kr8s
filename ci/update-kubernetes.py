@@ -95,8 +95,8 @@ def main():
             f"For {version['cycle']} using kindest/node {version['latest_kind_container']} until {version['eol']}"
         )
 
-    update_workflow(versions, ".github/workflows/test.yaml")
-    update_workflow(versions, ".github/workflows/kubectl-ng-test.yaml")
+    update_workflow(versions, ".github/workflows/test-kr8s.yaml")
+    update_workflow(versions, ".github/workflows/test-kubectl-ng.yaml")
     update_badges("README.md", versions)
     update_badges("docs/index.md", versions)
 
