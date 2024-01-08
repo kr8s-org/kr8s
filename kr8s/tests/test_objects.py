@@ -797,6 +797,17 @@ async def test_pod_exec_stdin(ubuntu_pod):
     assert b"foo" in ex.stdout
 
 
+async def test_pod_exec_not_ready(ns):
+    pod = await Pod.gen(name="nginx", namespace=ns, image="nginx:latest")
+    await pod.create()
+    try:
+        assert not await pod.ready()
+        await pod.exec(["date"])
+        assert await pod.ready()
+    finally:
+        await pod.delete()
+
+
 async def test_configmap_data(ns):
     [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
     cm.namespace = ns
