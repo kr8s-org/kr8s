@@ -703,7 +703,7 @@ class Pod(APIObject):
     singular = "pod"
     namespaced = True
 
-    async def ready(self) -> bool:
+    async def _ready(self) -> bool:
         """Check if the pod is ready."""
         await self._refresh()
         conditions = list_dict_unpack(
@@ -717,6 +717,10 @@ class Pod(APIObject):
             and conditions.get("Ready", "False") == "True"
             and conditions.get("ContainersReady", "False") == "True"
         )
+
+    async def ready(self) -> bool:
+        """Check if the pod is ready."""
+        return await self._ready()
 
     async def logs(
         self,
@@ -862,6 +866,9 @@ class Pod(APIObject):
         check: bool = True,
         capture_output: bool = True,
     ):
+        while not await self._ready():
+            await anyio.sleep(0.1)
+
         ex = Exec(
             self,
             command,
