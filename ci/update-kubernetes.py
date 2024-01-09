@@ -56,8 +56,9 @@ def get_versions():
     return data
 
 
-def update_workflow(versions, workflow):
-    workflow = yaml.load(Path(workflow))
+def update_workflow(versions, workflow_path):
+    workflow_path = Path(workflow_path)
+    workflow = yaml.load(workflow_path)
     workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][0] = versions[
         0
     ]["latest_kind_container"]
@@ -69,7 +70,7 @@ def update_workflow(versions, workflow):
                 "kubernetes-version": version["latest_kind_container"],
             }
         )
-    yaml.dump(workflow, Path(workflow))
+    yaml.dump(workflow, workflow_path)
 
 
 def update_badges(filename, versions):
