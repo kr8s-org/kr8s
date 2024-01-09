@@ -24,4 +24,4 @@ repos:
           - --license-filepath=LICENSE_HEADER
           - --use-current-year
           - --no-extra-eol
-          - --detect-license-in-X-top-lines=2
+          - --detect-license-in-X-top-lines=5
