@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Jupyter Development Team., MrNaif2018, Dask Developers, NVIDIA
-# SPDX-License-Identifier: MIT License, BSD 3-Clause License
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
+# SPDX-License-Identifier: BSD 3-Clause License
 #
 # This file was originally based on universalasync (commit d397911) and jupyter-core (commit 98b9a1a).
 # Both projects attempt to solve the same problem: how to run nested async tasks.
