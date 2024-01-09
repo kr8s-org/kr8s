@@ -21,8 +21,29 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
   publish-kubectl-ng:
     runs-on: ubuntu-latest
+    needs: publish-kr8s
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Update kr8s pin in kubectl-ng
+        run: |
+          pushd examples/kubectl-ng
+          poetry add kr8s==${RELEASE_VERSION}
+          poetry lock
+          popd
+          git config --global user.name 'Kr8s Bot'
+          git config --global user.email 'kr8s-bot@users.noreply.github.com'
+          git commit -am "Bumping kubectl-ng pin to ${RELEASE_VERSION}"
+          git push
       - name: Publish kubectl-ng
         uses: JRubics/poetry-publish@v1.16
         with:

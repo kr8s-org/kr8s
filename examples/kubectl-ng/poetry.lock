@@ -782,13 +782,13 @@ test = ["kubernetes (>=26.1.0)", "kubernetes-asyncio (>=24.2.3)", "kubernetes-va
 
 [[package]]
 name = "kubernetes-validate"
-version = "1.28.3"
+version = "1.29.0"
 description = "validates kubernetes resource definitions against schemas"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "kubernetes-validate-1.28.3.tar.gz", hash = "sha256:f8dbc7af04900f235d478bc4c41e4480b7e5f50521fdc90a6df4e843f851f16f"},
+    {file = "kubernetes-validate-1.29.0.tar.gz", hash = "sha256:a497ecea3407b10cdd00ee682fb095f1197c24b60f8eff03bf6cd0026aa3a8d4"},
 ]
 
 [package.dependencies]
@@ -796,6 +796,7 @@ importlib-resources = "*"
 jsonschema = "*"
 packaging = "*"
 PyYAML = "*"
+referencing = "*"
 typing-extensions = "*"
 
 [[package]]
