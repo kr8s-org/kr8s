@@ -43,7 +43,7 @@ jobs:
           git config --global user.name 'Kr8s Bot'
           git config --global user.email 'kr8s-bot@users.noreply.github.com'
           git commit -am "Bumping kubectl-ng pin to ${RELEASE_VERSION}"
-          git push
+          git push origin HEAD:main
       - name: Publish kubectl-ng
         uses: JRubics/poetry-publish@v1.16
         with:
