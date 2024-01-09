@@ -473,6 +473,23 @@ class Api(object):
             )
         return resources
 
+    async def api_versions(self) -> List[str]:
+        """Get the Kubernetes API versions."""
+        async for version in self._api_versions():
+            yield version
+
+    async def _api_versions(self) -> List[str]:
+        async with self.call_api(method="GET", version="", base="/api") as response:
+            core_api_list = response.json()
+        for version in core_api_list["versions"]:
+            yield version
+
+        async with self.call_api(method="GET", version="", base="/apis") as response:
+            api_list = response.json()
+        for group in api_list["groups"]:
+            for version in group["versions"]:
+                yield version["groupVersion"]
+
     @property
     def __version__(self) -> str:
         from . import __version__

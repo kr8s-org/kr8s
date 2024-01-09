@@ -6,6 +6,7 @@ from functools import wraps
 import typer
 
 from ._api_resources import api_resources
+from ._api_versions import api_versions
 from ._create import create
 from ._delete import delete
 from ._exec import kexec
@@ -33,6 +34,7 @@ def register(app, func, alias=None):
 
 app = typer.Typer()
 register(app, api_resources)
+register(app, api_versions)
 register(app, create)
 register(app, delete)
 register(app, get)
