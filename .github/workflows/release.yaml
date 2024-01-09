@@ -40,10 +40,16 @@ jobs:
           poetry add kr8s==${RELEASE_VERSION}
           poetry lock
           popd
+      - name: Push new pins back to the repo
+        run: |
           git config --global user.name 'Kr8s Bot'
           git config --global user.email 'kr8s-bot@users.noreply.github.com'
           git commit -am "Bumping kubectl-ng pin to ${RELEASE_VERSION}"
           git push origin HEAD:main
+
+          # Move the pin forward in our working copy to ensure the version is
+          # dynamically generated correctly during publishing
+          git tag -d ${RELEASE_VERSION} && git tag ${RELEASE_VERSION}
       - name: Publish kubectl-ng
         uses: JRubics/poetry-publish@v1.16
         with:
