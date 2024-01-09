@@ -189,6 +189,18 @@ async def test_get_class():
     assert isinstance(pods[0], Pod)
 
 
+async def test_api_versions():
+    api = await kr8s.asyncio.api()
+    versions = [version async for version in api.api_versions()]
+    assert "apps/v1" in versions
+
+
+def test_api_versions_sync():
+    api = kr8s.api()
+    versions = [version for version in api.api_versions()]
+    assert "apps/v1" in versions
+
+
 async def test_api_resources():
     resources = await kr8s.asyncio.api_resources()
 
