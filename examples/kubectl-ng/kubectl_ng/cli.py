@@ -32,7 +32,7 @@ def register(app, func, alias=None):
         app.command()(func)
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 register(app, api_resources)
 register(app, api_versions)
 register(app, create)
