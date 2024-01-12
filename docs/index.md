@@ -334,9 +334,10 @@ await pf.stop()
 
 `````
 
-```{seealso}
+### More examples
+
 See the [Examples Documentation](examples/index) for a full set of examples.
-```
+
 
 ```{toctree}
 :maxdepth: 2
