@@ -960,7 +960,7 @@ class Pod(APIObject):
             env (dict): Environment variables to set in the container.
             image_pull_policy (str): Image pull policy to use.
             labels (dict): Labels to add to the pod.
-            ports (list): Ports to expose.
+            ports (list|int): Ports to expose.
             restart (str): Restart policy to use.
 
         Returns:
@@ -970,7 +970,26 @@ class Pod(APIObject):
             >>> from kr8s.objects import Pod
             >>> pod = Pod.gen(name="my-pod", image="my-image")
             >>> pod.create()
+
+            Create an nginx Pod that exposes port 80.
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="nginx", image="nginx:latest", ports=[80])
+            >>> pod.create()
+
+            Create an wordpress Pod that exposes port 80.
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="wordpress", image="wordpress:latest", ports=[{"containerPort": 80}])
+            >>> pod.create()
         """
+        if ports:
+            if isinstance(ports, int):
+                ports = [ports]
+            # Convert any integer ports to valid v1.ContainerPort format
+            ports = [
+                {"containerPort": port} if isinstance(port, int) else port
+                for port in ports
+            ]
+
         return cls(
             xdict(
                 apiVersion="v1",

@@ -5,6 +5,7 @@ import datetime
 import pathlib
 import tempfile
 import time
+from contextlib import suppress
 
 import httpx
 import pytest
@@ -853,3 +854,22 @@ async def test_pod_list():
     assert all(isinstance(p, Pod) for p in pods1)
     assert all(isinstance(p, Pod) for p in pods2)
     assert {p.name for p in pods1} == {p.name for p in pods2}
+
+
+@pytest.mark.parametrize(
+    "ports",
+    [
+        80,
+        [80],
+        [80, 81],
+        [{"containerPort": 80}],
+        [{"containerPort": 80}, {"containerPort": 81}],
+    ],
+)
+async def test_pod_gen_ports(ns, ports):
+    pod = await Pod.gen(name="nginx", namespace=ns, image="nginx:latest", ports=ports)
+    try:
+        await pod.create()  # This should succeed
+    finally:
+        with suppress(kr8s.NotFoundError):
+            await pod.delete()
