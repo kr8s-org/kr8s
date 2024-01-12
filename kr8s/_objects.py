@@ -981,12 +981,14 @@ class Pod(APIObject):
             >>> pod = Pod.gen(name="wordpress", image="wordpress:latest", ports=[{"containerPort": 80}])
             >>> pod.create()
         """
-        if isinstance(ports, int):
-            ports = [ports]
-        # Convert any integer ports to valid v1.ContainerPort format
-        ports = [
-            {"containerPort": port} if isinstance(port, int) else port for port in ports
-        ]
+        if ports:
+            if isinstance(ports, int):
+                ports = [ports]
+            # Convert any integer ports to valid v1.ContainerPort format
+            ports = [
+                {"containerPort": port} if isinstance(port, int) else port
+                for port in ports
+            ]
 
         return cls(
             xdict(
