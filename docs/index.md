@@ -1,5 +1,6 @@
 # <img alt="kr8s" title="kr8s" src="_static/branding/text-trimmed.png" style="max-height: 100px" />
 
+[![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kr8s)](https://pypi.org/project/kr8s/)
 [![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.26%7C1.27%7C1.28%7C1.29-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
