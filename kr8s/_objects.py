@@ -50,8 +50,6 @@ if sys.version_info >= (3, 11):
 else:
     APIObjectType = "APIObject"
 
-WaitMode = Literal["AND", "OR", "wait", "wait-for"]
-
 
 class APIObject:
     """Base class for Kubernetes objects."""
@@ -373,12 +371,14 @@ class APIObject:
         api = await kr8s.asyncio.api()
         return await api._get(kind=cls, **kwargs)
 
-    async def _test_conditions(self, conditions: list, mode: WaitMode = "OR") -> bool:
+    async def _test_conditions(
+        self, conditions: list, mode: Literal["any", "all"] = "any"
+    ) -> bool:
         """Test if conditions are met.
 
         Args:
             conditions: A list of conditions to test.
-            mode: Match any condition with "OR" or all conditions with "AND". Defaults to "OR".
+            mode: Match any condition with "any" or all conditions with "all". Defaults to "any".
 
         Returns:
             bool: True if any condition is met, False otherwise.
@@ -409,24 +409,24 @@ class APIObject:
                 results.append(value == condition)
             else:
                 raise ValueError(f"Unknown condition type {condition}")
-        if mode == "AND" or mode == "wait-for":
-            return all(results)
-        elif mode == "OR" or mode == "wait":
+        if mode == "any":
             return any(results)
+        elif mode == "all":
+            return all(results)
         else:
-            raise ValueError(f"Unknown wait mode {mode}")
+            raise ValueError(f"Unknown wait mode '{mode}', must be 'any' or 'all'")
 
     async def wait(
         self,
         conditions: Union[List[str], str],
-        mode: WaitMode = "OR",
+        mode: Literal["any", "all"] = "any",
         timeout: int = None,
     ):
         """Wait for conditions to be met.
 
         Args:
             conditions: A list of conditions to wait for.
-            mode: Match any condition with "OR" or all conditions with "AND". Defaults to "OR".
+            mode: Match any condition with "any" or all conditions with "all". Defaults to "any".
             timeout: Timeout in seconds.
 
         Example:
