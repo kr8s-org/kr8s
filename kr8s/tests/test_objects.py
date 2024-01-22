@@ -137,6 +137,26 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("delete")
 
 
+async def test_pod_wait_multiple_conditions(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.wait(conditions=["condition=Failed", "condition=Ready"])
+    with pytest.raises(TimeoutError):
+        await pod.wait(
+            conditions=["condition=Failed", "condition=Ready"], mode="all", timeout=0.1
+        )
+    await pod.wait(
+        conditions=[
+            "condition=Initialized",
+            "condition=ContainersReady",
+        ],
+        mode="all",
+    )
+    with pytest.raises(ValueError):
+        await pod.wait(conditions=["condition=Failed", "condition=Ready"], mode="foo")
+    await pod.delete()
+
+
 def test_pod_wait_ready_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()

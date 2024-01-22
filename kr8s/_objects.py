@@ -9,7 +9,17 @@ import pathlib
 import re
 import sys
 import time
-from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    BinaryIO,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    Union,
+)
 
 import anyio
 import httpx
@@ -361,8 +371,19 @@ class APIObject:
         api = await kr8s.asyncio.api()
         return await api._get(kind=cls, **kwargs)
 
-    async def _test_conditions(self, conditions: list) -> bool:
-        """Test if conditions are met."""
+    async def _test_conditions(
+        self, conditions: list, mode: Literal["any", "all"] = "any"
+    ) -> bool:
+        """Test if conditions are met.
+
+        Args:
+            conditions: A list of conditions to test.
+            mode: Match any condition with "any" or all conditions with "all". Defaults to "any".
+
+        Returns:
+            bool: True if any condition is met, False otherwise.
+        """
+        results = []
         for condition in conditions:
             if condition.startswith("condition"):
                 condition = "=".join(condition.split("=")[1:])
@@ -377,24 +398,64 @@ class APIObject:
                 status_conditions = list_dict_unpack(
                     self.status.get("conditions", []), "type", "status"
                 )
-                if status_conditions.get(field, None) != value:
-                    return False
+                results.append(status_conditions.get(field, None) == value)
             elif condition == "delete":
-                if await self._exists():
-                    return False
+                results.append(not await self._exists())
             elif condition.startswith("jsonpath"):
                 matches = re.search(JSONPATH_CONDITION_EXPRESSION, condition)
                 expression = matches.group("expression")
                 condition = matches.group("condition")
                 [value] = jsonpath.findall(expression, self._raw)
-                if value != condition:
-                    return False
+                results.append(value == condition)
             else:
                 raise ValueError(f"Unknown condition type {condition}")
-        return True
+        if mode == "any":
+            return any(results)
+        elif mode == "all":
+            return all(results)
+        else:
+            raise ValueError(f"Unknown wait mode '{mode}', must be 'any' or 'all'")
 
-    async def wait(self, conditions: Union[List[str], str], timeout: int = None):
-        """Wait for conditions to be met."""
+    async def wait(
+        self,
+        conditions: Union[List[str], str],
+        mode: Literal["any", "all"] = "any",
+        timeout: int = None,
+    ):
+        """Wait for conditions to be met.
+
+        Args:
+            conditions: A list of conditions to wait for.
+            mode: Match any condition with "any" or all conditions with "all". Defaults to "any".
+            timeout: Timeout in seconds.
+
+        Example:
+            Wait for a Pod to be ready.
+
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> pod.wait("condition=Ready")
+
+            Wait for a Job to either succeed or fail.
+
+            >>> from kr8s.objects import Job
+            >>> job = Job.get("my-jod")
+            >>> job.wait(["condition=Complete", "condition=Failed"])
+
+            Wait for a Pod to be initialized and ready to start containers.
+
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> pod.wait(["condition=Initialized", "condition=PodReadyToStartContainers"], mode="all")
+
+        Note:
+            As of the current Kubertenetes release when this function was written (1.29) kubectl doesn't support
+            multiple conditions. There is a PR to implement this but it hasn't been merged yet
+            https://github.com/kubernetes/kubernetes/pull/119205.
+
+            Given that ``for`` is a reserved word anyway we can't exactly match the kubectl API so
+            we use ``condition`` in combination with a ``mode`` instead.
+        """
         if isinstance(conditions, str):
             conditions = [conditions]
 
@@ -404,10 +465,10 @@ class APIObject:
             except NotFoundError:
                 if set(conditions) == {"delete"}:
                     return
-            if await self._test_conditions(conditions):
+            if await self._test_conditions(conditions, mode=mode):
                 return
             async for _ in self._watch():
-                if await self._test_conditions(conditions):
+                if await self._test_conditions(conditions, mode=mode):
                     return
 
     async def annotate(self, annotations: dict = None, **kwargs) -> None:
