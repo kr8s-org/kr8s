@@ -137,6 +137,13 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("delete")
 
 
+async def test_pod_wait_multiple_conditions(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.wait(conditions=["condition=Failed", "condition=Ready"])
+    await pod.delete()
+
+
 def test_pod_wait_ready_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()
