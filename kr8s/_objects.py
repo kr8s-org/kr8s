@@ -442,6 +442,12 @@ class APIObject:
             >>> job = Job.get("my-jod")
             >>> job.wait(["condition=Complete", "condition=Failed"])
 
+            Wait for a Pod to be initialized and ready to start containers.
+
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> pod.wait(["condition=Initialized", "condition=PodReadyToStartContainers"], mode="all")
+
         Note:
             As of the current Kubertenetes release when this function was written (1.29) kubectl doesn't support
             multiple conditions. There is a PR to implement this but it hasn't been merged yet
