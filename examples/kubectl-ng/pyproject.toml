@@ -10,7 +10,7 @@ packages = [{ include = "kubectl_ng" }]
 python = "^3.9"
 typer = "^0.7.0"
 rich = "^13.3.2"
-kr8s = "v0.12.15"
+kr8s = "v0.13.0"
 
 [tool.poetry.group.test]
 optional = true
