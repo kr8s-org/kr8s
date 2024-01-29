@@ -364,9 +364,9 @@ class Api(object):
         headers = {}
         if as_object:
             group, version = as_object.version.split("/")
-            headers[
-                "Accept"
-            ] = f"application/json;as={as_object.kind};v={version};g={group}"
+            headers["Accept"] = (
+                f"application/json;as={as_object.kind};v={version};g={group}"
+            )
         async with self._get_kind(
             kind,
             namespace=namespace,

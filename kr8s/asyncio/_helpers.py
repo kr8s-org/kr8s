@@ -90,7 +90,7 @@ async def watch(
 ):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    async for (t, o) in api._watch(
+    async for t, o in api._watch(
         kind=kind,
         namespace=namespace,
         label_selector=label_selector,
