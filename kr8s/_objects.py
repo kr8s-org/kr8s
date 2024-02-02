@@ -406,7 +406,7 @@ class APIObject:
                 expression = matches.group("expression")
                 condition = matches.group("condition")
                 [value] = jsonpath.findall(expression, self._raw)
-                results.append(value == condition)
+                results.append(str(value) == str(condition))
             else:
                 raise ValueError(f"Unknown condition type {condition}")
         if mode == "any":

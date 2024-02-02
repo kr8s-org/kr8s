@@ -173,6 +173,47 @@ def test_pod_wait_ready_sync(example_pod_spec):
     pod.wait("delete")
 
 
+def test_wait_replicas(ns):
+    from kr8s.objects import StatefulSet
+
+    ss = StatefulSet(
+        {
+            "metadata": {
+                "name": "test-wait-replicas",
+                "namespace": ns,
+            },
+            "spec": {
+                "replicas": 3,
+                "selector": {
+                    "matchLabels": {
+                        "app": "test-wait-replicas",
+                    }
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "test-wait-replicas",
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "test-wait-replicas",
+                                "image": "nginx:latest",
+                            }
+                        ]
+                    },
+                },
+            },
+        }
+    )
+    ss.create()
+    try:
+        ss.wait("jsonpath='{.status.availableReplicas}'=3", timeout=30)
+    finally:
+        ss.delete()
+
+
 def test_pod_refresh_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()
