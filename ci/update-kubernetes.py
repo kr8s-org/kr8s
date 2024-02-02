@@ -36,17 +36,22 @@ def get_versions():
         data.sort(key=lambda x: x["eol"], reverse=True)
 
     print("Loading Kubernetes tags from https://hub.docker.com/r/kindest/node/tags...")
-    with urllib.request.urlopen(
-        "https://hub.docker.com/v2/repositories/kindest/node/tags"
-    ) as url:
-        container_tags = json.load(url)
+
+    container_tags = []
+    next_url = "https://hub.docker.com/v2/repositories/kindest/node/tags"
+    while next_url:
+        with urllib.request.urlopen(next_url) as url:
+            results = json.load(url)
+            container_tags += results["results"]
+            if "next" in results and results["next"]:
+                next_url = results["next"]
+            else:
+                next_url = None
 
     for version in data:
         try:
             version["latest_kind_container"] = [
-                x["name"]
-                for x in container_tags["results"]
-                if version["cycle"] in x["name"]
+                x["name"] for x in container_tags if version["cycle"] in x["name"]
             ][0][1:]
         except IndexError:
             version["latest_kind_container"] = None
