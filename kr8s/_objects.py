@@ -1043,6 +1043,12 @@ class Pod(APIObject):
             >>> from kr8s.objects import Pod
             >>> pod = Pod.gen(name="wordpress", image="wordpress:latest", ports=[{"containerPort": 80}])
             >>> pod.create()
+
+            Create a Pod that requires a GPU
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="cuda-vectoradd",
+            ...               image="nvidia/samples:vectoradd-cuda11.6.0-ubuntu18.04",
+            ...               resources={"limits": {"nvidia.com/gpu": 1}})
         """
         if ports:
             if isinstance(ports, int):
