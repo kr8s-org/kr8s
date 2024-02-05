@@ -1005,6 +1005,7 @@ class Pod(APIObject):
         annotations=None,
         command=None,
         env=None,
+        resources=None,
         image_pull_policy=None,
         labels=None,
         ports=None,
@@ -1019,6 +1020,7 @@ class Pod(APIObject):
             annotations (dict): Annotations to add to the pod.
             command (list): Command to run in the container.
             env (dict): Environment variables to set in the container.
+            resources (dict): Resources to set in the container.
             image_pull_policy (str): Image pull policy to use.
             labels (dict): Labels to add to the pod.
             ports (list|int): Ports to expose.
@@ -1068,6 +1070,7 @@ class Pod(APIObject):
                             image=image,
                             command=command,
                             env=env,
+                            resources=resources,
                             imagePullPolicy=image_pull_policy,
                             ports=ports,
                         )
