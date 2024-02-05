@@ -92,6 +92,38 @@ while not await pod.ready():
 
 `````
 
+## Create a Job and wait for it to either succeed or fail
+
+Create a new {py:class}`Job <kr8s.objects.Job>` and wait for it to either succeed or fail with {py:func}`Job.wait() <kr8s.objects.Job.wait()>`.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync: sync
+```python
+from kr8s.objects import Job
+
+job = Job(...)
+job.create()
+
+job.wait(["condition=Complete", "condition=Failed"])
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import Jod
+
+job = await Job(...)
+await job.create()
+
+await job.wait(["condition=Complete", "condition=Failed"])
+```
+````
+
+`````
+
 ## Create a Secret
 
 Create a {py:class}`Secret <kr8s.objects.Secret>` with several keys.

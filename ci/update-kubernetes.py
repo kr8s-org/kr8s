@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
+# SPDX-License-Identifier: BSD 3-Clause License
 import json
 import re
 import urllib.request
@@ -34,17 +36,22 @@ def get_versions():
         data.sort(key=lambda x: x["eol"], reverse=True)
 
     print("Loading Kubernetes tags from https://hub.docker.com/r/kindest/node/tags...")
-    with urllib.request.urlopen(
-        "https://hub.docker.com/v2/repositories/kindest/node/tags"
-    ) as url:
-        container_tags = json.load(url)
+
+    container_tags = []
+    next_url = "https://hub.docker.com/v2/repositories/kindest/node/tags"
+    while next_url:
+        with urllib.request.urlopen(next_url) as url:
+            results = json.load(url)
+            container_tags += results["results"]
+            if "next" in results and results["next"]:
+                next_url = results["next"]
+            else:
+                next_url = None
 
     for version in data:
         try:
             version["latest_kind_container"] = [
-                x["name"]
-                for x in container_tags["results"]
-                if version["cycle"] in x["name"]
+                x["name"] for x in container_tags if version["cycle"] in x["name"]
             ][0][1:]
         except IndexError:
             version["latest_kind_container"] = None
@@ -56,8 +63,9 @@ def get_versions():
     return data
 
 
-def update_test_workflow(versions):
-    workflow = yaml.load(Path(".github/workflows/test.yaml"))
+def update_workflow(versions, workflow_path):
+    workflow_path = Path(workflow_path)
+    workflow = yaml.load(workflow_path)
     workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][0] = versions[
         0
     ]["latest_kind_container"]
@@ -69,7 +77,7 @@ def update_test_workflow(versions):
                 "kubernetes-version": version["latest_kind_container"],
             }
         )
-    yaml.dump(workflow, Path(".github/workflows/test.yaml"))
+    yaml.dump(workflow, workflow_path)
 
 
 def update_badges(filename, versions):
@@ -95,7 +103,8 @@ def main():
             f"For {version['cycle']} using kindest/node {version['latest_kind_container']} until {version['eol']}"
         )
 
-    update_test_workflow(versions)
+    update_workflow(versions, ".github/workflows/test-kr8s.yaml")
+    update_workflow(versions, ".github/workflows/test-kubectl-ng.yaml")
     update_badges("README.md", versions)
     update_badges("docs/index.md", versions)
 

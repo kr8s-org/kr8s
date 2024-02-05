@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
@@ -9,7 +9,17 @@ import pathlib
 import re
 import sys
 import time
-from typing import Any, AsyncGenerator, BinaryIO, Dict, List, Optional, Type, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    BinaryIO,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    Union,
+)
 
 import anyio
 import httpx
@@ -361,8 +371,19 @@ class APIObject:
         api = await kr8s.asyncio.api()
         return await api._get(kind=cls, **kwargs)
 
-    async def _test_conditions(self, conditions: list) -> bool:
-        """Test if conditions are met."""
+    async def _test_conditions(
+        self, conditions: list, mode: Literal["any", "all"] = "any"
+    ) -> bool:
+        """Test if conditions are met.
+
+        Args:
+            conditions: A list of conditions to test.
+            mode: Match any condition with "any" or all conditions with "all". Defaults to "any".
+
+        Returns:
+            bool: True if any condition is met, False otherwise.
+        """
+        results = []
         for condition in conditions:
             if condition.startswith("condition"):
                 condition = "=".join(condition.split("=")[1:])
@@ -377,24 +398,64 @@ class APIObject:
                 status_conditions = list_dict_unpack(
                     self.status.get("conditions", []), "type", "status"
                 )
-                if status_conditions.get(field, None) != value:
-                    return False
+                results.append(status_conditions.get(field, None) == value)
             elif condition == "delete":
-                if await self._exists():
-                    return False
+                results.append(not await self._exists())
             elif condition.startswith("jsonpath"):
                 matches = re.search(JSONPATH_CONDITION_EXPRESSION, condition)
                 expression = matches.group("expression")
                 condition = matches.group("condition")
                 [value] = jsonpath.findall(expression, self._raw)
-                if value != condition:
-                    return False
+                results.append(str(value) == str(condition))
             else:
                 raise ValueError(f"Unknown condition type {condition}")
-        return True
+        if mode == "any":
+            return any(results)
+        elif mode == "all":
+            return all(results)
+        else:
+            raise ValueError(f"Unknown wait mode '{mode}', must be 'any' or 'all'")
 
-    async def wait(self, conditions: Union[List[str], str], timeout: int = None):
-        """Wait for conditions to be met."""
+    async def wait(
+        self,
+        conditions: Union[List[str], str],
+        mode: Literal["any", "all"] = "any",
+        timeout: int = None,
+    ):
+        """Wait for conditions to be met.
+
+        Args:
+            conditions: A list of conditions to wait for.
+            mode: Match any condition with "any" or all conditions with "all". Defaults to "any".
+            timeout: Timeout in seconds.
+
+        Example:
+            Wait for a Pod to be ready.
+
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> pod.wait("condition=Ready")
+
+            Wait for a Job to either succeed or fail.
+
+            >>> from kr8s.objects import Job
+            >>> job = Job.get("my-jod")
+            >>> job.wait(["condition=Complete", "condition=Failed"])
+
+            Wait for a Pod to be initialized and ready to start containers.
+
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> pod.wait(["condition=Initialized", "condition=PodReadyToStartContainers"], mode="all")
+
+        Note:
+            As of the current Kubertenetes release when this function was written (1.29) kubectl doesn't support
+            multiple conditions. There is a PR to implement this but it hasn't been merged yet
+            https://github.com/kubernetes/kubernetes/pull/119205.
+
+            Given that ``for`` is a reserved word anyway we can't exactly match the kubectl API so
+            we use ``condition`` in combination with a ``mode`` instead.
+        """
         if isinstance(conditions, str):
             conditions = [conditions]
 
@@ -404,10 +465,10 @@ class APIObject:
             except NotFoundError:
                 if set(conditions) == {"delete"}:
                     return
-            if await self._test_conditions(conditions):
+            if await self._test_conditions(conditions, mode=mode):
                 return
             async for _ in self._watch():
-                if await self._test_conditions(conditions):
+                if await self._test_conditions(conditions, mode=mode):
                     return
 
     async def annotate(self, annotations: dict = None, **kwargs) -> None:
@@ -703,7 +764,7 @@ class Pod(APIObject):
     singular = "pod"
     namespaced = True
 
-    async def ready(self) -> bool:
+    async def _ready(self) -> bool:
         """Check if the pod is ready."""
         await self._refresh()
         conditions = list_dict_unpack(
@@ -717,6 +778,10 @@ class Pod(APIObject):
             and conditions.get("Ready", "False") == "True"
             and conditions.get("ContainersReady", "False") == "True"
         )
+
+    async def ready(self) -> bool:
+        """Check if the pod is ready."""
+        return await self._ready()
 
     async def logs(
         self,
@@ -810,7 +875,12 @@ class Pod(APIObject):
                 async for line in resp.aiter_lines():
                     yield line
 
-    def portforward(self, remote_port: int, local_port: int = None) -> int:
+    def portforward(
+        self,
+        remote_port: int,
+        local_port: int = None,
+        address: List[str] | str = "127.0.0.1",
+    ) -> int:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
@@ -832,10 +902,19 @@ class Pod(APIObject):
             >>> print(f"Forwarding to port {pf.local_port}")
             >>> # Do something with port 8888
             >>> await pf.stop()
+
+            Explict bind address:
+
+            >>> async with pod.PortForward(8888, address=["127.0.0.1", "10.20.0.1"]) as port:
+            ...     print(f"Forwarding to port {port}")
+            ...     # Do something with port 8888 on the Pod, port will be bind to 127.0.0.1 and 10.20.0.1
+
         """
+        if isinstance(address, str):
+            address = [address]
         if self._asyncio:
-            return AsyncPortForward(self, remote_port, local_port)
-        return SyncPortForward(self, remote_port, local_port)
+            return AsyncPortForward(self, remote_port, local_port, address)
+        return SyncPortForward(self, remote_port, local_port, address)
 
     async def _exec(
         self,
@@ -848,6 +927,9 @@ class Pod(APIObject):
         check: bool = True,
         capture_output: bool = True,
     ):
+        while not await self._ready():
+            await anyio.sleep(0.1)
+
         ex = Exec(
             self,
             command,
@@ -923,6 +1005,7 @@ class Pod(APIObject):
         annotations=None,
         command=None,
         env=None,
+        resources=None,
         image_pull_policy=None,
         labels=None,
         ports=None,
@@ -937,9 +1020,10 @@ class Pod(APIObject):
             annotations (dict): Annotations to add to the pod.
             command (list): Command to run in the container.
             env (dict): Environment variables to set in the container.
+            resources (dict): Resources to set in the container.
             image_pull_policy (str): Image pull policy to use.
             labels (dict): Labels to add to the pod.
-            ports (list): Ports to expose.
+            ports (list|int): Ports to expose.
             restart (str): Restart policy to use.
 
         Returns:
@@ -949,7 +1033,32 @@ class Pod(APIObject):
             >>> from kr8s.objects import Pod
             >>> pod = Pod.gen(name="my-pod", image="my-image")
             >>> pod.create()
+
+            Create an nginx Pod that exposes port 80.
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="nginx", image="nginx:latest", ports=[80])
+            >>> pod.create()
+
+            Create an wordpress Pod that exposes port 80.
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="wordpress", image="wordpress:latest", ports=[{"containerPort": 80}])
+            >>> pod.create()
+
+            Create a Pod that requires a GPU
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.gen(name="cuda-vectoradd",
+            ...               image="nvidia/samples:vectoradd-cuda11.6.0-ubuntu18.04",
+            ...               resources={"limits": {"nvidia.com/gpu": 1}})
         """
+        if ports:
+            if isinstance(ports, int):
+                ports = [ports]
+            # Convert any integer ports to valid v1.ContainerPort format
+            ports = [
+                {"containerPort": port} if isinstance(port, int) else port
+                for port in ports
+            ]
+
         return cls(
             xdict(
                 apiVersion="v1",
@@ -967,6 +1076,7 @@ class Pod(APIObject):
                             image=image,
                             command=command,
                             env=env,
+                            resources=resources,
                             imagePullPolicy=image_pull_policy,
                             ports=ports,
                         )
@@ -1133,7 +1243,12 @@ class Service(APIObject):
         pods = await self._ready_pods()
         return len(pods) > 0
 
-    def portforward(self, remote_port: int, local_port: int = None) -> int:
+    def portforward(
+        self,
+        remote_port: int,
+        local_port: int = None,
+        address: str | List[str] = "127.0.0.1",
+    ) -> int:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
@@ -1157,9 +1272,11 @@ class Service(APIObject):
             >>> await pf.stop()
 
         """
+        if isinstance(address, str):
+            address = [address]
         if self._asyncio:
-            return AsyncPortForward(self, remote_port, local_port)
-        return SyncPortForward(self, remote_port, local_port)
+            return AsyncPortForward(self, remote_port, local_port, address)
+        return SyncPortForward(self, remote_port, local_port, address)
 
 
 ## apps/v1 objects
@@ -1599,6 +1716,8 @@ async def objects_from_files(
         files = [f for f in path.glob(pattern) if f.is_file()]
     else:
         files = [path]
+    if not api:
+        api = await kr8s.asyncio.api(_asyncio=_asyncio)
     objects = []
     for file in files:
         with open(file, "r") as f:

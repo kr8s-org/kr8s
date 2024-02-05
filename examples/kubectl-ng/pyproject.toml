@@ -4,13 +4,26 @@ version = "0.0.0"
 description = ""
 authors = ["Jacob Tomlinson <jacob@tomlinson.email>"]
 readme = "README.md"
-packages = [{include = "kubectl_ng"}]
+packages = [{ include = "kubectl_ng" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"
 typer = "^0.7.0"
 rich = "^13.3.2"
-kr8s = "^0.5.1"
+kr8s = "v0.13.0"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.4"
+pytest-asyncio = "^0.23.3"
+pytest-kind = "^22.11.1"
+pytest-timeout = "^2.2.0"
+pytest-rerunfailures = "^13.0"
+pytest-cov = "^4.1.0"
+trio = "^0.23.2"
+kubernetes-validate = "^1.28.3"
 
 [tool.poetry-dynamic-versioning]
 enable = true

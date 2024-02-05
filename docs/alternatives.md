@@ -63,18 +63,7 @@ The official `kubernetes` library maps exactly onto the Kubernetes API due to au
 
 In contrast `kr8s` may not have 100% API coverage with the Kubernetes API but the library is written to be very clear and readable which generally improves code quality. You can also use the [low-level API](client) to fill in any missing API gaps that you may need.
 
-Here's an example comparing listing all Pods using a label selector with `kr8s`:
-
-```python
-import kr8s
-
-selector = {'component': 'kube-scheduler'}
-
-for pod in kr8s.get("pods", namespace=kr8s.ALL, label_selector=selector):
-    print(pod.namespace, pod.name)
-```
-
-And here's the same example with `kubernetes`:
+Here's an example comparing listing all Pods using a label selector with `kubernetes`:
 
 ```python
 from kubernetes import client, config
@@ -89,22 +78,24 @@ for pods in v1.list_pod_for_all_namespaces(label_selector=selector_str, ).items:
     print(pod.metadata.namespace, pod.metadata.name)
 ```
 
+And here's the same example with `kr8s`:
+
+```python
+import kr8s
+
+selector = {'component': 'kube-scheduler'}
+
+for pod in kr8s.get("pods", namespace=kr8s.ALL, label_selector=selector):
+    print(pod.namespace, pod.name)
+```
+
 ### `kr8s` vs `kubernetes_asyncio`
 
 The official `kubernetes` library doesn't support asyncio so the `kubernetes_asyncio` library exists to fill that gap. It is created in the same way by auto generating a library using an asyncio OpenAPI generator.
 
 The code that is needed to use this library is the most verbose out of all of the libraries due to the use of async context managers for HTTP sessions and the documentation is even more minimal than the official library. Often developers need to look at the official docs and then try and translate it into `kubernetes_asyncio` code.
 
-Here's an example of listing the Nodes in your cluster with `kr8s`:
-
-```python
-import kr8s.asyncio
-
-for node in await kr8s.asyncio.get("nodes"):
-    print(node.name)
-```
-
-And here's the same example with `kubernetes-asyncio`:
+Here's an example of listing the Nodes in your cluster with `kubernetes-asyncio`:
 
 ```python
 from kubernetes_asyncio import client, config
@@ -119,21 +110,20 @@ async with ApiClient() as api:
         print(node.metadata.name)
 ```
 
-### `kr8s` vs `pykube-ng`
-
-`pykube-ng` is a maintained fork of `pykube` which aims to be a lightweight and pythonic client. It uses no code generation and produces more readable code but doesn't support asyncio. It also has a very object driven API that appears to be inspired by [SQLAlchemy](https://www.sqlalchemy.org/) which can result in overly complex looking queries to do simple things like get a single resource.
-
-Here's an example listing ready Pods with `kr8s`:
+And here's the same example with `kr8s`:
 
 ```python
-import kr8s
+import kr8s.asyncio
 
-for pod in kr8s.get("pods", namespace="kube-system"):
-    if pod.ready():
-        print(pod.name)
+for node in await kr8s.asyncio.get("nodes"):
+    print(node.name)
 ```
 
-And here's the same example with `pykube-ng`:
+### `kr8s` vs `pykube-ng`
+
+`pykube-ng` is a maintained fork of `pykube` which aims to be a lightweight and pythonic client. It uses no code generation and produces more readable code but doesn't support asyncio. It also has a very object driven API that appears to be inspired by [SQLAlchemy](https://www.sqlalchemy.org/) and feels like a traditional ORM which can result in overly complex looking queries to do simple things like get a single resource.
+
+Here's an example listing ready Pods with `pykube-ng`:
 
 ```python
 import pykube
@@ -144,22 +134,23 @@ for pod in pykube.Pod.objects(api).filter(namespace="kube-system"):
         print(pod.name)
 ```
 
+And here's the same example with `kr8s`:
+
+```python
+import kr8s
+
+for pod in kr8s.get("pods", namespace="kube-system"):
+    if pod.ready():
+        print(pod.name)
+```
+
 ### `kr8s` vs `lightkube`
 
 Lightkube feels like the Typescript of the Python Kubernetes Client landscape. It has a strong emphasis on type safety and has a partially auto generated codebase to ensure strict schema validation on the client side, but manages to balance that well with a pleasant and pythonic API and supports both sync and async usage.
 
 It feels like the API client that `kubernetes` + `kubernetes_asyncio` could've been. This is a different design goal to `kr8s` which is trying to replicate the `kubectl` experience in Python rather than exposing the Kubernetes HTTP API.
 
-Here's an example of scaling a Deployment with `kr8s`:
-
-```python
-from kr8s.objects import Deployment
-
-deploy = Deployment("metrics-server", namespace="kube-system")
-deploy.scale(1)
-```
-
-And here's the same example with `lightkube`:
+Here's an example of scaling a Deployment with `lightkube`:
 
 ```python
 from lightkube import Client
@@ -173,4 +164,13 @@ deploy = Deployment.Scale(
     spec=ScaleSpec(replicas=1)
 )
 client.replace(deploy)
+```
+
+And here's the same example with `kr8s`:
+
+```python
+from kr8s.objects import Deployment
+
+deploy = Deployment("metrics-server", namespace="kube-system")
+deploy.scale(1)
 ```

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
@@ -364,9 +364,9 @@ class Api(object):
         headers = {}
         if as_object:
             group, version = as_object.version.split("/")
-            headers[
-                "Accept"
-            ] = f"application/json;as={as_object.kind};v={version};g={group}"
+            headers["Accept"] = (
+                f"application/json;as={as_object.kind};v={version};g={group}"
+            )
         async with self._get_kind(
             kind,
             namespace=namespace,
@@ -472,6 +472,23 @@ class Api(object):
                 ]
             )
         return resources
+
+    async def api_versions(self) -> List[str]:
+        """Get the Kubernetes API versions."""
+        async for version in self._api_versions():
+            yield version
+
+    async def _api_versions(self) -> List[str]:
+        async with self.call_api(method="GET", version="", base="/api") as response:
+            core_api_list = response.json()
+        for version in core_api_list["versions"]:
+            yield version
+
+        async with self.call_api(method="GET", version="", base="/apis") as response:
+            api_list = response.json()
+        for group in api_list["groups"]:
+            for version in group["versions"]:
+                yield version["groupVersion"]
 
     @property
     def __version__(self) -> str:

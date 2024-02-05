@@ -1,5 +1,6 @@
 # <img alt="kr8s" title="kr8s" src="_static/branding/text-trimmed.png" style="max-height: 100px" />
 
+[![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kr8s)](https://pypi.org/project/kr8s/)
 [![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.26%7C1.27%7C1.28%7C1.29-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
@@ -299,7 +300,9 @@ Open a port forward to a Pod as a background task/thread.
 from kr8s.objects import Pod
 
 pod = Pod.get("my-pod")
-pf = pod.portforward(remote_port=1234, local_port=5678)
+# Listen on port 5678 on 127.0.0.1, forwarding to 5000 in the pod
+pf = pod.portforward(remote_port=5000, local_port=5678)
+
 
 # Starts the port forward in a background thread
 pf.start()
@@ -332,9 +335,10 @@ await pf.stop()
 
 `````
 
-```{seealso}
+### More examples
+
 See the [Examples Documentation](examples/index) for a full set of examples.
-```
+
 
 ```{toctree}
 :maxdepth: 2

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 from functools import wraps
@@ -6,6 +6,7 @@ from functools import wraps
 import typer
 
 from ._api_resources import api_resources
+from ._api_versions import api_versions
 from ._create import create
 from ._delete import delete
 from ._exec import kexec
@@ -31,8 +32,9 @@ def register(app, func, alias=None):
         app.command()(func)
 
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 register(app, api_resources)
+register(app, api_versions)
 register(app, create)
 register(app, delete)
 register(app, get)

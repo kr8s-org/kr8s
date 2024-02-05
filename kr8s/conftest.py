@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import base64
@@ -6,14 +6,12 @@ import os
 import socket
 import subprocess
 import tempfile
-import time
 import uuid
 from contextlib import closing
 from pathlib import Path
 
 import pytest
 import yaml
-from pytest_kind.cluster import KindCluster
 
 from kr8s._api import Api
 from kr8s._testutils import set_env
@@ -113,31 +111,6 @@ async def example_deployment_spec(ns):
 def check_socket(host, port):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         return sock.connect_ex((host, port)) == 0
-
-
-@pytest.fixture(scope="session", autouse=True)
-def k8s_cluster(request) -> KindCluster:
-    image = None
-    if version := os.environ.get("KUBERNETES_VERSION"):
-        image = f"kindest/node:v{version}"
-
-    kind_cluster = KindCluster(
-        name="pytest-kind",
-        image=image,
-    )
-    kind_cluster.create()
-    os.environ["KUBECONFIG"] = str(kind_cluster.kubeconfig_path)
-    # CI fix, wait for default service account to be created before continuing
-    while True:
-        try:
-            kind_cluster.kubectl("get", "serviceaccount", "default")
-            break
-        except Exception:
-            time.sleep(1)
-    yield kind_cluster
-    del os.environ["KUBECONFIG"]
-    if not request.config.getoption("keep_cluster"):  # pragma: no cover
-        kind_cluster.delete()
 
 
 @pytest.fixture(scope="session", autouse=True)

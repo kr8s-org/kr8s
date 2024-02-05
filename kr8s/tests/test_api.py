@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import queue
@@ -187,6 +187,18 @@ async def test_get_class():
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
+
+
+async def test_api_versions():
+    api = await kr8s.asyncio.api()
+    versions = [version async for version in api.api_versions()]
+    assert "apps/v1" in versions
+
+
+def test_api_versions_sync():
+    api = kr8s.api()
+    versions = [version for version in api.api_versions()]
+    assert "apps/v1" in versions
 
 
 async def test_api_resources():

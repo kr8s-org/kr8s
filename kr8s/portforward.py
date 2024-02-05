@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
+# SPDX-License-Identifier: BSD 3-Clause License
 import threading
 import time
 
@@ -17,6 +19,7 @@ class PortForward(_PortForward):
 
     def stop(self):
         """Stop the background thread."""
-        while self.server is None:
-            time.sleep(0.1)
-        self.server.close()
+        for server in self.servers:
+            while server is None:
+                time.sleep(0.1)
+            server.close()

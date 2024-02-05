@@ -1,10 +1,11 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, Yuvi Panda, Anaconda Inc, NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import datetime
 import pathlib
 import tempfile
 import time
+from contextlib import suppress
 
 import httpx
 import pytest
@@ -24,6 +25,7 @@ from kr8s.asyncio.objects import (
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import get_class, new_class, object_from_spec
+from kr8s.objects import objects_from_files as sync_objects_from_files
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
@@ -135,6 +137,26 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("delete")
 
 
+async def test_pod_wait_multiple_conditions(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    await pod.wait(conditions=["condition=Failed", "condition=Ready"])
+    with pytest.raises(TimeoutError):
+        await pod.wait(
+            conditions=["condition=Failed", "condition=Ready"], mode="all", timeout=0.1
+        )
+    await pod.wait(
+        conditions=[
+            "condition=Initialized",
+            "condition=ContainersReady",
+        ],
+        mode="all",
+    )
+    with pytest.raises(ValueError):
+        await pod.wait(conditions=["condition=Failed", "condition=Ready"], mode="foo")
+    await pod.delete()
+
+
 def test_pod_wait_ready_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()
@@ -149,6 +171,47 @@ def test_pod_wait_ready_sync(example_pod_spec):
     pod.delete()
     pod.wait("condition=Ready=False")
     pod.wait("delete")
+
+
+def test_wait_replicas(ns):
+    from kr8s.objects import StatefulSet
+
+    ss = StatefulSet(
+        {
+            "metadata": {
+                "name": "test-wait-replicas",
+                "namespace": ns,
+            },
+            "spec": {
+                "replicas": 3,
+                "selector": {
+                    "matchLabels": {
+                        "app": "test-wait-replicas",
+                    }
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "test-wait-replicas",
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "test-wait-replicas",
+                                "image": "nginx:latest",
+                            }
+                        ]
+                    },
+                },
+            },
+        }
+    )
+    ss.create()
+    try:
+        ss.wait("jsonpath='{.status.availableReplicas}'=3", timeout=30)
+    finally:
+        ss.delete()
 
 
 def test_pod_refresh_sync(example_pod_spec):
@@ -567,6 +630,25 @@ async def test_unsupported_port_forward():
         await PortForward(pv, 80).start()
 
 
+async def test_multiple_bind_addresses_port_forward(nginx_service):
+    [nginx_pod, *_] = await nginx_service.ready_pods()
+
+    # Example multiple addresses
+    multiple_addresses = ["127.0.0.2", "127.0.0.3"]
+
+    pf = nginx_pod.portforward(80, local_port=None, address=multiple_addresses)
+
+    # Start the port forwarding
+    await pf.start()
+    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        for address in multiple_addresses:
+            resp = await session.get(f"http://{address}:{pf.local_port}/")
+            assert resp.status_code == 200
+
+    # Stop the port forwarding
+    await pf.stop()
+
+
 async def test_scalable_dot_notation():
     class Foo(APIObject):
         version = "foo.kr8s.org/v1alpha1"
@@ -601,6 +683,18 @@ async def test_objects_from_file():
     assert len(objects) == 2
     assert isinstance(objects[0], Pod)
     assert isinstance(objects[1], Service)
+    assert len(objects[1].spec.ports) == 1
+
+
+def test_objects_from_file_sync():
+    objects = sync_objects_from_files(
+        CURRENT_DIR / "resources" / "simple" / "nginx_pod_service.yaml"
+    )
+    assert len(objects) == 2
+    assert isinstance(objects[0], Pod)
+    assert isinstance(objects[1], Service)
+    assert not objects[0]._asyncio
+    assert not objects[0].api._asyncio
     assert len(objects[1].spec.ports) == 1
 
 
@@ -770,6 +864,17 @@ async def test_pod_exec_stdin(ubuntu_pod):
         assert b"foo" in ex.stdout
 
 
+async def test_pod_exec_not_ready(ns):
+    pod = await Pod.gen(name="nginx", namespace=ns, image="nginx:latest")
+    await pod.create()
+    try:
+        assert not await pod.ready()
+        await pod.exec(["date"])
+        assert await pod.ready()
+    finally:
+        await pod.delete()
+
+
 async def test_configmap_data(ns):
     [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
     cm.namespace = ns
@@ -815,3 +920,22 @@ async def test_pod_list():
     assert all(isinstance(p, Pod) for p in pods1)
     assert all(isinstance(p, Pod) for p in pods2)
     assert {p.name for p in pods1} == {p.name for p in pods2}
+
+
+@pytest.mark.parametrize(
+    "ports",
+    [
+        80,
+        [80],
+        [80, 81],
+        [{"containerPort": 80}],
+        [{"containerPort": 80}, {"containerPort": 81}],
+    ],
+)
+async def test_pod_gen_ports(ns, ports):
+    pod = await Pod.gen(name="nginx", namespace=ns, image="nginx:latest", ports=ports)
+    try:
+        await pod.create()  # This should succeed
+    finally:
+        with suppress(kr8s.NotFoundError):
+            await pod.delete()

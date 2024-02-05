@@ -92,7 +92,7 @@ pod = Pod({...}, api=api)
 
 For situations where there may not be an appropriate method to call or you want to call the Kubernetes API directly you can use the {py:func}`.call_api() <kr8s.Api.call_api>` context manager.
 
-To make API requests for resources more convenience `call_api` allows building the url via various kwargs.
+To make API requests for resources more convenient `call_api` allows building the url via various kwargs.
 
 ```{warning}
 The `call_api` method is only available via the [asynchronous API](asyncio). This is because it yields async objects from `httpx`.

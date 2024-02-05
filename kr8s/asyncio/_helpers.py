@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023, Dask Developers, NVIDIA
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from typing import Dict, List, Union
 
@@ -90,7 +90,7 @@ async def watch(
 ):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    async for (t, o) in api._watch(
+    async for t, o in api._watch(
         kind=kind,
         namespace=namespace,
         label_selector=label_selector,
