@@ -168,7 +168,7 @@ class KubeAuth:
                 self.client_key_file = str(key_file)
         if "client-certificate" in self._user:
             client_cert_path = anyio.Path(self._user["client-certificate"])
-            if await client_key_path.exists():
+            if await client_cert_path.exists():
                 self.client_cert_file = self._user["client-certificate"]
             else:
                 self.client_cert_file = (
@@ -180,10 +180,10 @@ class KubeAuth:
                     base64.b64decode(self._user["client-certificate-data"])
                 )
                 self.client_cert_file = str(cert_file)
-        if "certificate-authority" in self._user:
-            server_ca_path = anyio.Path(self._user["certificate-authority"])
-            if await client_key_path.exists():
-                self.server_ca_file = self._user["certificate-authority"]
+        if "certificate-authority" in self._cluster:
+            server_ca_path = anyio.Path(self._cluster["certificate-authority"])
+            if await server_ca_path.exists():
+                self.server_ca_file = self._cluster["certificate-authority"]
             else:
                 self.server_ca_file = (
                     anyio.Path(self._kubeconfig).parent / server_ca_path
