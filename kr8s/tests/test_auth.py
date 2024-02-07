@@ -70,15 +70,21 @@ async def kubeconfig_with_certs_on_disk(k8s_cluster):
         # Open kubeconfig and dump certs to disk, then write new kubeconfig with paths to certs
         kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
         user = kubeconfig["users"][0]["user"]
+        ca = kubeconfig["clusters"][0]["cluster"].pop("certificate-authority-data")
         with tempfile.TemporaryDirectory() as d:
             kubeconfig["users"][0]["user"] = {
                 "client-certificate": f"{d}/client.crt" if absolute else "client.crt",
                 "client-key": f"{d}/client.key" if absolute else "client.key",
             }
+            kubeconfig["clusters"][0]["cluster"]["certificate-authority"] = (
+                f"{d}/ca.crt" if absolute else "ca.crt"
+            )
             with open(f"{d}/client.crt", "wb") as f:
                 f.write(base64.b64decode(user["client-certificate-data"]))
             with open(f"{d}/client.key", "wb") as f:
                 f.write(base64.b64decode(user["client-key-data"]))
+            with open(f"{d}/ca.crt", "wb") as f:
+                f.write(base64.b64decode(ca))
             with open(f"{d}/config", "wb") as f:
                 f.write(yaml.safe_dump(kubeconfig).encode())
                 f.flush()
