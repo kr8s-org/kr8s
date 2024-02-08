@@ -137,8 +137,14 @@ async def test_bad_auth(serviceaccount):
 
 async def test_url(kubectl_proxy):
     api = await kr8s.asyncio.api(url=kubectl_proxy)
-    version = await api.version()
-    assert "major" in version
+    assert await api.get("pods", namespace="kube-system")
+    assert api.auth.server == kubectl_proxy
+
+    # Ensure reauthentication works
+    api.auth.server = None
+    await api.reauthenticate()
+    assert await api.get("pods", namespace="kube-system")
+    assert api.auth.server == kubectl_proxy
 
 
 def test_no_config():
@@ -163,6 +169,15 @@ async def test_service_account(serviceaccount):
 async def test_exec(kubeconfig_with_exec):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
     assert await api.get("pods", namespace=kr8s.ALL)
+    assert api.auth.server
+    assert api.auth.server_ca_file
+
+    # Test reauthentication
+    api.auth.server = None
+    api.auth.server_ca_file = None
+    await api.reauthenticate()
+    assert api.auth.server
+    assert api.auth.server_ca_file
 
 
 async def test_token(kubeconfig_with_token):
