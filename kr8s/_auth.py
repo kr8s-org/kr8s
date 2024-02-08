@@ -29,6 +29,7 @@ class KubeAuth:
         self.token = None
         self.namespace = namespace
         self.active_context = None
+        self._url = url
         self._insecure_skip_tls_verify = False
         self._use_context = context
         self._context = None
@@ -42,9 +43,6 @@ class KubeAuth:
         self._kubeconfig = kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
         self.__auth_lock = anyio.Lock()
 
-        if url:
-            self.server = url
-
     def __await__(self):
         async def f():
             await self.reauthenticate()
@@ -55,10 +53,13 @@ class KubeAuth:
     async def reauthenticate(self) -> None:
         """Reauthenticate with the server."""
         async with self.__auth_lock:
-            if self._kubeconfig is not False and not self.server:
-                await self._load_kubeconfig()
-            if self._serviceaccount and not self.server:
-                await self._load_service_account()
+            if self._url:
+                self.server = self._url
+            else:
+                if self._kubeconfig is not False:
+                    await self._load_kubeconfig()
+                if self._serviceaccount:
+                    await self._load_service_account()
             if not self.server:
                 raise ValueError("Unable to find valid credentials")
 
