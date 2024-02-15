@@ -23,14 +23,14 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        kubernetes-version: ["1.29.1"]
+        kubernetes-version: ["1.29.2"]
         include:
           - python-version: '3.10'
-            kubernetes-version: 1.28.6
+            kubernetes-version: 1.28.7
           - python-version: '3.10'
-            kubernetes-version: 1.27.10
+            kubernetes-version: 1.27.11
           - python-version: '3.10'
-            kubernetes-version: 1.26.13
+            kubernetes-version: 1.26.14
     env:
       KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
 
