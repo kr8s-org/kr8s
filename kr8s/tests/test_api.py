@@ -155,7 +155,6 @@ async def test_get_pods_as_table():
     assert len(pods.rows) > 0
     assert not await pods.exists()  # Cannot exist in the Kubernetes API
 
-
 async def test_watch_pods(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()

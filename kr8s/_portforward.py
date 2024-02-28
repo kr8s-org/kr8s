@@ -206,6 +206,7 @@ class PortForward:
                     },
                 ) as websocket:
                     yield websocket
+                    break
             except aiohttp.client_exceptions.WSServerHandshakeError as e:
                 self.pod = None
                 if connection_attempts > 5:
