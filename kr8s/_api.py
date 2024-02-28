@@ -287,11 +287,7 @@ class Api(object):
             obj_cls = kind
         else:
             try:
-                resources = await self._api_resources()
-                for resource in resources:
-                    if "shortNames" in resource and kind in resource["shortNames"]:
-                        kind = resource["name"]
-                        break
+                kind = self._obtain_kind(kind)
             except ServerError as e:
                 warnings.warn(str(e))
             obj_cls = get_class(kind, _asyncio=self._asyncio)
@@ -434,6 +430,24 @@ class Api(object):
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         return await self._api_resources()
+
+    async def _obtain_kind(self, kind) -> str:
+        """Get the kind for an API resource.
+        If the resource is not found in the cache, clear it and try again."""
+        resources = await self._api_resources()
+        full_kind = self._filter_api_resources_for_kind(kind, resources)
+        if full_kind:
+            return full_kind
+        else:
+            self._api_resources.cache_clear()
+            resources = await self._api_resources()
+            return self._filter_api_resources_for_kind(kind, resources)
+
+    def _filter_api_resources_for_kind(self, kind, resources) -> str:
+        for resource in resources:
+            if "shortNames" in resource and kind in resource["shortNames"]:
+                return resource["name"]
+        return ""
 
     # Cache for 6 hours because kubectl does
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
