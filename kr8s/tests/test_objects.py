@@ -595,13 +595,13 @@ async def test_pod_port_forward_start_stop(nginx_service):
         resp.read()
     await pf.stop()
     assert pf._bg_task is None
-    
-    
+
+
 async def test_multiple_pods_port_forward_start_stop(nginx_service):
     [nginx_pod_1, *_] = await nginx_service.ready_pods()
     [nginx_pod_2, *_] = await nginx_service.ready_pods()
     pods = [nginx_pod_1, nginx_pod_2]
-    for pod in pods:  
+    for pod in pods:
         pf = pod.portforward(80)
         assert pf._bg_task is None
         port = await pf.start()
@@ -650,6 +650,7 @@ async def test_unsupported_port_forward():
         await pv.portforward(80)
     with pytest.raises(ValueError):
         await PortForward(pv, 80).start()
+
 
 async def test_multiple_bind_addresses_port_forward(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
