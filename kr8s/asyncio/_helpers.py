@@ -62,7 +62,7 @@ async def get(
     """
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    return await api._get(
+    return await api.async_get(
         kind,
         *names,
         namespace=namespace,
@@ -76,7 +76,7 @@ async def get(
 async def version(api=None, _asyncio=True):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    return await api._version()
+    return await api.async_version()
 
 
 async def watch(
@@ -90,7 +90,7 @@ async def watch(
 ):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    async for t, o in api._watch(
+    async for t, o in api.async_watch(
         kind=kind,
         namespace=namespace,
         label_selector=label_selector,
@@ -103,13 +103,13 @@ async def watch(
 async def api_resources(api=None, _asyncio=True):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    return await api._api_resources()
+    return await api.async_api_resources()
 
 
 async def whoami(api=None, _asyncio=True):
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    return await api._whoami()
+    return await api.async_whoami()
 
 
 get.__doc__ = Api.get.__doc__

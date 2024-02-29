@@ -211,9 +211,9 @@ class Api(object):
             The Kubernetes version information.
 
         """
-        return await self._version()
+        return await self.async_version()
 
-    async def _version(self) -> dict:
+    async def async_version(self) -> dict:
         async with self.call_api(method="GET", version="", base="/version") as response:
             return response.json()
 
@@ -229,9 +229,9 @@ class Api(object):
         Returns:
             str: The subject that's currently authenticated.
         """
-        return await self._whoami()
+        return await self.async_whoami()
 
-    async def _whoami(self):
+    async def async_whoami(self):
         if self.auth.token:
             payload = {
                 "apiVersion": "authentication.k8s.io/v1",
@@ -253,7 +253,7 @@ class Api(object):
                 return name.value
 
     @contextlib.asynccontextmanager
-    async def _get_kind(
+    async def async_get_kind(
         self,
         kind: Union[str, type],
         namespace: str = None,
@@ -287,7 +287,7 @@ class Api(object):
             obj_cls = kind
         else:
             try:
-                resources = await self._api_resources()
+                resources = await self.async_api_resources()
                 for resource in resources:
                     if "shortNames" in resource and kind in resource["shortNames"]:
                         kind = resource["name"]
@@ -341,7 +341,7 @@ class Api(object):
         List[object]
             The resources.
         """
-        return await self._get(
+        return await self.async_get(
             kind,
             *names,
             namespace=namespace,
@@ -351,7 +351,7 @@ class Api(object):
             **kwargs,
         )
 
-    async def _get(
+    async def async_get(
         self,
         kind: Union[str, type],
         *names: List[str],
@@ -367,7 +367,7 @@ class Api(object):
             headers["Accept"] = (
                 f"application/json;as={as_object.kind};v={version};g={group}"
             )
-        async with self._get_kind(
+        async with self.async_get_kind(
             kind,
             namespace=namespace,
             label_selector=label_selector,
@@ -400,7 +400,7 @@ class Api(object):
         since: str = None,
     ):
         """Watch a Kubernetes resource."""
-        async for t, object in self._watch(
+        async for t, object in self.async_watch(
             kind,
             namespace=namespace,
             label_selector=label_selector,
@@ -409,7 +409,7 @@ class Api(object):
         ):
             yield t, object
 
-    async def _watch(
+    async def async_watch(
         self,
         kind: str,
         namespace: str = None,
@@ -418,7 +418,7 @@ class Api(object):
         since: str = None,
     ) -> Tuple[str, object]:
         """Watch a Kubernetes resource."""
-        async with self._get_kind(
+        async with self.async_get_kind(
             kind,
             namespace=namespace,
             label_selector=label_selector,
@@ -433,12 +433,12 @@ class Api(object):
 
     async def api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
-        return await self._api_resources()
+        return await self.async_api_resources()
 
     # Cache for 6 hours because kubectl does
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
     @cached(TTLCache(1, 60 * 60 * 6))
-    async def _api_resources(self) -> dict:
+    async def async_api_resources(self) -> dict:
         """Get the Kubernetes API resources."""
         resources = []
         async with self.call_api(method="GET", version="", base="/api") as response:
@@ -475,10 +475,10 @@ class Api(object):
 
     async def api_versions(self) -> List[str]:
         """Get the Kubernetes API versions."""
-        async for version in self._api_versions():
+        async for version in self.async_api_versions():
             yield version
 
-    async def _api_versions(self) -> List[str]:
+    async def async_api_versions(self) -> List[str]:
         async with self.call_api(method="GET", version="", base="/api") as response:
             core_api_list = response.json()
         for version in core_api_list["versions"]:

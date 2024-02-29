@@ -203,13 +203,15 @@ class APIObject:
         while start + timeout > time.time():
             if name:
                 try:
-                    resources = await api._get(cls, name, namespace=namespace, **kwargs)
+                    resources = await api.async_get(
+                        cls, name, namespace=namespace, **kwargs
+                    )
                 except ServerError as e:
                     if e.response.status_code == 404:
                         continue
                     raise e
             elif label_selector or field_selector:
-                resources = await api._get(
+                resources = await api.async_get(
                     cls,
                     namespace=namespace,
                     label_selector=label_selector,
@@ -233,9 +235,9 @@ class APIObject:
 
     async def exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
-        return await self._exists(ensure=ensure)
+        return await self.async_exists(ensure=ensure)
 
-    async def _exists(self, ensure=False) -> bool:
+    async def async_exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
         try:
             async with self.api.call_api(
@@ -286,9 +288,9 @@ class APIObject:
 
     async def refresh(self) -> None:
         """Refresh this object from Kubernetes."""
-        await self._refresh()
+        await self.async_refresh()
 
-    async def _refresh(self) -> None:
+    async def async_refresh(self) -> None:
         """Refresh this object from Kubernetes."""
         try:
             async with self.api.call_api(
@@ -305,9 +307,9 @@ class APIObject:
 
     async def patch(self, patch, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
-        await self._patch(patch, subresource=subresource, type=type)
+        await self.async_patch(patch, subresource=subresource, type=type)
 
-    async def _patch(self, patch: Dict, *, subresource=None, type=None) -> None:
+    async def async_patch(self, patch: Dict, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if type == "json":
@@ -335,16 +337,18 @@ class APIObject:
         """Scale this object in Kubernetes."""
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
-        await self._exists(ensure=True)
-        await self._patch({"spec": dot_to_nested_dict(self.scalable_spec, replicas)})
+        await self.async_exists(ensure=True)
+        await self.async_patch(
+            {"spec": dot_to_nested_dict(self.scalable_spec, replicas)}
+        )
         while self.replicas != replicas:
-            await self._refresh()
+            await self.async_refresh()
             await asyncio.sleep(0.1)
 
-    async def _watch(self):
+    async def async_watch(self):
         """Watch this object in Kubernetes."""
         since = self.metadata.get("resourceVersion")
-        async for event, obj in self.api._watch(
+        async for event, obj in self.api.async_watch(
             self.endpoint,
             namespace=self.namespace,
             field_selector=f"metadata.name={self.name}",
@@ -355,7 +359,7 @@ class APIObject:
 
     async def watch(self):
         """Watch this object in Kubernetes."""
-        async for event, obj in self._watch():
+        async for event, obj in self.async_watch():
             yield event, obj
 
     @classmethod
@@ -369,7 +373,7 @@ class APIObject:
             A list of objects.
         """
         api = await kr8s.asyncio.api()
-        return await api._get(kind=cls, **kwargs)
+        return await api.async_get(kind=cls, **kwargs)
 
     async def _test_conditions(
         self, conditions: list, mode: Literal["any", "all"] = "any"
@@ -400,7 +404,7 @@ class APIObject:
                 )
                 results.append(status_conditions.get(field, None) == value)
             elif condition == "delete":
-                results.append(not await self._exists())
+                results.append(not await self.async_exists())
             elif condition.startswith("jsonpath"):
                 matches = re.search(JSONPATH_CONDITION_EXPRESSION, condition)
                 expression = matches.group("expression")
@@ -461,13 +465,13 @@ class APIObject:
 
         with anyio.fail_after(timeout):
             try:
-                await self._refresh()
+                await self.async_refresh()
             except NotFoundError:
                 if set(conditions) == {"delete"}:
                     return
             if await self._test_conditions(conditions, mode=mode):
                 return
-            async for _ in self._watch():
+            async for _ in self.async_watch():
                 if await self._test_conditions(conditions, mode=mode):
                     return
 
@@ -477,7 +481,7 @@ class APIObject:
             annotations = kwargs
         if not annotations:
             raise ValueError("No annotations provided")
-        await self._patch({"metadata": {"annotations": annotations}})
+        await self.async_patch({"metadata": {"annotations": annotations}})
 
     async def label(self, labels: dict = None, **kwargs) -> None:
         """Add labels to this object in Kubernetes.
@@ -501,7 +505,7 @@ class APIObject:
             labels = kwargs
         if not labels:
             raise ValueError("No labels provided")
-        await self._patch({"metadata": {"labels": labels}})
+        await self.async_patch({"metadata": {"labels": labels}})
 
     def keys(self) -> list:
         """Return the keys of this object."""
@@ -525,11 +529,11 @@ class APIObject:
             >>> pod = Pod.get("my-pod")
             >>> pod.set_owner(deployment)
         """
-        await self._set_owner(owner)
+        await self.async_set_owner(owner)
 
-    async def _set_owner(self, owner: APIObject) -> None:
+    async def async_set_owner(self, owner: APIObject) -> None:
         """Set the owner of this object."""
-        await self._patch(
+        await self.async_patch(
             {
                 "metadata": {
                     "ownerReferences": [
@@ -563,7 +567,7 @@ class APIObject:
             >>> deployment.adopt(pod)
 
         """
-        await child._set_owner(self)
+        await child.async_set_owner(self)
 
     def to_dict(self) -> dict:
         """Return a dictionary representation of this object."""
@@ -722,14 +726,14 @@ class Node(APIObject):
 
         This will mark the node as unschedulable.
         """
-        await self._patch({"spec": {"unschedulable": True}})
+        await self.async_patch({"spec": {"unschedulable": True}})
 
     async def uncordon(self) -> None:
         """Uncordon the node.
 
         This will mark the node as schedulable.
         """
-        await self._patch({"spec": {"unschedulable": False}})
+        await self.async_patch({"spec": {"unschedulable": False}})
 
 
 class PersistentVolumeClaim(APIObject):
@@ -764,9 +768,9 @@ class Pod(APIObject):
     singular = "pod"
     namespaced = True
 
-    async def _ready(self) -> bool:
+    async def async_ready(self) -> bool:
         """Check if the pod is ready."""
-        await self._refresh()
+        await self.async_refresh()
         conditions = list_dict_unpack(
             self.status.get("conditions", []),
             key="type",
@@ -781,7 +785,7 @@ class Pod(APIObject):
 
     async def ready(self) -> bool:
         """Check if the pod is ready."""
-        return await self._ready()
+        return await self.async_ready()
 
     async def logs(
         self,
@@ -916,7 +920,7 @@ class Pod(APIObject):
             return AsyncPortForward(self, remote_port, local_port, address)
         return SyncPortForward(self, remote_port, local_port, address)
 
-    async def _exec(
+    async def async_exec(
         self,
         command: List[str],
         *,
@@ -927,7 +931,7 @@ class Pod(APIObject):
         check: bool = True,
         capture_output: bool = True,
     ):
-        while not await self._ready():
+        while not await self.async_ready():
             await anyio.sleep(0.1)
 
         ex = Exec(
@@ -985,7 +989,7 @@ class Pod(APIObject):
             >>> print(ex.stdout)
             >>> print(ex.stderr)
         """
-        return await self._exec(
+        return await self.async_exec(
             command,
             container=container,
             stdin=stdin,
@@ -1111,7 +1115,7 @@ class ReplicationController(APIObject):
 
     async def ready(self):
         """Check if the deployment is ready."""
-        await self._refresh()
+        await self.async_refresh()
         return (
             self.raw["status"].get("observedGeneration", 0)
             >= self.raw["metadata"]["generation"]
@@ -1179,9 +1183,9 @@ class Service(APIObject):
                 Service's spec will be used.
             **kwargs: Additional keyword arguments to pass to the API call.
         """
-        return await self._proxy_http_request(method, path, port, **kwargs)
+        return await self.async_proxy_http_request(method, path, port, **kwargs)
 
-    async def _proxy_http_request(
+    async def async_proxy_http_request(
         self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
     ) -> httpx.Response:
         if port is None:
@@ -1198,39 +1202,39 @@ class Service(APIObject):
     async def proxy_http_get(
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> httpx.Response:
-        return await self._proxy_http_request("GET", path, port, **kwargs)
+        return await self.async_proxy_http_request("GET", path, port, **kwargs)
 
     async def proxy_http_post(
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> None:
-        return await self._proxy_http_request("POST", path, port, **kwargs)
+        return await self.async_proxy_http_request("POST", path, port, **kwargs)
 
     async def proxy_http_put(
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> httpx.Response:
-        return await self._proxy_http_request("PUT", path, port, **kwargs)
+        return await self.async_proxy_http_request("PUT", path, port, **kwargs)
 
     async def proxy_http_delete(
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> httpx.Response:
-        return await self._proxy_http_request("DELETE", path, port, **kwargs)
+        return await self.async_proxy_http_request("DELETE", path, port, **kwargs)
 
     async def ready_pods(self) -> List[Pod]:
         """Return a list of ready Pods for this Service."""
-        return await self._ready_pods()
+        return await self.async_ready_pods()
 
-    async def _ready_pods(self) -> List[Pod]:
+    async def async_ready_pods(self) -> List[Pod]:
         """Return a list of ready Pods for this Service."""
-        pods = await self.api._get(
+        pods = await self.api.async_get(
             "pods",
             label_selector=dict_to_selector(self.spec["selector"]),
             namespace=self.namespace,
         )
-        return [pod for pod in pods if await pod._ready()]
+        return [pod for pod in pods if await pod.async_ready()]
 
     async def ready(self) -> bool:
         """Check if the service is ready."""
-        await self._refresh()
+        await self.async_refresh()
 
         # If the service is of type LoadBalancer, check if it has endpoints
         if (
@@ -1240,7 +1244,7 @@ class Service(APIObject):
             return False
 
         # Check there is at least one Pod in service
-        pods = await self._ready_pods()
+        pods = await self.async_ready_pods()
         return len(pods) > 0
 
     def portforward(
@@ -1317,7 +1321,7 @@ class Deployment(APIObject):
 
     async def pods(self) -> List[Pod]:
         """Return a list of Pods for this Deployment."""
-        pods = await self.api._get(
+        pods = await self.api.async_get(
             "pods",
             label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
             namespace=self.namespace,
@@ -1326,7 +1330,7 @@ class Deployment(APIObject):
 
     async def ready(self):
         """Check if the deployment is ready."""
-        await self._refresh()
+        await self.async_refresh()
         return (
             self.raw["status"].get("observedGeneration", 0)
             >= self.raw["metadata"]["generation"]
