@@ -112,7 +112,7 @@ def sync(source: object) -> object:
     for name in dir(source):
         method = getattr(source, name)
 
-        if not name.startswith("_"):
+        if not name.startswith("_") and not name.startswith("async_"):
             if inspect.iscoroutinefunction(method) or inspect.isasyncgenfunction(
                 method
             ):

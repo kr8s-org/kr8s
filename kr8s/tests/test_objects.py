@@ -570,12 +570,10 @@ async def test_pod_port_forward_context_manager(nginx_service):
 
 
 def test_pod_port_forward_context_manager_sync(nginx_service):
-    async_nginx_service = nginx_service
     nginx_service = SyncService.get(
-        async_nginx_service.name, namespace=async_nginx_service.namespace
+        nginx_service.name, namespace=nginx_service.namespace
     )
-    [nginx_pod, *_] = nginx_service.ready_pods()
-    with nginx_pod.portforward(80) as port:
+    with nginx_service.portforward(80) as port:
         with httpx.Client(timeout=DEFAULT_TIMEOUT) as session:
             resp = session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200

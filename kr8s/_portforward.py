@@ -180,9 +180,9 @@ class PortForward:
         if isinstance(self._resource, Pod):
             return self._resource
 
-        if hasattr(self._resource, "ready_pods"):
+        if hasattr(self._resource, "async_ready_pods"):
             try:
-                return random.choice(await self._resource.ready_pods())
+                return random.choice(await self._resource.async_ready_pods())
             except IndexError:
                 raise RuntimeError("No ready pods found")
 
