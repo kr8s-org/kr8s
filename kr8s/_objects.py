@@ -1226,7 +1226,7 @@ class Service(APIObject):
             label_selector=dict_to_selector(self.spec["selector"]),
             namespace=self.namespace,
         )
-        return [pod for pod in pods if await pod.ready()]
+        return [pod for pod in pods if await pod._ready()]
 
     async def ready(self) -> bool:
         """Check if the service is ready."""

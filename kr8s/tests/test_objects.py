@@ -24,6 +24,7 @@ from kr8s.asyncio.objects import (
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
+from kr8s.objects import Service as SyncService
 from kr8s.objects import get_class, new_class, object_from_spec
 from kr8s.objects import objects_from_files as sync_objects_from_files
 
@@ -564,6 +565,23 @@ async def test_pod_port_forward_context_manager(nginx_service):
             resp = await session.get(f"http://localhost:{port}/foo")
             assert resp.status_code == 404
             resp = await session.get(f"http://localhost:{port}/foo.dat")
+            assert resp.status_code == 200
+            resp.read()
+
+
+def test_pod_port_forward_context_manager_sync(nginx_service):
+    async_nginx_service = nginx_service
+    nginx_service = SyncService.get(
+        async_nginx_service.name, namespace=async_nginx_service.namespace
+    )
+    [nginx_pod, *_] = nginx_service.ready_pods()
+    with nginx_pod.portforward(80) as port:
+        with httpx.Client(timeout=DEFAULT_TIMEOUT) as session:
+            resp = session.get(f"http://localhost:{port}/")
+            assert resp.status_code == 200
+            resp = session.get(f"http://localhost:{port}/foo")
+            assert resp.status_code == 404
+            resp = session.get(f"http://localhost:{port}/foo.dat")
             assert resp.status_code == 200
             resp.read()
 
