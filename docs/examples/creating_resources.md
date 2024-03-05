@@ -233,3 +233,71 @@ await pod.create()
 ````
 
 `````
+
+
+## Create objects from a YAML file
+
+Open a YAML file containing some resources and create them.
+
+Let's start with a YAML file containing a simple nginx Pod and Service.
+
+```yaml
+# manifest.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app.kubernetes.io/name: proxy
+spec:
+  containers:
+  - name: nginx
+    image: nginx:stable
+    ports:
+      - containerPort: 80
+        name: http-web-svc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app.kubernetes.io/name: proxy
+  ports:
+  - name: name-of-service-port
+    protocol: TCP
+    port: 80
+    targetPort: http-web-svc
+```
+
+Then with `kr8s` we can load this file and create an object for each resource. Then use objetc methods to create them.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync: sync
+```python
+from kr8s.objects import objects_from_files
+
+resources = objects_from_files("manifest.yaml")
+
+for resource in resources:
+    resource.create()
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import objects_from_files
+
+resources = await objects_from_files("manifest.yaml")
+
+for resource in resources:
+    await resource.create()
+```
+````
+
+`````
