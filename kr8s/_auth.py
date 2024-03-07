@@ -165,9 +165,11 @@ class KubeAuth:
         if "client-key-data" in self._user:
             async with NamedTemporaryFile(delete=False) as key_file:
                 try:
-                    key_data = base64.b64decode(self._user["client-key-data"])
+                    key_data = base64.b64decode(
+                        self._user["client-key-data"], validate=True
+                    )
                 except binascii.Error:
-                    key_data = self._user["client-key-data"]
+                    key_data = self._user["client-key-data"].encode()
                 await key_file.write_bytes(key_data)
                 self.client_key_file = str(key_file)
         if "client-certificate" in self._user:
@@ -181,9 +183,11 @@ class KubeAuth:
         if "client-certificate-data" in self._user:
             async with NamedTemporaryFile(delete=False) as cert_file:
                 try:
-                    cert_data = base64.b64decode(self._user["client-certificate-data"])
+                    cert_data = base64.b64decode(
+                        self._user["client-certificate-data"], validate=True
+                    )
                 except binascii.Error:
-                    cert_data = self._user["client-certificate-data"]
+                    cert_data = self._user["client-certificate-data"].encode()
                 await cert_file.write_bytes(cert_data)
                 self.client_cert_file = str(cert_file)
         if "certificate-authority" in self._cluster:
@@ -198,10 +202,10 @@ class KubeAuth:
             async with NamedTemporaryFile(delete=False) as ca_file:
                 try:
                     ca_data = base64.b64decode(
-                        self._cluster["certificate-authority-data"]
+                        self._cluster["certificate-authority-data"], validate=True
                     )
                 except binascii.Error:
-                    ca_data = self._cluster["certificate-authority-data"]
+                    ca_data = self._cluster["certificate-authority-data"].encode()
                 await ca_file.write_bytes(ca_data)
                 self.server_ca_file = str(ca_file)
         if "token" in self._user:
