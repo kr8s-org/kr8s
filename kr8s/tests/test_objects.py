@@ -581,28 +581,8 @@ async def test_pod_port_forward_context_manager_manual(nginx_service):
 
 async def test_pod_port_forward_start_stop(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
-    pf = nginx_pod.portforward(80)
-    assert pf._bg_task is None
-    port = await pf.start()
-    assert pf._bg_task is not None
-    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
-        resp = await session.get(f"http://localhost:{port}/")
-        assert resp.status_code == 200
-        resp = await session.get(f"http://localhost:{port}/foo")
-        assert resp.status_code == 404
-        resp = await session.get(f"http://localhost:{port}/foo.dat")
-        assert resp.status_code == 200
-        resp.read()
-    await pf.stop()
-    assert pf._bg_task is None
-
-
-async def test_multiple_pods_port_forward_start_stop(nginx_service):
-    [nginx_pod_1, *_] = await nginx_service.ready_pods()
-    [nginx_pod_2, *_] = await nginx_service.ready_pods()
-    pods = [nginx_pod_1, nginx_pod_2]
-    for pod in pods:
-        pf = pod.portforward(80)
+    for _ in range(5):
+        pf = nginx_pod.portforward(80)
         assert pf._bg_task is None
         port = await pf.start()
         assert pf._bg_task is not None
@@ -616,7 +596,6 @@ async def test_multiple_pods_port_forward_start_stop(nginx_service):
             resp.read()
         await pf.stop()
         assert pf._bg_task is None
-        assert RuntimeError
 
 
 async def test_service_port_forward_context_manager(nginx_service):
