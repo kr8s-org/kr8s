@@ -7,8 +7,6 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, BinaryIO, List, Union
 
-import aiohttp
-
 from kr8s._exceptions import ExecError
 
 if TYPE_CHECKING:
@@ -31,9 +29,9 @@ class Exec:
         resource: APIObject,
         command: List[str],
         container: str = None,
-        stdin: Union(str | BinaryIO) = None,
-        stdout: Union(str | BinaryIO) = None,
-        stderr: Union(str | BinaryIO) = None,
+        stdin: Union[str | BinaryIO] = None,
+        stdout: Union[str | BinaryIO] = None,
+        stderr: Union[str | BinaryIO] = None,
         check: bool = True,
         capture_output: bool = True,
     ) -> None:
@@ -58,7 +56,7 @@ class Exec:
         async with self._resource.api.open_websocket(
             version=self._resource.version,
             url=f"{self._resource.endpoint}/{self._resource.name}/exec",
-            protocols=(EXEC_PROTOCOL,),
+            subprotocols=(EXEC_PROTOCOL,),
             namespace=self._resource.namespace,
             params={
                 "command": self.args,
@@ -69,7 +67,7 @@ class Exec:
             },
         ) as ws:
             if self._stdin:
-                if ws.protocol != "v5.channel.k8s.io":
+                if ws.subprotocol != "v5.channel.k8s.io":
                     raise ExecError(
                         "Stdin is not supported with protocol "
                         f"{ws.protocol}, only with v5.channel.k8s.io"
@@ -79,42 +77,40 @@ class Exec:
                 else:
                     await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.read())
                 await ws.send_bytes(CLOSE_CHANNEL.to_bytes() + STDIN_CHANNEL.to_bytes())
-            async for message in ws:
-                if message.type == aiohttp.WSMsgType.BINARY:
-                    channel, message = int(message.data[0]), message.data[1:]
-                    if message:
-                        if channel == STDOUT_CHANNEL:
-                            if self._capture_output:
-                                self.stdout += message
-                            if self._stdout:
-                                self._stdout.write(message)
-                        elif channel == STDERR_CHANNEL:
-                            if self._capture_output:
-                                self.stderr += message
-                            if self._stderr:
-                                self._stderr.write(message)
-                        elif channel == ERROR_CHANNEL:
-                            error = json.loads(message.decode())
-                            if error["status"] == "Success":
-                                self.returncode = 0
-                                continue
-                            # Extract return code from details
-                            if "details" in error and "causes" in error["details"]:
-                                for cause in error["details"]["causes"]:
-                                    if (
-                                        "reason" in cause
-                                        and cause["reason"] == "ExitCode"
-                                    ):
-                                        self.returncode = int(int(cause["message"]))
-                                        break
-                            else:
-                                self.returncode = 1
-                            if self.check:
-                                raise ExecError(error["message"])
+            while True:
+                message = await ws.receive_bytes()
+                channel, message = int(message[0]), message[1:]
+                if message:
+                    if channel == STDOUT_CHANNEL:
+                        if self._capture_output:
+                            self.stdout += message
+                        if self._stdout:
+                            self._stdout.write(message)
+                    elif channel == STDERR_CHANNEL:
+                        if self._capture_output:
+                            self.stderr += message
+                        if self._stderr:
+                            self._stderr.write(message)
+                    elif channel == ERROR_CHANNEL:
+                        error = json.loads(message.decode())
+                        if error["status"] == "Success":
+                            self.returncode = 0
+                            break
+                        # Extract return code from details
+                        if "details" in error and "causes" in error["details"]:
+                            for cause in error["details"]["causes"]:
+                                if "reason" in cause and cause["reason"] == "ExitCode":
+                                    self.returncode = int(cause["message"])
+                                    break
                         else:
-                            raise ExecError(
-                                f"Unhandled message on channel {channel}: {message}"
-                            )
+                            self.returncode = 1
+                        if self.check:
+                            raise ExecError(error["message"])
+                        break
+                    else:
+                        raise ExecError(
+                            f"Unhandled message on channel {channel}: {message}"
+                        )
             yield self
 
     async def wait(self) -> CompletedExec:

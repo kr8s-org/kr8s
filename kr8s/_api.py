@@ -8,10 +8,10 @@ import ssl
 import threading
 import warnings
 import weakref
-from typing import Dict, List, Tuple, Union
+from typing import AsyncGenerator, Dict, List, Tuple, Union
 
-import aiohttp
 import httpx
+import httpx_ws
 from asyncache import cached
 from cachetools import TTLCache
 from cryptography import x509
@@ -177,29 +177,27 @@ class Api(object):
         namespace: str = None,
         url: str = "",
         **kwargs,
-    ) -> aiohttp.ClientResponse:
+    ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession, None]:
         """Open a websocket connection to a Kubernetes API endpoint."""
-        headers = {"User-Agent": self.__version__, "content-type": "application/json"}
-        if self.auth.token:
-            headers["Authorization"] = f"Bearer {self.auth.token}"
+        if not self._session or self._session.is_closed:
+            await self._create_session()
         url = self._construct_url(version, base, namespace, url)
-        kwargs.update(url=url, ssl=await self.auth.ssl_context())
+        kwargs.update(url=url)
         auth_attempts = 0
         while True:
             try:
-                async with aiohttp.ClientSession(
-                    base_url=self.auth.server,
-                    headers=headers,
-                ) as session:
-                    async with session.ws_connect(**kwargs) as response:
-                        yield response
-            except aiohttp.ClientResponseError as e:
-                if e.status in (401, 403) and auth_attempts < 3:
-                    auth_attempts += 1
-                    await self.auth.reauthenticate()
-                    continue
-                else:
-                    raise
+                async with httpx_ws.aconnect_ws(
+                    client=self._session, **kwargs
+                ) as response:
+                    yield response
+            except httpx_ws.HTTPXWSException as e:
+                if e.code and e.code != 1000:
+                    if e.status in (401, 403) and auth_attempts < 3:
+                        auth_attempts += 1
+                        await self.auth.reauthenticate()
+                        continue
+                    else:
+                        raise
             break
 
     async def version(self) -> dict:

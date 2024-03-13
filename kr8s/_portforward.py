@@ -10,8 +10,8 @@ import sys
 from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, BinaryIO, List
 
-import aiohttp
 import anyio
+import httpx_ws
 import sniffio
 
 from ._exceptions import ConnectionClosedError
@@ -207,7 +207,7 @@ class PortForward:
                 ) as websocket:
                     yield websocket
                     break
-            except aiohttp.client_exceptions.WSServerHandshakeError as e:
+            except httpx_ws.HTTPXWSException as e:
                 self.pod = None
                 if connection_attempts > 5:
                     raise ConnectionClosedError("Unable to connect to Pod") from e
@@ -240,22 +240,18 @@ class PortForward:
     async def _ws_to_tcp(self, ws, writer: BinaryIO) -> None:
         channels = []
         while True:
-            message = await ws.receive()
-            if message.type == aiohttp.WSMsgType.CLOSED:
-                await asyncio.sleep(0.1)
-                continue
-            elif message.type == aiohttp.WSMsgType.BINARY:
-                # Kubernetes portforward protocol prefixes all frames with a byte to represent
-                # the channel. Channel 0 is rw for data and channel 1 is ro for errors.
-                if message.data[0] not in channels:
-                    # Keep track of our channels. Could be useful later for listening to multiple ports.
-                    channels.append(message.data[0])
-                else:
-                    if message.data[0] % 2 == 1:  # pragma: no cover
-                        # Odd channels are for errors.
-                        raise ConnectionClosedError(message.data[1:].decode())
-                    writer.write(message.data[1:])
-                    await writer.drain()
+            message = await ws.receive_bytes()
+            # Kubernetes portforward protocol prefixes all frames with a byte to represent
+            # the channel. Channel 0 is rw for data and channel 1 is ro for errors.
+            if message[0] not in channels:
+                # Keep track of our channels. Could be useful later for listening to multiple ports.
+                channels.append(message[0])
+            else:
+                if message[0] % 2 == 1:  # pragma: no cover
+                    # Odd channels are for errors.
+                    raise ConnectionClosedError(message[1:].decode())
+                writer.write(message[1:])
+                await writer.drain()
 
     def _is_port_in_use(self, port: int, host: str = "127.0.0.1"):
         """
