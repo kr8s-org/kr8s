@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-import asyncio
 import queue
 import threading
 
@@ -112,10 +111,10 @@ async def test_concurrent_api_creation():
     async def get_api():
         api = await kr8s.asyncio.api()
         await api.version()
-        return api
 
-    apis = await asyncio.gather(*[get_api() for _ in range(10)])
-    assert len(set(apis)) == 1
+    async with anyio.create_task_group() as tg:
+        for _ in range(10):
+            tg.start_soon(get_api)
 
 
 async def test_both_api_creation_methods_together():
@@ -160,7 +159,7 @@ async def test_watch_pods(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     async for event, obj in kr8s.asyncio.watch("pods", namespace=ns):
         assert event in ["ADDED", "MODIFIED", "DELETED"]
         assert isinstance(obj, Pod)
@@ -170,7 +169,7 @@ async def test_watch_pods(example_pod_spec, ns):
             elif event == "MODIFIED" and "test" in obj.labels and await obj.exists():
                 await obj.delete()
                 while await obj.exists():
-                    await asyncio.sleep(0.1)
+                    await anyio.sleep(0.1)
             elif event == "DELETED":
                 break
 

@@ -127,7 +127,7 @@ class PortForward:
 
         self._bg_task = self._loop.create_task(f())
         while self.local_port == 0:
-            await asyncio.sleep(0.1)
+            await anyio.sleep(0.1)
         return self.local_port
 
     async def stop(self) -> None:
@@ -211,7 +211,7 @@ class PortForward:
                 self.pod = None
                 if connection_attempts > 5:
                     raise ConnectionClosedError("Unable to connect to Pod") from e
-                await asyncio.sleep(0.1 * connection_attempts)
+                await anyio.sleep(0.1 * connection_attempts)
 
     async def _sync_sockets(self, reader: BinaryIO, writer: BinaryIO) -> None:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""

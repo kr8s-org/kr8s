@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import json
 import pathlib
@@ -221,7 +220,7 @@ class APIObject:
             else:
                 raise ValueError("Must specify name or selector")
             if len(resources) == 0:
-                await asyncio.sleep(backoff)
+                await anyio.sleep(backoff)
                 backoff = min(backoff * 2, 1)
                 continue
             if len(resources) > 1:
@@ -343,7 +342,7 @@ class APIObject:
         )
         while self.replicas != replicas:
             await self.async_refresh()
-            await asyncio.sleep(0.1)
+            await anyio.sleep(0.1)
 
     async def async_watch(self):
         """Watch this object in Kubernetes."""
