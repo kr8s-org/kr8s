@@ -1595,7 +1595,11 @@ def get_class(
             ):
                 return cls
 
-    raise KeyError(f"No object registered for {kind}{'.' + group if group else ''}")
+    raise KeyError(
+        f"No object registered for {kind}{'.' + group if group else ''}. "
+        "See https://docs.kr8s.org/en/stable/object.html#extending-the-objects-api "
+        "for more information on how to register a new object."
+    )
 
 
 def new_class(
