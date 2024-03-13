@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-import asyncio
 import datetime
 import pathlib
 import tempfile
 import time
 from contextlib import suppress
 
+import anyio
 import httpx
 import pytest
 
@@ -50,7 +50,7 @@ async def nginx_pod(k8s_cluster, example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     await pod.exec(
         [
             "dd",
@@ -75,7 +75,7 @@ async def ubuntu_pod(k8s_cluster, example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     yield pod
     await pod.delete()
 
@@ -87,7 +87,7 @@ async def nginx_service(example_service_spec, nginx_pod):
     service = await Service(example_service_spec)
     await service.create()
     while not await service.ready():
-        await asyncio.sleep(0.1)  # pragma: no cover
+        await anyio.sleep(0.1)  # pragma: no cover
     yield service
     try:
         await service.delete()
@@ -102,10 +102,10 @@ async def test_pod_create_and_delete(example_pod_spec):
         pod.replicas
     assert await pod.exists()
     while not await pod.ready():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     await pod.delete()
     while await pod.exists():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     assert not await pod.exists()
 
 
@@ -294,7 +294,7 @@ async def test_pod_get(example_pod_spec):
     assert pod2.namespace == pod.namespace
     await pod.delete()
     while await pod.exists():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     with pytest.raises(kr8s.NotFoundError):
         await pod2.delete()
 
@@ -324,14 +324,14 @@ async def test_pod_from_name(example_pod_spec):
     assert pod2.namespace == pod.namespace
     await pod.delete()
     while await pod.exists():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     with pytest.raises(kr8s.NotFoundError):
         await pod2.delete()
 
 
 async def test_pod_get_timeout(example_pod_spec):
     async def create_pod():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
         pod = await Pod(example_pod_spec)
         await pod.create()
         return pod
@@ -344,9 +344,11 @@ async def test_pod_get_timeout(example_pod_spec):
         )
         return pod
 
-    pods = await asyncio.gather(create_pod(), get_pod())
-    assert pods[0].name == pods[1].name
-    await pods[0].delete()
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(create_pod)
+        tg.start_soon(get_pod)
+    pod = await get_pod()
+    await pod.delete()
 
 
 async def test_missing_pod():
@@ -519,7 +521,7 @@ async def test_deployment_scale(example_deployment_spec):
     await deployment.scale(2)
     assert deployment.replicas == 2
     while not await deployment.ready():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     pods = await deployment.pods()
     assert len(pods) == 2
     await deployment.scale(1)
@@ -550,7 +552,7 @@ async def test_pod_logs(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
     while not await pod.ready():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     log = "\n".join([line async for line in pod.logs(container="pause")])
     assert isinstance(log, str)
     await pod.delete()
@@ -592,7 +594,7 @@ async def test_pod_port_forward_context_manager_manual(nginx_service):
         done = False
         while not done:
             # Put a breakpoint here and set done = True when you're finished.
-            await asyncio.sleep(1)
+            await anyio.sleep(1)
 
 
 async def test_pod_port_forward_start_stop(nginx_service):
@@ -750,7 +752,7 @@ async def test_adoption(nginx_service):
     assert nginx_pod.metadata["ownerReferences"][0]["name"] == nginx_service.name
     await nginx_service.delete()
     while await nginx_pod.exists():
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
 
 
 async def test_cast_to_from_lightkube(example_pod_spec):

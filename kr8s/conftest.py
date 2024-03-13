@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-import asyncio
 import base64
 import os
 import socket
@@ -10,6 +9,7 @@ import uuid
 from contextlib import closing
 from pathlib import Path
 
+import anyio
 import pytest
 import yaml
 
@@ -135,7 +135,7 @@ async def kubectl_proxy(k8s_cluster):
     host = "localhost"
     port = 8001
     while not check_socket(host, port):
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
     yield f"http://{host}:{port}"
     proxy.kill()
 
