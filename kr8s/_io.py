@@ -12,8 +12,8 @@
 # asyncio or trio.
 from __future__ import annotations
 
-import asyncio
 import inspect
+import subprocess
 import tempfile
 from contextlib import asynccontextmanager
 from functools import partial, wraps
@@ -130,18 +130,18 @@ def sync(source: object) -> object:
 
 async def check_output(*args, **kwargs) -> str:
     """Run a command and return its output."""
-    p = await asyncio.create_subprocess_exec(
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
+    completed_process = await anyio.run_process(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
         **kwargs,
     )
-    stdout_data, stderr_data = await p.communicate()
-    if p.returncode == 0:
-        return stdout_data.decode()
+    if completed_process.returncode == 0:
+        return completed_process.stdout.decode()
     else:
         raise RuntimeError(
-            f"Process exited with non-zero code {p.returncode}:\n{stderr_data.decode()}"
+            f"Process exited with non-zero code {completed_process.returncode}:\n{completed_process.stderr.decode()}"
         )
 
 

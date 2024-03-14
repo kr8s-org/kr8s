@@ -59,3 +59,11 @@ async def test_tempfiles():
         assert await f.exists()
         assert isinstance(f, anyio.Path)
     assert not await f.exists()
+
+
+async def test_check_output():
+    output = await kr8s._io.check_output("echo", "hello")
+    assert output == "hello\n"
+
+    with pytest.raises(RuntimeError, match="non-zero code"):
+        await kr8s._io.check_output("false")
