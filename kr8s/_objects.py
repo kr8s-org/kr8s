@@ -37,6 +37,7 @@ from kr8s._data_utils import (
 )
 from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import Exec
+from kr8s._io import sync
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -1624,7 +1625,7 @@ def new_class(
         kind, version = kind.split(".", 1)
     if version is None:
         version = "v1"
-    return type(
+    newcls = type(
         kind,
         (APIObject,),
         {
@@ -1639,6 +1640,9 @@ def new_class(
             "scalable_spec": scalable_spec or "replicas",
         },
     )
+    if not asyncio:
+        newcls = sync(newcls)
+    return newcls
 
 
 def object_from_spec(
