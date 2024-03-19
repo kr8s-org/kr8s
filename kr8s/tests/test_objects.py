@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import datetime
+import inspect
 import pathlib
 import tempfile
 import time
@@ -953,3 +954,15 @@ async def test_pod_gen_ports(ns, ports):
     finally:
         with suppress(kr8s.NotFoundError):
             await pod.delete()
+
+
+def test_sync_new_class_is_sync():
+    MyResource = new_class(
+        kind="MyResource",
+        version="newclass.example.com/v1",
+        namespaced=True,
+        asyncio=False,
+    )
+    instance = MyResource({})
+    assert not instance._asyncio
+    assert not inspect.iscoroutinefunction(instance.create)
