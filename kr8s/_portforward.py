@@ -217,7 +217,7 @@ class PortForward:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
             async with self._connect_websocket() as ws:
-                with suppress(ConnectionClosedError):
+                with suppress(ConnectionClosedError, httpx_ws.WebSocketDisconnect):
                     async with anyio.create_task_group() as tg:
                         tg.start_soon(self._tcp_to_ws, ws, reader)
                         tg.start_soon(self._ws_to_tcp, ws, writer)
