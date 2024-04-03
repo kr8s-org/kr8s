@@ -132,12 +132,13 @@ class KubeAuth:
             self._insecure_skip_tls_verify = True
 
         if "exec" in self._user:
-            if (
-                self._user["exec"]["apiVersion"]
-                != "client.authentication.k8s.io/v1beta1"
-            ):
+            if self._user["exec"]["apiVersion"] not in [
+                "client.authentication.k8s.io/v1beta1",
+                "client.authentication.k8s.io/v1",
+            ]:
                 raise ValueError(
-                    "Only client.authentication.k8s.io/v1beta1 is supported for exec auth"
+                    "Only client.authentication.k8s.io/v1beta1 or "
+                    "client.authentication.k8s.io/v1 is supported for exec auth"
                 )
             command = self._user["exec"]["command"]
             args = self._user["exec"].get("args") or []
