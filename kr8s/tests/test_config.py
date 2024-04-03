@@ -1,12 +1,26 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+from tempfile import NamedTemporaryFile
+
+import pytest
+
 from kr8s._config import KubeConfig, KubeConfigSet
 
 
-async def test_load_kubeconfig(k8s_cluster):
-    path = str(k8s_cluster.kubeconfig_path)
-    config = await KubeConfig(path)
-    assert config.path == path
+@pytest.fixture
+def temp_kubeconfig(k8s_cluster):
+    """Create a temporary kubeconfig by copying the one from k8s_cluster."""
+    with open(k8s_cluster.kubeconfig_path, "rb") as f:
+        kubeconfig = f.read()
+    with NamedTemporaryFile() as f:
+        f.write(kubeconfig)
+        f.flush()
+        yield f.name
+
+
+async def test_load_kubeconfig(temp_kubeconfig):
+    config = await KubeConfig(temp_kubeconfig)
+    assert config.path == temp_kubeconfig
     assert config._raw
     assert "current-context" in config._raw
     assert config.current_context
@@ -16,11 +30,10 @@ async def test_load_kubeconfig(k8s_cluster):
     assert len(config.contexts) > 0
 
 
-async def test_load_kubeconfig_set(k8s_cluster):
-    path = str(k8s_cluster.kubeconfig_path)
-    configs = await KubeConfigSet(path)
+async def test_load_kubeconfig_set(temp_kubeconfig):
+    configs = await KubeConfigSet(temp_kubeconfig)
     assert len(configs._configs) == 1
-    assert configs._configs[0].path == path
+    assert configs._configs[0].path == temp_kubeconfig
     assert configs._configs[0]._raw
     assert "current-context" in configs._configs[0]._raw
     assert configs.current_context
@@ -28,3 +41,23 @@ async def test_load_kubeconfig_set(k8s_cluster):
     assert "name" in configs.clusters[0]
     assert len(configs.users) > 0
     assert len(configs.contexts) > 0
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_rename_context(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    context = config.current_context
+    new_context = f"{context}-new"
+    assert context in [c["name"] for c in config.contexts]
+    await config.rename_context(context, new_context)
+    # Load again from disk to ensure the change was saved
+    config = await cls(temp_kubeconfig)
+    assert new_context in [c["name"] for c in config.contexts]
+    assert context not in [c["name"] for c in config.contexts]
+    assert config.current_context == new_context
+    await config.rename_context(new_context, context)
+    assert new_context not in [c["name"] for c in config.contexts]
+    assert context in [c["name"] for c in config.contexts]
+    assert config.current_context == context
+    with pytest.raises(ValueError):
+        await config.rename_context("foobar", new_context)
