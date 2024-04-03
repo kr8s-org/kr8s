@@ -134,10 +134,10 @@ class KubeAuth:
         if "exec" in self._user:
             if (
                 self._user["exec"]["apiVersion"]
-                != "client.authentication.k8s.io/v1beta1"
+                == "client.authentication.k8s.io/v1alpha1"
             ):
                 raise ValueError(
-                    "Only client.authentication.k8s.io/v1beta1 is supported for exec auth"
+                    "client.authentication.k8s.io/v1alpha1 is not supported for exec auth"
                 )
             command = self._user["exec"]["command"]
             args = self._user["exec"].get("args") or []
