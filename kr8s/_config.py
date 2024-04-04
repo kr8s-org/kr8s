@@ -32,6 +32,24 @@ class KubeConfigSet(object):
             await config.save()
 
     @property
+    def path(self) -> str:
+        return self.get_path()
+
+    def get_path(self, context: str = None) -> str:
+        """Return the path of the config for the current context.
+
+        Args:
+            context (str): Override the context to use. If not provided, the current context is used.
+        """
+        if not context:
+            context = self.current_context
+        if context:
+            for config in self._configs:
+                if context in [c["name"] for c in config.contexts]:
+                    return config.path
+        return self._configs[0].path
+
+    @property
     def raw(self) -> Dict:
         """Merge all kubeconfig data into a single kubeconfig."""
         data = {
@@ -70,6 +88,27 @@ class KubeConfigSet(object):
                     await self.use_context(new)
                 return
         raise ValueError(f"Context {old} not found")
+
+    def get_context(self, context_name: str) -> Dict:
+        """Get a context by name."""
+        for context in self.contexts:
+            if context["name"] == context_name:
+                return context["context"]
+        raise ValueError(f"Context {context_name} not found")
+
+    def get_cluster(self, cluster_name: str) -> Dict:
+        """Get a cluster by name."""
+        for cluster in self.clusters:
+            if cluster["name"] == cluster_name:
+                return cluster["cluster"]
+        raise ValueError(f"Cluster {cluster_name} not found")
+
+    def get_user(self, user_name: str) -> Dict:
+        """Get a user by name."""
+        for user in self.users:
+            if user["name"] == user_name:
+                return user["user"]
+        raise ValueError(f"User {user_name} not found")
 
     @property
     def preferences(self) -> Dict:
@@ -135,6 +174,27 @@ class KubeConfig(object):
                 return
         raise ValueError(f"Context {old} not found")
 
+    def get_context(self, context_name: str) -> Dict:
+        """Get a context by name."""
+        for context in self.contexts:
+            if context["name"] == context_name:
+                return context["context"]
+        raise ValueError(f"Context {context_name} not found")
+
+    def get_cluster(self, cluster_name: str) -> Dict:
+        """Get a cluster by name."""
+        for cluster in self.clusters:
+            if cluster["name"] == cluster_name:
+                return cluster["cluster"]
+        raise ValueError(f"Cluster {cluster_name} not found")
+
+    def get_user(self, user_name: str) -> Dict:
+        """Get a user by name."""
+        for user in self.users:
+            if user["name"] == user_name:
+                return user["user"]
+        raise ValueError(f"User {user_name} not found")
+
     @property
     def raw(self) -> Dict:
         return self._raw
@@ -157,4 +217,4 @@ class KubeConfig(object):
 
     @property
     def extensions(self) -> List[Dict]:
-        return self._raw["extensions"]
+        return self._raw["extensions"] if "extensions" in self._raw else []

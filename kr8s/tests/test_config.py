@@ -61,3 +61,36 @@ async def test_rename_context(temp_kubeconfig, cls):
     assert config.current_context == context
     with pytest.raises(ValueError):
         await config.rename_context("foobar", new_context)
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_get_context(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    context = config.current_context
+    assert "cluster" in config.get_context(context)
+    with pytest.raises(ValueError):
+        config.get_context("foobar")
+    with pytest.raises(ValueError):
+        config.get_context("")
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_get_cluster(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    context = config.get_context(config.current_context)
+    assert "server" in config.get_cluster(context["cluster"])
+    with pytest.raises(ValueError):
+        config.get_cluster("foobar")
+    with pytest.raises(ValueError):
+        config.get_cluster("")
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_get_user(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    context = config.get_context(config.current_context)
+    assert config.get_user(context["user"])
+    with pytest.raises(ValueError):
+        config.get_user("foobar")
+    with pytest.raises(ValueError):
+        config.get_user("")
