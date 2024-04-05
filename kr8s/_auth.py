@@ -7,8 +7,8 @@ import os
 import ssl
 
 import anyio
-import yaml
 
+from ._config import KubeConfigSet
 from ._io import NamedTemporaryFile, check_output
 
 
@@ -30,6 +30,7 @@ class KubeAuth:
         self.token = None
         self.namespace = namespace
         self.active_context = None
+        self.kubeconfig: KubeConfigSet = None
         self._url = url
         self._insecure_skip_tls_verify = False
         self._use_context = context
@@ -41,7 +42,9 @@ class KubeAuth:
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        self._kubeconfig = kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
+        self._kubeconfig_path = kubeconfig or os.environ.get(
+            "KUBECONFIG", "~/.kube/config"
+        )
         self.__auth_lock = anyio.Lock()
 
     def __await__(self):
@@ -57,7 +60,7 @@ class KubeAuth:
             if self._url:
                 self.server = self._url
             else:
-                if self._kubeconfig is not False:
+                if self._kubeconfig_path is not False:
                     await self._load_kubeconfig()
                 if self._serviceaccount and not self.server:
                     await self._load_service_account()
@@ -88,41 +91,25 @@ class KubeAuth:
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
-        self._kubeconfig = os.path.expanduser(self._kubeconfig)
-        if not os.path.exists(self._kubeconfig):
+        self._kubeconfig_path = os.path.expanduser(self._kubeconfig_path)
+        if not os.path.exists(self._kubeconfig_path):
             return
-        async with await anyio.open_file(self._kubeconfig) as f:
-            config = yaml.safe_load(await f.read())
+        self.kubeconfig = await KubeConfigSet(*self._kubeconfig_path.split(":"))
         if self._use_context:
             try:
-                [self._context] = [
-                    c["context"]
-                    for c in config["contexts"]
-                    if c["name"] == self._use_context
-                ]
+                self._context = self.kubeconfig.get_context(self._use_context)
                 self.active_context = self._use_context
             except ValueError as e:
                 raise ValueError(f"No such context {self._use_context}") from e
-        elif "current-context" in config:
-            [self._context] = [
-                c["context"]
-                for c in config["contexts"]
-                if c["name"] == config["current-context"]
-            ]
-            self.active_context = config["current-context"]
+        elif self.kubeconfig.current_context:
+            self._context = self.kubeconfig.get_context(self.kubeconfig.current_context)
+            self.active_context = self.kubeconfig.current_context
         else:
-            self._context = config["contexts"][0]["context"]
-            self.active_context = config["contexts"][0]["name"]
+            self._context = self.kubeconfig.contexts[0]["context"]
+            self.active_context = self.kubeconfig.contexts[0]["name"]
 
-        [self._cluster] = [
-            c["cluster"]
-            for c in config["clusters"]
-            if c["name"] == self._context["cluster"]
-        ]
-        [self._user] = [
-            u["user"] for u in config["users"] if u["name"] == self._context["user"]
-        ]
-
+        self._cluster = self.kubeconfig.get_cluster(self._context["cluster"])
+        self._user = self.kubeconfig.get_user(self._context["user"])
         self.server = self._cluster["server"]
 
         if (
@@ -160,7 +147,8 @@ class KubeAuth:
                 self.client_key_file = self._user["client-key"]
             else:
                 self.client_key_file = (
-                    anyio.Path(self._kubeconfig).parent / client_key_path
+                    anyio.Path(self.kubeconfig.get_path(self._use_context)).parent
+                    / client_key_path
                 )
         if "client-key-data" in self._user:
             async with NamedTemporaryFile(delete=False) as key_file:
@@ -178,7 +166,8 @@ class KubeAuth:
                 self.client_cert_file = self._user["client-certificate"]
             else:
                 self.client_cert_file = (
-                    anyio.Path(self._kubeconfig).parent / client_cert_path
+                    anyio.Path(self.kubeconfig.get_path(self._use_context)).parent
+                    / client_cert_path
                 )
         if "client-certificate-data" in self._user:
             async with NamedTemporaryFile(delete=False) as cert_file:
@@ -196,7 +185,8 @@ class KubeAuth:
                 self.server_ca_file = self._cluster["certificate-authority"]
             else:
                 self.server_ca_file = (
-                    anyio.Path(self._kubeconfig).parent / server_ca_path
+                    anyio.Path(self.kubeconfig.get_path(self._use_context)).parent
+                    / server_ca_path
                 )
         if "certificate-authority-data" in self._cluster:
             async with NamedTemporaryFile(delete=False) as ca_file:
