@@ -3,6 +3,7 @@
 import pytest
 
 from kr8s._data_utils import (
+    dict_list_pack,
     dict_to_selector,
     dot_to_nested_dict,
     list_dict_unpack,
@@ -13,6 +14,31 @@ from kr8s._data_utils import (
 def test_list_dict_unpack():
     data = [{"key": "hello", "value": "world"}]
     assert list_dict_unpack(data) == {"hello": "world"}
+
+
+def test_dict_list_pack():
+    data = {"hello": "world"}
+    assert dict_list_pack(data) == [{"key": "hello", "value": "world"}]
+
+
+def test_pack_unpack():
+    data = [{"key": "hello", "value": "world"}]
+    assert dict_list_pack(list_dict_unpack(data)) == data
+
+    data = {"hello": "world"}
+    assert list_dict_unpack(dict_list_pack(data)) == data
+
+
+def test_unpack_pack_deduplicate():
+    data = [
+        {"key": "hello", "value": "world"},
+        {"key": "hello", "value": "there"},
+    ]
+    unpacked = list_dict_unpack(data)
+    assert unpacked["hello"] == "there"
+    repacked = dict_list_pack(unpacked)
+    assert len(repacked) == 1
+    assert repacked == [{"key": "hello", "value": "there"}]
 
 
 def test_dot_to_nested_dict():

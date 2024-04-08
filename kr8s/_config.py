@@ -5,6 +5,8 @@ from typing import Dict, List
 import anyio
 import yaml
 
+from kr8s._data_utils import dict_list_pack, list_dict_unpack
+
 # TODO Implement set
 # TODO Implement unset
 # TODO Implement set cluster
@@ -116,15 +118,27 @@ class KubeConfigSet(object):
 
     @property
     def clusters(self) -> List[Dict]:
-        return [cluster for config in self._configs for cluster in config.clusters]
+        clusters = [cluster for config in self._configs for cluster in config.clusters]
+        # Unpack and repack to remove duplicates
+        clusters = list_dict_unpack(clusters, "name", "cluster")
+        clusters = dict_list_pack(clusters, "name", "cluster")
+        return clusters
 
     @property
     def users(self) -> List[Dict]:
-        return [user for config in self._configs for user in config.users]
+        users = [user for config in self._configs for user in config.users]
+        # Unpack and repack to remove duplicates
+        users = list_dict_unpack(users, "name", "user")
+        users = dict_list_pack(users, "name", "user")
+        return users
 
     @property
     def contexts(self) -> List[Dict]:
-        return [context for config in self._configs for context in config.contexts]
+        contexts = [context for config in self._configs for context in config.contexts]
+        # Unpack and repack to remove duplicates
+        contexts = list_dict_unpack(contexts, "name", "context")
+        contexts = dict_list_pack(contexts, "name", "context")
+        return contexts
 
     @property
     def extensions(self) -> List[Dict]:
