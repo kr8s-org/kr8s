@@ -26,6 +26,28 @@ def list_dict_unpack(
     return {i[key]: i[value] for i in input_list}
 
 
+def dict_list_pack(
+    input_dict: Dict, key: str = "key", value: str = "value"
+) -> List[Dict]:
+    """Convert a dictionary to a list of dictionaries.
+
+    Parameters
+    ----------
+    input_dict : Dict
+        The dictionary to convert to a list of dictionaries.
+    key : str, optional
+        The key to use for the input dictionary's keys. Defaults to "key".
+    value : str, optional
+        The key to use for the input dictionary's values. Defaults to "value".
+
+    Returns
+    -------
+    List[Dict]
+        A list of dictionaries with the keys and values from the input dictionary.
+    """
+    return [{key: k, value: v} for k, v in input_dict.items()]
+
+
 def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
     """Convert a dot notated key to a nested dictionary.
 
