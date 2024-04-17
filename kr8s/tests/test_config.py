@@ -94,3 +94,14 @@ async def test_get_user(temp_kubeconfig, cls):
         config.get_user("foobar")
     with pytest.raises(ValueError):
         config.get_user("")
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_use_namespace(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    current_namespace = config.current_namespace
+    await config.use_namespace("default")
+    assert config.current_namespace == "default"
+    await config.use_namespace("kube-system")
+    assert config.current_namespace == "kube-system"
+    await config.use_namespace(current_namespace)
