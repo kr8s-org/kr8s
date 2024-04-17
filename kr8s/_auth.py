@@ -206,7 +206,7 @@ class KubeAuth:
                 "kr8s doesn't not support this Kubernetes version"
             )
         if self.namespace is None:
-            self.namespace = self._context.get("namespace", "default")
+            self.namespace = self.kubeconfig.current_namespace
         if "auth-provider" in self._user:
             if p := self._user["auth-provider"]["name"] != "oidc":
                 raise ValueError(
