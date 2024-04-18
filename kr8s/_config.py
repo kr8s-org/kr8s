@@ -75,6 +75,18 @@ class KubeConfigSet(object):
         """
         return self._configs[0].current_context
 
+    @property
+    def current_namespace(self) -> str:
+        """Return the current namespace from the current context."""
+        return self.get_context(self.current_context).get("namespace", "default")
+
+    async def use_namespace(self, namespace: str) -> None:
+        for config in self._configs:
+            for context in config._raw["contexts"]:
+                if context["name"] == self.current_context:
+                    context["context"]["namespace"] = namespace
+            await config.save()
+
     async def use_context(self, context: str) -> None:
         """Set the current context."""
         if context not in [c["name"] for c in self.contexts]:
@@ -169,6 +181,16 @@ class KubeConfig(object):
     @property
     def current_context(self) -> str:
         return self._raw["current-context"]
+
+    @property
+    def current_namespace(self) -> str:
+        return self.get_context(self.current_context).get("namespace", "default")
+
+    async def use_namespace(self, namespace: str) -> None:
+        for context in self._raw["contexts"]:
+            if context["name"] == self.current_context:
+                context["context"]["namespace"] = namespace
+        await self.save()
 
     async def use_context(self, context: str, allow_unknown: bool = False) -> None:
         """Set the current context."""
