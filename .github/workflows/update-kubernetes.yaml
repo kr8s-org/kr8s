@@ -28,7 +28,9 @@ jobs:
           title: "Update Kubernetes versions"
           reviewers: "jacobtomlinson"
           token: "${{ secrets.BOT_TOKEN }}"
-          labels: "automerge"
+          labels: |
+            automerge
+            ci
           branch: "upgrade-k8s-version"
           body: |
             A new Kubernetes version has been detected.
