@@ -58,7 +58,7 @@ async def api(
             loop_id = id(asyncio.get_running_loop())
         except RuntimeError:
             loop_id = 0
-        thread_loop_id = (thread_id, loop_id)
+        thread_loop_id = f"{thread_id}.{loop_id}"
         if (
             _cls._instances
             and thread_loop_id in _cls._instances
