@@ -51,7 +51,9 @@ def get_versions():
     for version in data:
         try:
             version["latest_kind_container"] = [
-                x["name"] for x in container_tags if version["cycle"] in x["name"]
+                x["name"]
+                for x in container_tags
+                if version["cycle"] in x["name"] and "alpha" not in x["name"]
             ][0][1:]
         except IndexError:
             version["latest_kind_container"] = None
