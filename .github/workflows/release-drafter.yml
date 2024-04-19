@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  if: github.repository == 'kr8s-org/kr8s'
   update_release_draft:
+    if: github.repository == 'kr8s-org/kr8s'
     permissions:
       # Write permission is required to create a GitHub release
       contents: write
