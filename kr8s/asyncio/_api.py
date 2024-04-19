@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import asyncio
 import threading
 
 from kr8s._api import Api as _AsyncApi
@@ -53,18 +54,23 @@ async def api(
     async def _f(**kwargs):
         key = frozenset(kwargs.items())
         thread_id = threading.get_ident()
+        try:
+            loop_id = id(asyncio.get_running_loop())
+        except RuntimeError:
+            loop_id = 0
+        thread_loop_id = f"{thread_id}.{loop_id}"
         if (
             _cls._instances
-            and thread_id in _cls._instances
-            and key in _cls._instances[thread_id]
+            and thread_loop_id in _cls._instances
+            and key in _cls._instances[thread_loop_id]
         ):
-            return await _cls._instances[thread_id][key]
+            return await _cls._instances[thread_loop_id][key]
         if (
             all(k is None for k in kwargs.values())
-            and thread_id in _cls._instances
-            and list(_cls._instances[thread_id].values())
+            and thread_loop_id in _cls._instances
+            and list(_cls._instances[thread_loop_id].values())
         ):
-            return await list(_cls._instances[thread_id].values())[0]
+            return await list(_cls._instances[thread_loop_id].values())[0]
         return await _cls(**kwargs, bypass_factory=True)
 
     return await _f(

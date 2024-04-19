@@ -65,6 +65,17 @@ def test_api_factory_threaded():
     assert type(k1) is type(k2)
 
 
+def test_api_factory_multi_event_loop():
+    assert len(kr8s.Api._instances) == 0
+
+    async def create_api():
+        return await kr8s.asyncio.api()
+
+    k1 = anyio.run(create_api)
+    k2 = anyio.run(create_api)
+    assert k1 is not k2
+
+
 async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount):
     k1 = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     k2 = await kr8s.asyncio.api(serviceaccount=serviceaccount)

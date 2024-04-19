@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import json
 import ssl
@@ -56,9 +57,14 @@ class Api(object):
             context=kwargs.get("context"),
         )
         thread_id = threading.get_ident()
-        if thread_id not in Api._instances:
-            Api._instances[thread_id] = weakref.WeakValueDictionary()
-        Api._instances[thread_id][frozenset(kwargs.items())] = self
+        try:
+            loop_id = id(asyncio.get_running_loop())
+        except RuntimeError:
+            loop_id = 0
+        thread_loop_id = f"{thread_id}.{loop_id}"
+        if thread_loop_id not in Api._instances:
+            Api._instances[thread_loop_id] = weakref.WeakValueDictionary()
+        Api._instances[thread_loop_id][frozenset(kwargs.items())] = self
 
     def __await__(self):
         async def f():
