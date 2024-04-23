@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 import kr8s
+from kr8s._config import KubeConfig
 from kr8s._testutils import set_env
 
 HERE = Path(__file__).parent.resolve()
@@ -164,6 +165,33 @@ async def test_service_account(serviceaccount):
     assert str(serviceaccount) in api.auth.server_ca_file
     assert "BEGIN CERTIFICATE" in Path(api.auth.server_ca_file).read_text()
     assert api.auth.namespace == (serviceaccount / "namespace").read_text()
+
+
+async def test_service_account_with_kubeconfig_namespace(serviceaccount):
+    kubeconfig = await KubeConfig(
+        {
+            "apiVersion": "v1",
+            "clusters": None,
+            "contexts": [
+                {
+                    "context": {"cluster": "", "namespace": "bar", "user": ""},
+                    "name": "foo",
+                }
+            ],
+            "current-context": "foo",
+            "kind": "Config",
+            "preferences": {},
+            "users": None,
+        }
+    )
+    kubeconfig_path = str(Path(serviceaccount) / "kubeconfig")
+    await kubeconfig.save(path=kubeconfig_path)
+    api = await kr8s.asyncio.api(
+        serviceaccount=serviceaccount, kubeconfig=kubeconfig_path
+    )
+
+    assert api.auth.server
+    assert api.namespace == "bar"
 
 
 async def test_exec(kubeconfig_with_exec):

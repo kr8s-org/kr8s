@@ -3,6 +3,7 @@
 from tempfile import NamedTemporaryFile
 
 import pytest
+import yaml
 
 from kr8s._config import KubeConfig, KubeConfigSet
 
@@ -41,6 +42,14 @@ async def test_load_kubeconfig_set(temp_kubeconfig):
     assert "name" in configs.clusters[0]
     assert len(configs.users) > 0
     assert len(configs.contexts) > 0
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_kubeconfig_from_dict(temp_kubeconfig, cls):
+    with open(temp_kubeconfig) as fh:
+        config = yaml.safe_load(fh)
+    kubeconfig = await cls(config)
+    assert kubeconfig.raw == config
 
 
 @pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])

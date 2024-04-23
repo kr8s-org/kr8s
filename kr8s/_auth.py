@@ -108,6 +108,14 @@ class KubeAuth:
             self._context = self.kubeconfig.contexts[0]["context"]
             self.active_context = self.kubeconfig.contexts[0]["name"]
 
+        # Load configuration options from the context
+        if self.namespace is None:
+            self.namespace = self.kubeconfig.current_namespace
+
+        # If no cluster is found in the context, assume it's a service account
+        if not self._context["cluster"]:
+            return
+
         self._cluster = self.kubeconfig.get_cluster(self._context["cluster"])
         self._user = self.kubeconfig.get_user(self._context["user"])
         self.server = self._cluster["server"]
@@ -205,8 +213,6 @@ class KubeAuth:
                 "username/password authentication was removed in Kubernetes 1.19, "
                 "kr8s doesn't not support this Kubernetes version"
             )
-        if self.namespace is None:
-            self.namespace = self.kubeconfig.current_namespace
         if "auth-provider" in self._user:
             if p := self._user["auth-provider"]["name"] != "oidc":
                 raise ValueError(

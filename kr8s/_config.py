@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import anyio
 import yaml
@@ -18,8 +18,11 @@ from kr8s._data_utils import dict_list_pack, list_dict_unpack
 
 
 class KubeConfigSet(object):
-    def __init__(self, *paths):
-        self._configs = [KubeConfig(path) for path in paths]
+    def __init__(self, *paths_or_dicts: Union[List[str], List[Dict]]):
+        if isinstance(paths_or_dicts[0], str):
+            self._configs = [KubeConfig(path) for path in paths_or_dicts]
+        else:
+            self._configs = [KubeConfig(config) for config in paths_or_dicts]
 
     def __await__(self):
         async def f():
@@ -130,7 +133,10 @@ class KubeConfigSet(object):
 
     @property
     def clusters(self) -> List[Dict]:
-        clusters = [cluster for config in self._configs for cluster in config.clusters]
+        clusters = []
+        for config in self._configs:
+            if config.clusters:
+                clusters.extend(config.clusters)
         # Unpack and repack to remove duplicates
         clusters = list_dict_unpack(clusters, "name", "cluster")
         clusters = dict_list_pack(clusters, "name", "cluster")
@@ -138,7 +144,10 @@ class KubeConfigSet(object):
 
     @property
     def users(self) -> List[Dict]:
-        users = [user for config in self._configs for user in config.users]
+        users = []
+        for config in self._configs:
+            if config.users:
+                users.extend(config.users)
         # Unpack and repack to remove duplicates
         users = list_dict_unpack(users, "name", "user")
         users = dict_list_pack(users, "name", "user")
@@ -146,7 +155,10 @@ class KubeConfigSet(object):
 
     @property
     def contexts(self) -> List[Dict]:
-        contexts = [context for config in self._configs for context in config.contexts]
+        contexts = []
+        for config in self._configs:
+            if config.contexts:
+                contexts.extend(config.contexts)
         # Unpack and repack to remove duplicates
         contexts = list_dict_unpack(contexts, "name", "context")
         contexts = dict_list_pack(contexts, "name", "context")
@@ -154,28 +166,39 @@ class KubeConfigSet(object):
 
     @property
     def extensions(self) -> List[Dict]:
-        return [
-            extension for config in self._configs for extension in config.extensions
-        ]
+        extensions = []
+        for config in self._configs:
+            if config.extensions:
+                extensions.extend(config.extensions)
+        return extensions
 
 
 class KubeConfig(object):
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, path_or_config: Union[str, Dict]):
+        self.path = None
         self._raw = None
+        if isinstance(path_or_config, str):
+            self.path = path_or_config
+        else:
+            self._raw = path_or_config
+
         self.__write_lock = anyio.Lock()
 
     def __await__(self):
         async def f():
-            async with await anyio.open_file(self.path) as fh:
-                self._raw = yaml.safe_load(await fh.read())
+            if not self._raw:
+                async with await anyio.open_file(self.path) as fh:
+                    self._raw = yaml.safe_load(await fh.read())
             return self
 
         return f().__await__()
 
-    async def save(self) -> None:
+    async def save(self, path=None) -> None:
+        path = self.path if not path else path
+        if not path:
+            raise ValueError("No path provided")
         async with self.__write_lock:
-            async with await anyio.open_file(self.path, "w") as fh:
+            async with await anyio.open_file(path, "w") as fh:
                 await fh.write(yaml.safe_dump(self._raw))
 
     @property
