@@ -6,6 +6,7 @@ kubectl-ng:
 
 ci:
   - .github/**/*
+  - .pre-commit-config.yaml
 
 tests:
   - "**/tests/**/*"
