@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import copy
 import json
 import ssl
 import threading
@@ -64,7 +65,8 @@ class Api(object):
         thread_loop_id = f"{thread_id}.{loop_id}"
         if thread_loop_id not in Api._instances:
             Api._instances[thread_loop_id] = weakref.WeakValueDictionary()
-        Api._instances[thread_loop_id][frozenset(kwargs.items())] = self
+        key = hash_kwargs(kwargs)
+        Api._instances[thread_loop_id][key] = self
 
     def __await__(self):
         async def f():
@@ -508,3 +510,11 @@ class Api(object):
     @namespace.setter
     def namespace(self, value):
         self.auth.namespace = value
+
+
+def hash_kwargs(kwargs: dict):
+    key_kwargs = copy.copy(kwargs)
+    for key in key_kwargs:
+        if isinstance(key_kwargs[key], dict):
+            key_kwargs[key] = json.dumps(key_kwargs[key])
+    return frozenset(key_kwargs.items())
