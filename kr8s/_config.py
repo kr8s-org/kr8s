@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import pathlib
 from typing import Dict, List, Union
 
 import anyio
@@ -19,7 +20,9 @@ from kr8s._data_utils import dict_list_pack, list_dict_unpack
 
 class KubeConfigSet(object):
     def __init__(self, *paths_or_dicts: Union[List[str], List[Dict]]):
-        if isinstance(paths_or_dicts[0], str):
+        if isinstance(paths_or_dicts[0], str) or isinstance(
+            paths_or_dicts[0], pathlib.Path
+        ):
             self._configs = [KubeConfig(path) for path in paths_or_dicts]
         else:
             self._configs = [KubeConfig(config) for config in paths_or_dicts]
@@ -177,7 +180,7 @@ class KubeConfig(object):
     def __init__(self, path_or_config: Union[str, Dict]):
         self.path = None
         self._raw = None
-        if isinstance(path_or_config, str):
+        if isinstance(path_or_config, str) or isinstance(path_or_config, pathlib.Path):
             self.path = path_or_config
         else:
             self._raw = path_or_config

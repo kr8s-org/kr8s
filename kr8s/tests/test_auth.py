@@ -100,6 +100,14 @@ async def test_kubeconfig(k8s_cluster):
     assert await api.whoami() == "kubernetes-admin"
 
 
+async def test_kubeconfig_dict(k8s_cluster):
+    config = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    assert isinstance(config, dict)
+    api = await kr8s.asyncio.api(kubeconfig=config)
+    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await api.whoami() == "kubernetes-admin"
+
+
 async def test_kubeconfig_context(kubeconfig_with_second_context):
     kubeconfig_path, context_name = kubeconfig_with_second_context
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)

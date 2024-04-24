@@ -4,6 +4,7 @@ import base64
 import binascii
 import json
 import os
+import pathlib
 import ssl
 
 import anyio
@@ -42,7 +43,7 @@ class KubeAuth:
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        self._kubeconfig_path = kubeconfig or os.environ.get(
+        self._kubeconfig_path_or_dict = kubeconfig or os.environ.get(
             "KUBECONFIG", "~/.kube/config"
         )
         self.__auth_lock = anyio.Lock()
@@ -60,7 +61,7 @@ class KubeAuth:
             if self._url:
                 self.server = self._url
             else:
-                if self._kubeconfig_path is not False:
+                if self._kubeconfig_path_or_dict is not False:
                     await self._load_kubeconfig()
                 if self._serviceaccount and not self.server:
                     await self._load_service_account()
@@ -91,10 +92,19 @@ class KubeAuth:
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
-        self._kubeconfig_path = os.path.expanduser(self._kubeconfig_path)
-        if not os.path.exists(self._kubeconfig_path):
-            return
-        self.kubeconfig = await KubeConfigSet(*self._kubeconfig_path.split(":"))
+        if isinstance(self._kubeconfig_path_or_dict, str) or isinstance(
+            self._kubeconfig_path_or_dict, pathlib.Path
+        ):
+            self._kubeconfig_path_or_dict = os.path.expanduser(
+                self._kubeconfig_path_or_dict
+            )
+            if not os.path.exists(self._kubeconfig_path_or_dict):
+                return
+            self.kubeconfig = await KubeConfigSet(
+                *self._kubeconfig_path_or_dict.split(":")
+            )
+        else:
+            self.kubeconfig = await KubeConfigSet(self._kubeconfig_path_or_dict)
         if self._use_context:
             try:
                 self._context = self.kubeconfig.get_context(self._use_context)
