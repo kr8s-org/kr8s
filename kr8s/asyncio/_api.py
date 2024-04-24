@@ -4,6 +4,7 @@ import asyncio
 import threading
 
 from kr8s._api import Api as _AsyncApi
+from kr8s._api import hash_kwargs
 
 
 async def api(
@@ -52,7 +53,7 @@ async def api(
         _cls = _SyncApi
 
     async def _f(**kwargs):
-        key = frozenset(kwargs.items())
+        key = hash_kwargs(kwargs)
         thread_id = threading.get_ident()
         try:
             loop_id = id(asyncio.get_running_loop())
