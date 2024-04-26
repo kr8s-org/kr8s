@@ -416,7 +416,11 @@ async def test_pod_annotate(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
     await pod.annotate({"foo": "bar"})
+    await pod.annotate(fizz="buzz")
     assert "foo" in pod.annotations
+    assert "fizz" in pod.annotations
+    with pytest.raises(ValueError):
+        await pod.annotate({})
     await pod.delete()
 
 
