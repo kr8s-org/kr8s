@@ -52,7 +52,7 @@ Issues = "https://github.com/kr8s-org/kr8s/issues"
 Changelog = "https://github.com/kr8s-org/kr8s/releases"
 
 [tool.pytest.ini_options]
-addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
+addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml --cov-report lcov"
 timeout = 300
 xfail_strict = true
 reruns = 3
