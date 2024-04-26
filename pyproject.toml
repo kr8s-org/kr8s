@@ -45,6 +45,12 @@ docs = [
     "sphinx-autoapi>=2.1.0",
 ]
 
+[project.urls]
+Documentation = "https://docs.kr8s.org/en/stable"
+Repository = "https://github.com/kr8s-org/kr8s.git"
+Issues = "https://github.com/kr8s-org/kr8s/issues"
+Changelog = "https://github.com/kr8s-org/kr8s/releases"
+
 [tool.pytest.ini_options]
 addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml"
 timeout = 300
