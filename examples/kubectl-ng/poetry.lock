@@ -550,13 +550,13 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "kr8s"
-version = "0.14.3"
+version = "0.14.4"
 description = "A Kubernetes API library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "kr8s-0.14.3-py3-none-any.whl", hash = "sha256:6f653cf73bf775d3e596a13f10a021dffa3de6c96b5fdb3c6b674a726e920adb"},
-    {file = "kr8s-0.14.3.tar.gz", hash = "sha256:79487da3547374e31e7f882aeff26c95285b77bd9ed2716d895ff0bf18896bae"},
+    {file = "kr8s-0.14.4-py3-none-any.whl", hash = "sha256:440d31a00da1ed5e59b3e9812eb7404022400417ab4aa575abf1c8d3a6fbab53"},
+    {file = "kr8s-0.14.4.tar.gz", hash = "sha256:d96fc937a14116511234c797ba92459bc691f7295acfc01ff84763e3f3aea094"},
 ]
 
 [package.dependencies]
@@ -1212,4 +1212,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "28ac8bc22a263e2d639da9649855af1370967df0e79a88be3443c067b2113c7b"
+content-hash = "186ed581ff66068100de617900dfe21455beee6bb45eada28f0765798914fda6"
