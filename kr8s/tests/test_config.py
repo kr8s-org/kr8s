@@ -21,7 +21,7 @@ def temp_kubeconfig(k8s_cluster):
 
 async def test_load_kubeconfig(temp_kubeconfig):
     config = await KubeConfig(temp_kubeconfig)
-    assert config.path == temp_kubeconfig
+    assert str(config.path) == temp_kubeconfig
     assert config._raw
     assert "current-context" in config._raw
     assert config.current_context
@@ -34,7 +34,7 @@ async def test_load_kubeconfig(temp_kubeconfig):
 async def test_load_kubeconfig_set(temp_kubeconfig):
     configs = await KubeConfigSet(temp_kubeconfig)
     assert len(configs._configs) == 1
-    assert configs._configs[0].path == temp_kubeconfig
+    assert str(configs._configs[0].path) == temp_kubeconfig
     assert configs._configs[0]._raw
     assert "current-context" in configs._configs[0]._raw
     assert configs.current_context
