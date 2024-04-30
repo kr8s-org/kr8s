@@ -20,12 +20,14 @@ from kr8s._data_utils import dict_list_pack, list_dict_unpack
 
 class KubeConfigSet(object):
     def __init__(self, *paths_or_dicts: Union[List[str], List[Dict]]):
-        if isinstance(paths_or_dicts[0], str) or isinstance(
-            paths_or_dicts[0], pathlib.Path
-        ):
-            self._configs = [KubeConfig(path) for path in paths_or_dicts]
-        else:
-            self._configs = [KubeConfig(config) for config in paths_or_dicts]
+        self._configs = []
+        for path_or_dict in paths_or_dicts:
+            try:
+                self._configs.append(KubeConfig(path_or_dict))
+            except ValueError:
+                pass
+        if not self._configs:
+            raise ValueError("No valid kubeconfig provided")
 
     def __await__(self):
         async def f():
@@ -181,7 +183,9 @@ class KubeConfig(object):
         self.path = None
         self._raw = None
         if isinstance(path_or_config, str) or isinstance(path_or_config, pathlib.Path):
-            self.path = path_or_config
+            self.path = pathlib.Path(path_or_config).expanduser()
+            if not self.path.exists():
+                raise ValueError(f"File {self.path} does not exist")
         else:
             self._raw = path_or_config
 
