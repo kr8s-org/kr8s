@@ -95,13 +95,16 @@ class KubeAuth:
         if isinstance(self._kubeconfig_path_or_dict, str) or isinstance(
             self._kubeconfig_path_or_dict, pathlib.Path
         ):
-            if os.name != "nt":
-                self.kubeconfig = await KubeConfigSet(
-                    *str(self._kubeconfig_path_or_dict).split(":")
-                )
-            else:
-                # Windows doesn't support multiple configs in a path
-                self.kubeconfig = await KubeConfigSet(self._kubeconfig_path_or_dict)
+            try:
+                if os.name != "nt":
+                    self.kubeconfig = await KubeConfigSet(
+                        *str(self._kubeconfig_path_or_dict).split(":")
+                    )
+                else:
+                    # Windows doesn't support multiple configs in a path
+                    self.kubeconfig = await KubeConfigSet(self._kubeconfig_path_or_dict)
+            except ValueError:
+                return
         else:
             self.kubeconfig = await KubeConfigSet(self._kubeconfig_path_or_dict)
         if self._use_context:
