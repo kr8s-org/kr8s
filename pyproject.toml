@@ -16,7 +16,7 @@ dependencies = [
     "python-jsonpath>=0.7.1",
     "anyio>=3.7.0",
     "httpx>=0.24.1",
-    "httpx-ws>=0.5.1",
+    "httpx-ws>=0.5.2",
     "python-box>=7.0.1",
 ]
 [project.optional-dependencies]
