@@ -32,6 +32,7 @@ class KubeAuth:
         self.namespace = namespace
         self.active_context = None
         self.kubeconfig: KubeConfigSet = None
+        self.tls_server_name = None
         self._url = url
         self._insecure_skip_tls_verify = False
         self._use_context = context
@@ -137,6 +138,9 @@ class KubeAuth:
             and self._cluster["insecure-skip-tls-verify"]
         ):
             self._insecure_skip_tls_verify = True
+
+        if "tls-server-name" in self._cluster:
+            self.tls_server_name = self._cluster["tls-server-name"]
 
         if "exec" in self._user:
             if (
