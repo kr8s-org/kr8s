@@ -128,6 +128,8 @@ class Api(object):
             await self._create_session()
         url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url, method=method)
+        if self.auth.tls_server_name:
+            kwargs["extensions"] = {"sni_hostname": self.auth.tls_server_name}
         auth_attempts = 0
         ssl_attempts = 0
         while True:
@@ -191,6 +193,8 @@ class Api(object):
             await self._create_session()
         url = self._construct_url(version, base, namespace, url)
         kwargs.update(url=url)
+        if self.auth.tls_server_name:
+            kwargs["extensions"] = {"sni_hostname": self.auth.tls_server_name}
         auth_attempts = 0
         while True:
             try:
