@@ -15,7 +15,6 @@ config = typer.Typer(
 def config_current_context():
     """Display the current context."""
     try:
-        api = kr8s.api()
-        typer.echo(api.auth.kubeconfig.current_context)
+        typer.echo(kr8s.api().auth.kubeconfig.current_context)
     except KeyError:
         typer.echo("error: current-context is not set")
