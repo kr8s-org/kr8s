@@ -7,6 +7,7 @@ import typer
 
 from ._api_resources import api_resources
 from ._api_versions import api_versions
+from ._config import config
 from ._create import create
 from ._delete import delete
 from ._exec import kexec
@@ -26,10 +27,14 @@ def _typer_async(f):
 def register(app, func, alias=None):
     if asyncio.iscoroutinefunction(func):
         func = _typer_async(func)
-    if alias is not None:
-        app.command(alias)(func)
+    if isinstance(func, typer.Typer):
+        assert alias, "Typer subcommand must have an alias."
+        app.add_typer(func, name=alias)
     else:
-        app.command()(func)
+        if alias is not None:
+            app.command(alias)(func)
+        else:
+            app.command()(func)
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -41,6 +46,7 @@ register(app, get)
 register(app, version)
 register(app, wait)
 register(app, kexec, "exec")
+register(app, config, "config")
 
 
 def go():
