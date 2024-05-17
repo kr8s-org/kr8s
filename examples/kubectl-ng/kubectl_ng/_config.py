@@ -103,8 +103,24 @@ async def config_use_context(context: Annotated[str, typer.Argument()]):
     console.print(f'Switched to context "{context}".')
 
 
+async def config_rename_context(
+    old_name: Annotated[str, typer.Argument()],
+    new_name: Annotated[str, typer.Argument()],
+):
+    """Renames a context from the kubeconfig file."""
+    try:
+        api = await kr8s.asyncio.api()
+        await api.auth.kubeconfig.rename_context(old_name, new_name)
+    except (ValueError, KeyError):
+        typer.echo(f"error: context {old_name} not found")
+        raise typer.Exit(code=1)
+
+    console.print(f'Context "{old_name}" renamed to "{new_name}".')
+
+
 register(config, config_current_context, "current-context")
 register(config, config_get_clusters, "get-clusters")
 register(config, config_get_users, "get-users")
 register(config, config_get_contexts, "get-contexts")
 register(config, config_use_context, "use-context")
+register(config, config_rename_context, "rename-context")
