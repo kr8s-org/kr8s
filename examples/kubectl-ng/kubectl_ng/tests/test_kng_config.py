@@ -39,3 +39,10 @@ def test_get_contexts(k8s_cluster):
     result = runner.invoke(app, ["config", "get-contexts", "foo"])
     assert result.exit_code == 1
     assert "foo not found" in result.stdout
+
+
+def test_use_context():
+    current_context = kr8s.api().auth.kubeconfig.current_context
+    result = runner.invoke(app, ["config", "use-context", current_context])
+    assert result.exit_code == 0
+    assert current_context in result.stdout
