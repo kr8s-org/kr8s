@@ -10,6 +10,8 @@ from typing_extensions import Annotated
 
 import kr8s
 
+from ._typer_utils import register
+
 console = Console()
 
 config = typer.Typer(
@@ -19,7 +21,6 @@ config = typer.Typer(
 )
 
 
-@config.command(name="current-context", help="Display the current-context")
 def config_current_context():
     """Display the current context."""
     try:
@@ -29,7 +30,6 @@ def config_current_context():
         raise typer.Exit(code=1)
 
 
-@config.command(name="get-clusters", help="Display clusters defined in the kubeconfig")
 def config_get_clusters():
     """Display clusters defined in the kubeconfig."""
     try:
@@ -45,7 +45,6 @@ def config_get_clusters():
     console.print(table)
 
 
-@config.command(name="get-users", help="Display users defined in the kubeconfig")
 def config_get_users():
     """Display users defined in the kubeconfig."""
     try:
@@ -61,7 +60,6 @@ def config_get_users():
     console.print(table)
 
 
-@config.command(name="get-contexts", help="Describe one or many contexts")
 def config_get_contexts(name: Annotated[Optional[str], typer.Argument()] = None):
     """Display users defined in the kubeconfig."""
     try:
@@ -91,3 +89,38 @@ def config_get_contexts(name: Annotated[Optional[str], typer.Argument()] = None)
         raise typer.Exit(code=1)
 
     console.print(table)
+
+
+async def config_use_context(context: Annotated[str, typer.Argument()]):
+    """Set the current-context in a kubeconfig file."""
+    try:
+        api = await kr8s.asyncio.api()
+        await api.auth.kubeconfig.use_context(context)
+    except (ValueError, KeyError):
+        typer.echo(f"error: context {context} not found")
+        raise typer.Exit(code=1)
+
+    console.print(f'Switched to context "{context}".')
+
+
+async def config_rename_context(
+    old_name: Annotated[str, typer.Argument()],
+    new_name: Annotated[str, typer.Argument()],
+):
+    """Renames a context from the kubeconfig file."""
+    try:
+        api = await kr8s.asyncio.api()
+        await api.auth.kubeconfig.rename_context(old_name, new_name)
+    except (ValueError, KeyError):
+        typer.echo(f"error: context {old_name} not found")
+        raise typer.Exit(code=1)
+
+    console.print(f'Context "{old_name}" renamed to "{new_name}".')
+
+
+register(config, config_current_context, "current-context")
+register(config, config_get_clusters, "get-clusters")
+register(config, config_get_users, "get-users")
+register(config, config_get_contexts, "get-contexts")
+register(config, config_use_context, "use-context")
+register(config, config_rename_context, "rename-context")

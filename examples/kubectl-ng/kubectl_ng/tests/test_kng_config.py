@@ -39,3 +39,40 @@ def test_get_contexts(k8s_cluster):
     result = runner.invoke(app, ["config", "get-contexts", "foo"])
     assert result.exit_code == 1
     assert "foo not found" in result.stdout
+
+
+def test_use_context():
+    current_context = kr8s.api().auth.kubeconfig.current_context
+    result = runner.invoke(app, ["config", "use-context", current_context])
+    assert result.exit_code == 0
+    assert current_context in result.stdout
+
+
+def test_rename_context():
+    # Get current context
+    current_context = kr8s.api().auth.kubeconfig.current_context
+    result = runner.invoke(app, ["config", "current-context"])
+    assert result.exit_code == 0
+    assert current_context in result.stdout
+
+    # Rename current context to foo
+    result = runner.invoke(app, ["config", "rename-context", current_context, "foo"])
+    assert result.exit_code == 0
+    assert current_context in result.stdout
+    assert "foo" in result.stdout
+
+    # Check the context rename was successful
+    result = runner.invoke(app, ["config", "current-context"])
+    assert result.exit_code == 0
+    assert "foo" in result.stdout
+
+    # Rename foo back to the original name
+    result = runner.invoke(app, ["config", "rename-context", "foo", current_context])
+    assert result.exit_code == 0
+    assert current_context in result.stdout
+    assert "foo" in result.stdout
+
+    # Check the context revert was successful
+    result = runner.invoke(app, ["config", "current-context"])
+    assert result.exit_code == 0
+    assert current_context in result.stdout
