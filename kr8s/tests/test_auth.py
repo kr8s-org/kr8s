@@ -177,6 +177,21 @@ def test_no_config():
         kr8s.api(kubeconfig="/no/file/here")
 
 
+def test_kubeconfig_multi_paths(k8s_cluster, tmp_path):
+    kubeconfig1: Path = k8s_cluster.kubeconfig_path
+    kubeconfig2 = Path(tmp_path / "kubeconfig").write_bytes(kubeconfig1.read_bytes())
+    kubeconfig_multi_str = f"{kubeconfig1}:{kubeconfig2}"
+    api = kr8s.api(kubeconfig=kubeconfig_multi_str)
+    assert (
+        str(api.auth._serviceaccount) == "/var/run/secrets/kubernetes.io/serviceaccount"
+    )
+
+
+def test_kubeconfig_isdir_fail(tmp_path):
+    with pytest.raises(IsADirectoryError):
+        kr8s.api(kubeconfig=tmp_path)
+
+
 async def test_service_account(serviceaccount):
     api = await kr8s.asyncio.api(
         serviceaccount=serviceaccount, kubeconfig="/no/file/here"

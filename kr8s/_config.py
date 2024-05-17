@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import os
 import pathlib
 from typing import Dict, List, Union
 
@@ -182,10 +183,17 @@ class KubeConfig(object):
     def __init__(self, path_or_config: Union[str, Dict]):
         self.path = None
         self._raw = None
+
+        if not path_or_config:
+            raise ValueError("KubeConfig path_or_config is None or empty string.")
         if isinstance(path_or_config, str) or isinstance(path_or_config, pathlib.Path):
             self.path = pathlib.Path(path_or_config).expanduser()
             if not self.path.exists():
                 raise ValueError(f"File {self.path} does not exist")
+            if os.path.isdir(self.path):
+                raise IsADirectoryError(
+                    f'Error loading config file "{self.path}": is a directory.'
+                )
         else:
             self._raw = path_or_config
 
