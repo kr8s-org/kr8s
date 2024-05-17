@@ -25,3 +25,17 @@ def test_get_users(k8s_cluster):
     result = runner.invoke(app, ["config", "get-users"])
     assert result.exit_code == 0
     assert k8s_cluster.name in result.stdout
+
+
+def test_get_contexts(k8s_cluster):
+    result = runner.invoke(app, ["config", "get-contexts"])
+    assert result.exit_code == 0
+    assert k8s_cluster.name in result.stdout
+
+    result = runner.invoke(app, ["config", "get-contexts", f"kind-{k8s_cluster.name}"])
+    assert result.exit_code == 0
+    assert k8s_cluster.name in result.stdout
+
+    result = runner.invoke(app, ["config", "get-contexts", "foo"])
+    assert result.exit_code == 1
+    assert "foo not found" in result.stdout
