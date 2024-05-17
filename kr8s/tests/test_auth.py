@@ -100,10 +100,20 @@ async def test_kubeconfig(k8s_cluster):
     assert await api.whoami() == "kubernetes-admin"
 
 
-async def test_kubeconfig_multi(k8s_cluster):
-    api = await kr8s.asyncio.api(
-        kubeconfig=f"{k8s_cluster.kubeconfig_path}:{k8s_cluster.kubeconfig_path}"
+async def test_kubeconfig_multi_paths_same(k8s_cluster):
+    kubeconfig_multi_str = (
+        f"{k8s_cluster.kubeconfig_path}:{k8s_cluster.kubeconfig_path}"
     )
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_multi_str)
+    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await api.whoami() == "kubernetes-admin"
+
+
+async def test_kubeconfig_multi_paths_diff(k8s_cluster, tmp_path):
+    kubeconfig1: Path = k8s_cluster.kubeconfig_path
+    kubeconfig2 = Path(tmp_path / "kubeconfig").write_bytes(kubeconfig1.read_bytes())
+    kubeconfig_multi_str = f"{kubeconfig1}:{kubeconfig2}"
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_multi_str)
     assert await api.get("pods", namespace=kr8s.ALL)
     assert await api.whoami() == "kubernetes-admin"
 
@@ -175,16 +185,6 @@ async def test_url(kubectl_proxy):
 def test_no_config():
     with pytest.raises(ValueError):
         kr8s.api(kubeconfig="/no/file/here")
-
-
-def test_kubeconfig_multi_paths(k8s_cluster, tmp_path):
-    kubeconfig1: Path = k8s_cluster.kubeconfig_path
-    kubeconfig2 = Path(tmp_path / "kubeconfig").write_bytes(kubeconfig1.read_bytes())
-    kubeconfig_multi_str = f"{kubeconfig1}:{kubeconfig2}"
-    api = kr8s.api(kubeconfig=kubeconfig_multi_str)
-    assert (
-        str(api.auth._serviceaccount) == "/var/run/secrets/kubernetes.io/serviceaccount"
-    )
 
 
 def test_kubeconfig_isdir_fail(tmp_path):
