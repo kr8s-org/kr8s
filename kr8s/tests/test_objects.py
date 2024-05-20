@@ -3,6 +3,7 @@
 import datetime
 import inspect
 import pathlib
+import platform
 import tempfile
 import time
 from contextlib import suppress
@@ -656,6 +657,10 @@ async def test_unsupported_port_forward():
         await PortForward(pv, 80).start()
 
 
+@pytest.mark.skipif(
+    "macOS" in platform.platform(),
+    reason="Hangs on macOS, see https://github.com/kr8s-org/kr8s/issues/380",
+)
 async def test_multiple_bind_addresses_port_forward(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
 
