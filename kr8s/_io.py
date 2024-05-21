@@ -23,6 +23,7 @@ from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, Tuple, T
 import anyio
 
 T = TypeVar("T")
+C = TypeVar("C")
 
 
 class Portal:
@@ -97,7 +98,7 @@ def iter_over_async(agen: AsyncGenerator) -> Generator:
         yield obj
 
 
-def sync(source: object) -> object:
+def sync(source: C) -> C:
     """Convert all public async methods/properties of an object to universal methods.
 
     See :func:`run_sync` for more info
