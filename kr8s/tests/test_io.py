@@ -5,7 +5,7 @@ import pytest
 import trio
 
 import kr8s
-from kr8s._io import NamedTemporaryFile
+from kr8s._async_utils import NamedTemporaryFile
 from kr8s.asyncio.objects import Pod
 
 
@@ -62,8 +62,8 @@ async def test_tempfiles():
 
 
 async def test_check_output():
-    output = await kr8s._io.check_output("echo", "hello")
+    output = await kr8s._async_utils.check_output("echo", "hello")
     assert output == "hello\n"
 
     with pytest.raises(RuntimeError, match="non-zero code"):
-        await kr8s._io.check_output("false")
+        await kr8s._async_utils.check_output("false")

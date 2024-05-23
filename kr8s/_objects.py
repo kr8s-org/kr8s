@@ -29,6 +29,7 @@ from box import Box
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
+from kr8s._async_utils import sync
 from kr8s._data_utils import (
     dict_to_selector,
     dot_to_nested_dict,
@@ -37,7 +38,6 @@ from kr8s._data_utils import (
 )
 from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import Exec
-from kr8s._io import sync
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 

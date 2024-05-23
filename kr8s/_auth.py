@@ -9,8 +9,8 @@ import ssl
 
 import anyio
 
+from ._async_utils import NamedTemporaryFile, check_output
 from ._config import KubeConfigSet
-from ._io import NamedTemporaryFile, check_output
 
 
 class KubeAuth:
