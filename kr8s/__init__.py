@@ -6,6 +6,8 @@ import kr8s.objects  # noqa
 
 from ._api import ALL  # noqa
 from ._api import Api as _AsyncApi
+from ._async_utils import run_sync as _run_sync
+from ._async_utils import sync as _sync  # noqa
 from ._exceptions import (
     APITimeoutError,  # noqa
     ConnectionClosedError,  # noqa
@@ -13,8 +15,6 @@ from ._exceptions import (
     NotFoundError,  # noqa
     ServerError,  # noqa
 )
-from ._io import run_sync as _run_sync
-from ._io import sync as _sync  # noqa
 from .asyncio import (
     api as _api,
 )

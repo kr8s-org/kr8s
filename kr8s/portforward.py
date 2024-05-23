@@ -3,7 +3,7 @@
 import threading
 import time
 
-from ._io import sync
+from ._async_utils import sync
 from ._portforward import PortForward as _PortForward
 
 

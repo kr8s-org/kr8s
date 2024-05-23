@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from functools import partial
 
-from ._io import run_sync, sync
+from ._async_utils import run_sync, sync
 from ._objects import (
     APIObject as _APIObject,
 )
