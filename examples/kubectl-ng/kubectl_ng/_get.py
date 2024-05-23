@@ -75,21 +75,29 @@ async def get(
 
     Use "kubectl-ng api-resources" for a complete list of supported resources.
     """
+    resource_names = []
+    # Support kubectl-ng get pod,svc
+    if len(resources) == 1:
+        resources = resources[0].split(",")
+    # Support kubectl-ng get pod [name]
+    elif len(resources) == 2:
+        resources, resource_names = [[r] for r in resources]
+    else:
+        raise typer.BadParameter(
+            f"Format '{' '.join(resources)}' not currently supported."
+        )
     kubernetes = await kr8s.asyncio.api()
+    if namespace:
+        kubernetes.namespace = namespace
     if all_namespaces:
-        namespace = kr8s.ALL
+        kubernetes.namespace = kr8s.ALL
     for kind in resources:
         response = await kubernetes.get(
             kind,
-            namespace=namespace,
             label_selector=label_selector,
             field_selector=field_selector,
             as_object=Table,
         )
-
-        if not response.rows:
-            console.print(f"No resources found in {namespace} namespace.")
-            return
 
         table = rich.table.Table(box=box.SIMPLE)
         table.add_column("Namespace", style="magenta", no_wrap=True)
@@ -102,11 +110,24 @@ async def get(
                 table.add_column(column["name"], **kwargs)
 
         for row in response.rows:
-            r = [
-                str(row)
-                for row, column in zip(row["cells"], response.column_definitions)
-                if column["priority"] == 0
-            ]
-            table.add_row(row["object"]["metadata"]["namespace"], *r)
+            if (
+                not resource_names
+                or row["object"]["metadata"]["name"] == resource_names[0]
+            ):
+                r = [
+                    str(row)
+                    for row, column in zip(row["cells"], response.column_definitions)
+                    if column["priority"] == 0
+                ]
+                table.add_row(row["object"]["metadata"]["namespace"], *r)
+
+        if not table.rows:
+            if resource_names:
+                console.print(f"No resources found with name {resource_names[0]}.")
+            else:
+                console.print(
+                    f"No {kind} resources found in {kubernetes.namespace} namespace."
+                )
+            return
 
         console.print(table)
