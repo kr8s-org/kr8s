@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 
 import asyncio
+from contextlib import suppress
 from functools import wraps
 
 import typer
@@ -10,7 +11,8 @@ import typer
 def _typer_async(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
+        with suppress(asyncio.CancelledError, KeyboardInterrupt):
+            return asyncio.run(f(*args, **kwargs))
 
     return wrapper
 
