@@ -977,3 +977,15 @@ def test_sync_new_class_is_sync():
     instance = MyResource({})
     assert not instance._asyncio
     assert not inspect.iscoroutinefunction(instance.create)
+
+
+def test_new_class_plural_suffix():
+    MyPlural = new_class(
+        kind="MyPlural",
+        version="newclass.example.com/v1",
+        namespaced=True,
+        plural_suffix="es",
+    )
+    instance = MyPlural({})
+    assert instance.plural.endswith("es")
+    assert instance.endpoint.endswith("es")
