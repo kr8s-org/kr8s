@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import pytest
@@ -114,3 +115,30 @@ async def test_use_namespace(temp_kubeconfig, cls):
     await config.use_namespace("kube-system")
     assert config.current_namespace == "kube-system"
     await config.use_namespace(current_namespace)
+
+
+async def test_kubeconfigset_multi_paths(temp_kubeconfig, tmp_path):
+    kubeconfig1 = Path(temp_kubeconfig)
+    kubeconfig2 = Path(tmp_path / "kubeconfig")
+    kubeconfig2.write_bytes(kubeconfig1.read_bytes())
+    config = await KubeConfigSet(kubeconfig1, kubeconfig2)
+    context = config.get_context(config.current_context)
+    assert config.get_user(context["user"])
+
+
+async def test_kubeconfigset_multi_paths_one_empty(temp_kubeconfig):
+    config = await KubeConfigSet(temp_kubeconfig, "")
+    context = config.get_context(config.current_context)
+    assert config.get_user(context["user"])
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_kubeconfig_path_empty_fail(cls):
+    with pytest.raises(ValueError):
+        await cls("")
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_kubeconfig_path_isdir_fail(cls, tmp_path):
+    with pytest.raises(IsADirectoryError):
+        await cls(tmp_path)
