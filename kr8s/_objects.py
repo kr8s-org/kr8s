@@ -1609,6 +1609,7 @@ def new_class(
     namespaced=True,
     scalable: Optional[bool] = None,
     scalable_spec: Optional[str] = None,
+    plural_suffix: str = "s",
 ) -> Type[APIObject]:
     """Create a new APIObject subclass.
 
@@ -1617,6 +1618,9 @@ def new_class(
         version: The Kubernetes API version.
         asyncio: Whether to use asyncio or not.
         namespaced: Whether the resource is namespaced or not.
+        scalable: Whether the resource is scalable or not.
+        scalable_spec: The name of the field to use for scaling.
+        plural_suffix: The suffix to use for the plural form of the resource.
 
     Returns:
         A new APIObject subclass.
@@ -1632,8 +1636,8 @@ def new_class(
             "kind": kind,
             "version": version,
             "_asyncio": asyncio,
-            "endpoint": kind.lower() + "s",
-            "plural": kind.lower() + "s",
+            "endpoint": kind.lower() + plural_suffix,
+            "plural": kind.lower() + plural_suffix,
             "singular": kind.lower(),
             "namespaced": namespaced,
             "scalable": scalable or False,
