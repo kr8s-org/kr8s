@@ -1669,7 +1669,7 @@ def object_from_spec(
         cls = get_class(spec["kind"], spec["apiVersion"], _asyncio=_asyncio)
     except KeyError:
         if allow_unknown_type:
-            cls = new_class(spec["kind"], spec["apiVersion"])
+            cls = new_class(spec["kind"], spec["apiVersion"], asyncio=_asyncio)
         else:
             raise
     return cls(spec, api=api)

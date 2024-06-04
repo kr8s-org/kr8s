@@ -21,13 +21,24 @@ from kr8s.asyncio.objects import (
     PersistentVolume,
     Pod,
     Service,
+    get_class,
+    new_class,
     object_from_name_type,
+    object_from_spec,
     objects_from_files,
 )
 from kr8s.asyncio.portforward import PortForward
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
-from kr8s.objects import get_class, new_class, object_from_spec
+from kr8s.objects import (
+    get_class as sync_get_class,
+)
+from kr8s.objects import (
+    new_class as sync_new_class,
+)
+from kr8s.objects import (
+    object_from_spec as sync_object_from_spec,
+)
 from kr8s.objects import objects_from_files as sync_objects_from_files
 
 DEFAULT_TIMEOUT = httpx.Timeout(30)
@@ -491,11 +502,27 @@ async def test_object_from_spec(example_pod_spec, example_service_spec):
     assert isinstance(pod, Pod)
     assert pod.name == example_pod_spec["metadata"]["name"]
     assert pod.spec == example_pod_spec["spec"]
+    assert pod._asyncio
 
     service = object_from_spec(example_service_spec)
     assert isinstance(service, Service)
     assert service.name == example_service_spec["metadata"]["name"]
     assert service.spec == example_service_spec["spec"]
+    assert service._asyncio
+
+
+async def test_object_from_spec_sync(example_pod_spec, example_service_spec):
+    pod = sync_object_from_spec(example_pod_spec)
+    assert isinstance(pod, Pod)
+    assert pod.name == example_pod_spec["metadata"]["name"]
+    assert pod.spec == example_pod_spec["spec"]
+    assert not pod._asyncio
+
+    service = sync_object_from_spec(example_service_spec)
+    assert isinstance(service, Service)
+    assert service.name == example_service_spec["metadata"]["name"]
+    assert service.spec == example_service_spec["spec"]
+    assert not service._asyncio
 
 
 async def test_subclass_registration():
@@ -520,6 +547,47 @@ async def test_new_class_registration():
     MyOtherResource = new_class("MyOtherResource.foo.kr8s.org/v1alpha1")  # noqa: F841
 
     get_class("MyOtherResource", "foo.kr8s.org/v1alpha1")
+    assert MyOtherResource._asyncio
+
+
+async def test_new_sync_class_registration():
+    with pytest.raises(KeyError):
+        sync_get_class("MyOtherSyncResource", "foo.kr8s.org/v1alpha1")
+
+    MyOtherSyncResource = sync_new_class(
+        "MyOtherSyncResource.foo.kr8s.org/v1alpha1"
+    )  # noqa: F841
+
+    sync_get_class("MyOtherSyncResource", "foo.kr8s.org/v1alpha1")
+    assert not MyOtherSyncResource._asyncio
+
+
+async def test_new_class_registration_from_spec():
+    my_async_resource_instance = await object_from_spec(
+        {
+            "kind": "MyAsyncResource",
+            "apiVersion": "foo.kr8s.org/v1alpha1",
+            "metadata": {"name": "foo"},
+            "spec": {},
+        },
+        allow_unknown_type=True,
+    )  # noqa: F841
+
+    assert my_async_resource_instance._asyncio
+
+
+async def test_new_sync_class_registration_from_spec():
+    my_sync_resource_instance = sync_object_from_spec(
+        {
+            "kind": "MySyncResource",
+            "apiVersion": "foo.kr8s.org/v1alpha1",
+            "metadata": {"name": "foo"},
+            "spec": {},
+        },
+        allow_unknown_type=True,
+    )  # noqa: F841
+
+    assert not my_sync_resource_instance._asyncio
 
 
 async def test_deployment_scale(example_deployment_spec):
