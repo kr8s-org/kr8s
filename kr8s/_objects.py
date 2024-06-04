@@ -112,7 +112,8 @@ class APIObject:
     def api(self):
         if self._api is None and self._asyncio:
             raise RuntimeError(
-                "Object has not been initialized with an API object. Did you forget to await it?"
+                f"{self.__repr__()} has not been initialized with an API object. "
+                "Did you forget to await it?"
             )
         return self._api
 
