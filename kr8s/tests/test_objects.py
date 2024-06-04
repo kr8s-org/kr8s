@@ -563,7 +563,7 @@ async def test_new_sync_class_registration():
 
 
 async def test_new_class_registration_from_spec():
-    my_async_resource_instance = object_from_spec(
+    my_async_resource_instance = await object_from_spec(
         {
             "kind": "MyAsyncResource",
             "apiVersion": "foo.kr8s.org/v1alpha1",
