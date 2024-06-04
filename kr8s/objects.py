@@ -111,8 +111,18 @@ from ._objects import (
 from ._objects import (
     Table as _Table,
 )
-from ._objects import get_class, new_class, object_from_spec  # noqa
+from ._objects import (
+    get_class as _get_class,
+)
+from ._objects import (
+    new_class as _new_class,
+)
+
+# noqa
 from ._objects import object_from_name_type as _object_from_name_type
+from ._objects import (
+    object_from_spec as _object_from_spec,
+)
 from ._objects import objects_from_files as _objects_from_files
 
 
@@ -334,3 +344,6 @@ class Table(_Table):
 
 object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
 objects_from_files = run_sync(partial(_objects_from_files, _asyncio=False))
+get_class = partial(_get_class, _asyncio=False)
+new_class = partial(_new_class, asyncio=False)
+object_from_spec = partial(_object_from_spec, _asyncio=False)

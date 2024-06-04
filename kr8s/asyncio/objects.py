@@ -39,4 +39,7 @@ from kr8s._objects import (  # noqa
     Table,
     object_from_name_type,
     objects_from_files,
+    get_class,
+    new_class,
+    object_from_spec,
 )
