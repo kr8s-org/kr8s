@@ -562,6 +562,34 @@ async def test_new_sync_class_registration():
     assert not MyOtherSyncResource._asyncio
 
 
+async def test_new_class_registration_from_spec():
+    my_async_resource_instance = object_from_spec(
+        {
+            "kind": "MyAsyncResource",
+            "apiVersion": "foo.kr8s.org/v1alpha1",
+            "metadata": {"name": "foo"},
+            "spec": {},
+        },
+        allow_unknown_type=True,
+    )  # noqa: F841
+
+    assert my_async_resource_instance._asyncio
+
+
+async def test_new_sync_class_registration_from_spec():
+    my_sync_resource_instance = sync_object_from_spec(
+        {
+            "kind": "MySyncResource",
+            "apiVersion": "foo.kr8s.org/v1alpha1",
+            "metadata": {"name": "foo"},
+            "spec": {},
+        },
+        allow_unknown_type=True,
+    )  # noqa: F841
+
+    assert not my_sync_resource_instance._asyncio
+
+
 async def test_deployment_scale(example_deployment_spec):
     deployment = await Deployment(example_deployment_spec)
     await deployment.create()
