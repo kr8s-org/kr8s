@@ -77,14 +77,14 @@ class APIObject:
             )
         if namespace is not None:
             self._raw["metadata"]["namespace"] = namespace
-        self.api = api
-        if self.api is None and not self._asyncio:
-            self.api = kr8s.api()
+        self._api = api
+        if self._api is None and not self._asyncio:
+            self._api = kr8s.api()
 
     def __await__(self):
         async def f():
-            if self.api is None:
-                self.api = await kr8s.asyncio.api()
+            if self._api is None:
+                self._api = await kr8s.asyncio.api()
             return self
 
         return f().__await__()
@@ -107,6 +107,18 @@ class APIObject:
         if self.namespaced and self.namespace != other.namespace:
             return False
         return True
+
+    @property
+    def api(self):
+        if self._api is None and self._asyncio:
+            raise RuntimeError(
+                "Object has not been initialized with an API object. Did you forget to await it?"
+            )
+        return self._api
+
+    @api.setter
+    def api(self, value):
+        self._api = value
 
     @property
     def raw(self) -> str:

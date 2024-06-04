@@ -140,6 +140,13 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("delete")
 
 
+async def test_pod_missing_await_error(example_pod_spec):
+    pod = Pod(example_pod_spec)  # We intentionally forget to await here
+    assert pod._api is None
+    with pytest.raises(RuntimeError, match="forget to await it"):
+        await pod.create()
+
+
 async def test_pod_wait_multiple_conditions(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
