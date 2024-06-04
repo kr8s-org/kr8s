@@ -5,6 +5,8 @@ tag-template: "next"
 exclude-labels:
   - kubectl-ng
 categories:
+  - title: "🚨 Breaking"
+    label: "breaking"
   - title: "Enhancements"
     label: "enhancement"
   - title: "Bug Fixes"
