@@ -1,15 +1,14 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import pathlib
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import anyio
+import jsonpath
 import yaml
 
 from kr8s._data_utils import dict_list_pack, list_dict_unpack
 
-# TODO Implement set
-# TODO Implement unset
 # TODO Implement set cluster
 # TODO Implement delete cluster
 # TODO Implement set context
@@ -18,7 +17,18 @@ from kr8s._data_utils import dict_list_pack, list_dict_unpack
 # TODO Implement delete user
 
 
-class KubeConfigSet(object):
+class KubeConfigMixin:
+
+    def get(self, path: Optional[str] = None, pointer: Optional[str] = None) -> Any:
+        """Get a value from the config using a JSON Path or JSON Pointer."""
+        if not path and not pointer:
+            raise ValueError("No path or pointer provided")
+        if path:
+            return jsonpath.findall(path, self.raw)
+        return jsonpath.pointer.resolve(pointer, self.raw)
+
+
+class KubeConfigSet(KubeConfigMixin, object):
     def __init__(self, *paths_or_dicts: Union[List[str], List[Dict]]):
         self._configs = []
         for path_or_dict in paths_or_dicts:
@@ -132,6 +142,25 @@ class KubeConfigSet(object):
                 return user["user"]
         raise ValueError(f"User {user_name} not found")
 
+    async def set(self, pointer: str, value) -> dict:
+        """Replace a value using a JSON Pointer.
+
+        Set only applies to the first kubeconfig.
+        """
+        await self._configs[0].set(pointer=pointer, value=value)
+        await anyio.sleep(0)
+
+    async def unset(self, pointer: str) -> dict:
+        """Remove a value using a JSON Pointer.
+
+        Unset applies to all kubeconfigs.
+        """
+        for config in self._configs:
+            try:
+                await config.unset(pointer=pointer)
+            except Exception:
+                pass
+
     @property
     def preferences(self) -> Dict:
         return self._configs[0].preferences
@@ -178,7 +207,7 @@ class KubeConfigSet(object):
         return extensions
 
 
-class KubeConfig(object):
+class KubeConfig(KubeConfigMixin, object):
     def __init__(self, path_or_config: Union[str, Dict]):
         self.path = None
         self._raw = None
@@ -267,6 +296,21 @@ class KubeConfig(object):
             if user["name"] == user_name:
                 return user["user"]
         raise ValueError(f"User {user_name} not found")
+
+    async def set(self, pointer: str, value: Any = None, strict: bool = False) -> dict:
+        """Replace a value using a JSON Pointer."""
+        if strict:
+            patch = jsonpath.JSONPatch().replace(pointer, value)
+        else:
+            patch = jsonpath.JSONPatch().add(pointer, value)
+        self._raw = patch.apply(self._raw)
+        await self.save()
+
+    async def unset(self, pointer: str) -> Any:
+        """Remove a value using a JSON Pointer."""
+        patch = jsonpath.JSONPatch().remove(pointer)
+        self._raw = patch.apply(self._raw)
+        await self.save()
 
     @property
     def raw(self) -> Dict:

@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 import yaml
+from jsonpath import JSONPointerKeyError
 
 from kr8s._config import KubeConfig, KubeConfigSet
 
@@ -142,3 +143,36 @@ async def test_kubeconfig_path_empty_fail(cls):
 async def test_kubeconfig_path_isdir_fail(cls, tmp_path):
     with pytest.raises(IsADirectoryError):
         await cls(tmp_path)
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_get(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    assert isinstance(config.get(path="contexts"), list)
+    assert isinstance(config.get(pointer="/contexts/0/name"), str)
+    assert isinstance(config.get(path="contexts[*].name"), list)
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_set(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    first_context = config.get(pointer="/contexts/0/name")
+
+    await config.set(pointer="/contexts/0/name", value="foo")
+    assert config.get(pointer="/contexts/0/name") == "foo"
+    assert config.get(path="contexts[0].name")[0] == "foo"
+
+    await config.set(pointer="/contexts/0/name", value=first_context)
+    assert config.get(pointer="/contexts/0/name") == first_context
+
+
+@pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
+async def test_unset(temp_kubeconfig, cls):
+    config = await cls(temp_kubeconfig)
+    with pytest.raises(JSONPointerKeyError):
+        config.get(pointer="/contexts/0/context/foo")
+    await config.set(pointer="/contexts/0/context/foo", value="bar")
+    assert config.get(pointer="/contexts/0/context/foo") == "bar"
+    await config.unset(pointer="/contexts/0/context/foo")
+    with pytest.raises(JSONPointerKeyError):
+        config.get(pointer="/contexts/0/context/foo")
