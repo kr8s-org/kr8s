@@ -281,6 +281,19 @@ async def test_nonexistant():
         await pod.exists(ensure=True)
 
 
+async def test_pod_kind_api_raw():
+    pod = await Pod(
+        {
+            "metadata": {"name": "foo"},
+            "spec": {"containers": [{"name": "foo", "image": "nginx"}]},
+        }
+    )
+    assert "kind" in pod.raw
+    assert "apiVersion" in pod.raw
+    assert pod.raw["kind"] == "Pod"
+    assert pod.raw["apiVersion"] == "v1"
+
+
 async def test_pod_metadata(example_pod_spec, ns):
     pod = await Pod(example_pod_spec)
     await pod.create()

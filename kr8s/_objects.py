@@ -124,7 +124,9 @@ class APIObject:
     @property
     def raw(self) -> str:
         """Raw object returned from the Kubernetes API."""
-        return self._raw
+        raw_spec = {"kind": self.kind, "apiVersion": self.version}
+        raw_spec.update(self._raw)
+        return raw_spec
 
     @raw.setter
     def raw(self, value: Any) -> None:
