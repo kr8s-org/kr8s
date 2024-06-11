@@ -1068,12 +1068,31 @@ def test_sync_new_class_is_sync():
 
 
 def test_new_class_plural_suffix():
-    MyPlural = new_class(
-        kind="MyPlural",
+    MyFoo = new_class(
+        kind="MyFoo",
         version="newclass.example.com/v1",
         namespaced=True,
-        plural_suffix="es",
     )
-    instance = MyPlural({})
-    assert instance.plural.endswith("es")
-    assert instance.endpoint.endswith("es")
+    instance = MyFoo({})
+    assert instance.plural == "myfoos"
+    assert instance.endpoint == "myfoos"
+
+    MyClass = new_class(
+        kind="MyClass",
+        plural="MyClasses",
+        version="newclass.example.com/v1",
+        namespaced=True,
+    )
+    instance = MyClass({})
+    assert instance.plural == "myclasses"
+    assert instance.endpoint == "myclasses"
+
+    MyPolicy = new_class(
+        kind="MyPolicy",
+        plural="MyPolicies",
+        version="newclass.example.com/v1",
+        namespaced=True,
+    )
+    instance = MyPolicy({})
+    assert instance.plural == "mypolicies"
+    assert instance.endpoint == "mypolicies"
