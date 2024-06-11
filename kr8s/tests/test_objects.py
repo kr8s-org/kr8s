@@ -1096,3 +1096,15 @@ def test_new_class_plural_suffix():
     instance = MyPolicy({})
     assert instance.plural == "mypolicies"
     assert instance.endpoint == "mypolicies"
+
+
+def test_object_setter(example_pod_spec):
+    po = Pod(example_pod_spec)
+
+    assert po.name != "foo"
+    po.raw["metadata"]["name"] = "foo"
+    assert po.name == "foo"
+
+    assert po.raw["spec"]["containers"][0]["name"] != "bar"
+    po.raw["spec"]["containers"][0]["name"] = "bar"
+    assert po.raw["spec"]["containers"][0]["name"] == "bar"
