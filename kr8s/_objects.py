@@ -1624,7 +1624,7 @@ def new_class(
     namespaced=True,
     scalable: Optional[bool] = None,
     scalable_spec: Optional[str] = None,
-    plural_suffix: str = "s",
+    plural: Optional[str] = None,
 ) -> Type[APIObject]:
     """Create a new APIObject subclass.
 
@@ -1635,7 +1635,7 @@ def new_class(
         namespaced: Whether the resource is namespaced or not.
         scalable: Whether the resource is scalable or not.
         scalable_spec: The name of the field to use for scaling.
-        plural_suffix: The suffix to use for the plural form of the resource.
+        plural: The plural form of the resource.
 
     Returns:
         A new APIObject subclass.
@@ -1644,6 +1644,7 @@ def new_class(
         kind, version = kind.split(".", 1)
     if version is None:
         version = "v1"
+    plural = plural or kind.lower() + "s"
     newcls = type(
         kind,
         (APIObject,),
@@ -1651,8 +1652,8 @@ def new_class(
             "kind": kind,
             "version": version,
             "_asyncio": asyncio,
-            "endpoint": kind.lower() + plural_suffix,
-            "plural": kind.lower() + plural_suffix,
+            "endpoint": plural.lower(),
+            "plural": plural.lower(),
             "singular": kind.lower(),
             "namespaced": namespaced,
             "scalable": scalable or False,
