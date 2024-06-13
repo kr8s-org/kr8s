@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import copy
 import datetime
 import inspect
 import pathlib
 import platform
 import tempfile
 import time
-import copy
 from contextlib import suppress
 
 import anyio
@@ -1109,6 +1109,7 @@ def test_object_setter(example_pod_spec):
     assert po.raw["spec"]["containers"][0]["name"] != "bar"
     po.raw["spec"]["containers"][0]["name"] = "bar"
     assert po.raw["spec"]["containers"][0]["name"] == "bar"
+
 
 def test_object_setter_from_old_spec(example_pod_spec):
     spec = copy.deepcopy(example_pod_spec)
