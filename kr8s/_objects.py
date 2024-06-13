@@ -64,19 +64,19 @@ class APIObject:
         with contextlib.suppress(TypeError, ValueError):
             resource = dict(resource)
         if isinstance(resource, str):
-            self._raw = {"metadata": {"name": resource}}
+            self.raw = {"metadata": {"name": resource}}
         elif isinstance(resource, dict):
-            self._raw = resource
+            self.raw = resource
         elif hasattr(resource, "to_dict"):
-            self._raw = resource.to_dict()
+            self.raw = resource.to_dict()
         elif hasattr(resource, "obj"):
-            self._raw = resource.obj
+            self.raw = resource.obj
         else:
             raise ValueError(
                 "resource must be a dict, string, have an obj attribute or a to_dict method"
             )
         if namespace is not None:
-            self._raw["metadata"]["namespace"] = namespace
+            self.raw["metadata"]["namespace"] = namespace
         self._api = api
         if self._api is None and not self._asyncio:
             self._api = kr8s.api()
@@ -124,9 +124,8 @@ class APIObject:
     @property
     def raw(self) -> str:
         """Raw object returned from the Kubernetes API."""
-        raw_spec = {"kind": self.kind, "apiVersion": self.version}
-        raw_spec.update(self._raw)
-        return raw_spec
+        self._raw.update({"kind": self.kind, "apiVersion": self.version})
+        return self._raw
 
     @raw.setter
     def raw(self, value: Any) -> None:
@@ -424,7 +423,7 @@ class APIObject:
                 matches = re.search(JSONPATH_CONDITION_EXPRESSION, condition)
                 expression = matches.group("expression")
                 condition = matches.group("condition")
-                [value] = jsonpath.findall(expression, self._raw)
+                [value] = jsonpath.findall(expression, self.raw)
                 results.append(str(value) == str(condition))
             else:
                 raise ValueError(f"Unknown condition type {condition}")
@@ -1545,12 +1544,12 @@ class Table(APIObject):
     @property
     def rows(self) -> List[Dict]:
         """Table rows."""
-        return self._raw["rows"]
+        return self.raw["rows"]
 
     @property
     def column_definitions(self) -> List[Dict]:
         """Table column definitions."""
-        return self._raw["columnDefinitions"]
+        return self.raw["columnDefinitions"]
 
 
 def get_class(
