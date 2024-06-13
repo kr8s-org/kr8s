@@ -6,6 +6,7 @@ import pathlib
 import platform
 import tempfile
 import time
+import copy
 from contextlib import suppress
 
 import anyio
@@ -1108,3 +1109,17 @@ def test_object_setter(example_pod_spec):
     assert po.raw["spec"]["containers"][0]["name"] != "bar"
     po.raw["spec"]["containers"][0]["name"] = "bar"
     assert po.raw["spec"]["containers"][0]["name"] == "bar"
+
+def test_object_setter_from_old_spec(example_pod_spec):
+    spec = copy.deepcopy(example_pod_spec)
+
+    po = Pod(example_pod_spec)
+
+    assert po.raw["spec"]["containers"][0]["name"] != "bar"
+    po.raw["spec"]["containers"][0]["name"] = "bar"
+    assert po.raw["spec"]["containers"][0]["name"] == "bar"
+
+    new_po = Pod(spec)
+    assert new_po.raw["spec"]["containers"][0]["name"] != "bar"
+    new_po.raw["spec"] = po.raw["spec"]
+    assert new_po.raw["spec"]["containers"][0]["name"] == "bar"
