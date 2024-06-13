@@ -550,13 +550,13 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "kr8s"
-version = "0.16.0"
+version = "0.16.1"
 description = "A Kubernetes API library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "kr8s-0.16.0-py3-none-any.whl", hash = "sha256:b23772ec5468b1aace1da620f497f1f03a2200a332d1253b34dcd928b2b1eef6"},
-    {file = "kr8s-0.16.0.tar.gz", hash = "sha256:b50841ea8fbde5a2e9598d4b1dec302ad4aefb00a5504f8e40baf679a2f444f6"},
+    {file = "kr8s-0.16.1-py3-none-any.whl", hash = "sha256:89f81798bbff63dbd651d8c866c7a9071509369ad5b5bd1bc24522b8d6ba80f6"},
+    {file = "kr8s-0.16.1.tar.gz", hash = "sha256:2a86a2117fcb788a35e33ba0177d92b96b183bff678dba9b472f58bfdace2350"},
 ]
 
 [package.dependencies]
@@ -815,25 +815,28 @@ pytest = ">=7.0.0"
 
 [[package]]
 name = "python-box"
-version = "7.1.1"
+version = "7.2.0"
 description = "Advanced Python dictionaries with dot notation access"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python-box-7.1.1.tar.gz", hash = "sha256:2a3df244a5a79ac8f8447b5d11b5be0f2747d7b141cb2866060081ae9b53cc50"},
-    {file = "python_box-7.1.1-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:81ed1ec0f0ff2370227fc07277c5baca46d190a4747631bad7eb6ab1630fb7d9"},
-    {file = "python_box-7.1.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8891735b4148e84d348c6eadd2f127152f751c9603e35d43a1f496183a291ac4"},
-    {file = "python_box-7.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:0036fd47d388deaca8ebd65aea905f88ee6ef91d1d8ce34898b66f1824afbe80"},
-    {file = "python_box-7.1.1-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:aabf8b9ae5dbc8ba431d8cbe0d4cfe737a25d52d68b0f5f2ff34915c21a2c1db"},
-    {file = "python_box-7.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c046608337e723ae4de3206db5d1e1202ed166da2dfdc70c1f9361e72ace5633"},
-    {file = "python_box-7.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:f9266795e9c233874fb5b34fa994054b4fb0371881678e6ec45aec17fc95feac"},
-    {file = "python_box-7.1.1-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:f76b5b7f0cdc07bfdd4200dc24e6e33189bb2ae322137a2b7110fd41891a3157"},
-    {file = "python_box-7.1.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4ea13c98e05a3ec0ff26f254986a17290b69b5ade209fad081fd628f8fcfaa08"},
-    {file = "python_box-7.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:1b3f346e332dba16df0b0543d319d9e7ce07d93e5ae152175302894352aa2d28"},
-    {file = "python_box-7.1.1-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:24c4ec0ee0278f66321100aaa9c615413da27a14ff43d376a2a3b4665e1d9494"},
-    {file = "python_box-7.1.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d95e5eec4fc8f3fc5c9cc7347fc2eb4f9187c853d34c90b1658d1eff96cd4eac"},
-    {file = "python_box-7.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:a0f1333c42e81529b6f68c192050df9d4505b803be7ac47f114036b98707f7cf"},
-    {file = "python_box-7.1.1-py3-none-any.whl", hash = "sha256:63b609555554d7a9d4b6e725f8e78ef1717c67e7d386200e03422ad612338df8"},
+    {file = "python_box-7.2.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:6bdeec791e25258351388b3029a3ec5da302bb9ed3be175493c43cdc6c47f5e3"},
+    {file = "python_box-7.2.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c449f7b3756a71479fa9c61a86e344ac00ed782a66d7662590f0afa294249d18"},
+    {file = "python_box-7.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:6b0d61f182d394106d963232854e495b51edc178faa5316a797be1178212d7e0"},
+    {file = "python_box-7.2.0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:e2d752de8c1204255bf7b0c814c59ef48293c187a7e9fdcd2fefa28024b72032"},
+    {file = "python_box-7.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e8a6c35ea356a386077935958a5debcd5b229b9a1b3b26287a52dfe1a7e65d99"},
+    {file = "python_box-7.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:32ed58ec4d9e5475efe69f9c7d773dfea90a6a01979e776da93fd2b0a5d04429"},
+    {file = "python_box-7.2.0-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:2a2d664c6a27f7515469b6f1e461935a2038ee130b7d194b4b4db4e85d363618"},
+    {file = "python_box-7.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e8a5a7365db1aaf600d3e8a2747fcf6833beb5d45439a54318548f02e302e3ec"},
+    {file = "python_box-7.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:739f827056ea148cbea3122d4617c994e829b420b1331183d968b175304e3a4f"},
+    {file = "python_box-7.2.0-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:2617ef3c3d199f55f63c908f540a4dc14ced9b18533a879e6171c94a6a436f23"},
+    {file = "python_box-7.2.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ffd866bed03087b1d8340014da8c3aaae19135767580641df1b4ae6fff6ac0aa"},
+    {file = "python_box-7.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:9681f059e7e92bdf20782cd9ea6e533d4711fc7b8c57a462922a025d46add4d0"},
+    {file = "python_box-7.2.0-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:6b59b1e2741c9ceecdf5a5bd9b90502c24650e609cd824d434fed3b6f302b7bb"},
+    {file = "python_box-7.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e23fae825d809ae7520fdeac88bb52be55a3b63992120a00e381783669edf589"},
+    {file = "python_box-7.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:573b1abdcb7bd745fa404444f060ee62fc35a74f067181e55dcb43cfe92f2827"},
+    {file = "python_box-7.2.0-py3-none-any.whl", hash = "sha256:a3c90832dd772cb0197fdb5bc06123b6e1b846899a1b53d9c39450d27a584829"},
+    {file = "python_box-7.2.0.tar.gz", hash = "sha256:551af20bdab3a60a2a21e3435120453c4ca32f7393787c3a5036e1d9fc6a0ede"},
 ]
 
 [package.extras]
@@ -1219,4 +1222,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "d517ab700164bde216922f796e18d3e7a4783422904d4798c053461faec600a4"
+content-hash = "7a0cc056a1b123b05e66dd42bae6a3ceaa5aca52cae0106627ebc04e906c68dc"
