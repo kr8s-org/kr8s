@@ -50,6 +50,7 @@ class Api(object):
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
         self._session = None
+        self._timeout = None
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,
@@ -75,6 +76,16 @@ class Api(object):
 
         return f().__await__()
 
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value):
+        self._timeout = value
+        if self._session:
+            self._session.timeout = value
+
     async def _create_session(self) -> None:
         headers = {"User-Agent": self.__version__, "content-type": "application/json"}
         if self.auth.token:
@@ -87,6 +98,7 @@ class Api(object):
             base_url=self.auth.server,
             headers=headers,
             verify=await self.auth.ssl_context(),
+            timeout=self._timeout,
         )
 
     def _construct_url(
@@ -173,7 +185,7 @@ class Api(object):
                     continue
                 else:
                     raise
-            except httpx.ReadTimeout as e:
+            except httpx.TimeoutException as e:
                 raise APITimeoutError(
                     "Timeout while waiting for the Kubernetes API server"
                 ) from e

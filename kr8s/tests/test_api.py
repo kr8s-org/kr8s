@@ -8,6 +8,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
+from kr8s._exceptions import APITimeoutError
 from kr8s.asyncio.objects import Pod, Table
 
 
@@ -291,3 +292,22 @@ async def test_api_resources_cache(caplog):
     assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
     await api.api_resources()
     assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
+
+
+async def test_api_timeout():
+    from httpx import Timeout
+
+    api = await kr8s.asyncio.api()
+    api.timeout = 10
+    await api.version()
+    assert api._session.timeout.read == 10
+    api.timeout = 20
+    await api.version()
+    assert api._session.timeout.read == 20
+    api.timeout = Timeout(30)
+    await api.version()
+    assert api._session.timeout.read == 30
+
+    api.timeout = 0.00001
+    with pytest.raises(APITimeoutError):
+        await api.version()
