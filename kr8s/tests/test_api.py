@@ -308,6 +308,6 @@ async def test_api_timeout():
     await api.version()
     assert api._session.timeout.read == 30
 
-    api.timeout = 0.0001
+    api.timeout = 0.00001
     with pytest.raises(APITimeoutError):
         await api.version()

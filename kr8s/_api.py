@@ -185,7 +185,7 @@ class Api(object):
                     continue
                 else:
                     raise
-            except httpx.ReadTimeout as e:
+            except httpx.TimeoutException as e:
                 raise APITimeoutError(
                     "Timeout while waiting for the Kubernetes API server"
                 ) from e
