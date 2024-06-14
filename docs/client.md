@@ -122,6 +122,36 @@ async with api.call_api("GET", base="/version", version="") as r:
 print(version)
 ```
 
+## Timeouts
+
+All API calls are made by `httpx` under the hood. There may be cases where you want to manually control the timeout of these requests, especially when interacting with clusters under a heavy load or are some distance away.
+
+To set the timeout you can set the `.timeout` attribute on the API object. This value can be set to anything that the `timeout` keyword argument in `httpx` accepts.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync: sync
+```python
+import kr8s
+
+api = kr8s.api()
+api.timeout = 10  # Set the default timeout for all calls to 10 seconds
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+import kr8s
+
+api = await kr8s.asyncio.api()
+api.timeout = 10  # Set the default timeout for all calls to 10 seconds
+```
+````
+
+`````
+
 (client-caching)=
 
 ## Client caching
