@@ -10,7 +10,7 @@ import ssl
 import threading
 import warnings
 import weakref
-from typing import AsyncGenerator, Dict, List, Tuple, Union
+from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 import httpx
 import httpx_ws
@@ -105,7 +105,7 @@ class Api(object):
         self,
         version: str = "v1",
         base: str = "",
-        namespace: str = None,
+        namespace: Optional[str] = None,
         url: str = "",
     ) -> str:
         if not base:
@@ -129,7 +129,7 @@ class Api(object):
         method: str = "GET",
         version: str = "v1",
         base: str = "",
-        namespace: str = None,
+        namespace: Optional[str] = None,
         url: str = "",
         raise_for_status: bool = True,
         stream: bool = False,
@@ -196,7 +196,7 @@ class Api(object):
         self,
         version: str = "v1",
         base: str = "",
-        namespace: str = None,
+        namespace: Optional[str] = None,
         url: str = "",
         **kwargs,
     ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession, None]:
@@ -278,10 +278,10 @@ class Api(object):
     async def async_get_kind(
         self,
         kind: Union[str, type],
-        namespace: str = None,
-        label_selector: Union[str, Dict] = None,
-        field_selector: Union[str, Dict] = None,
-        params: dict = None,
+        namespace: Optional[str] = None,
+        label_selector: Optional[Union[str, Dict]] = None,
+        field_selector: Optional[Union[str, Dict]] = None,
+        params: Optional[dict] = None,
         watch: bool = False,
         **kwargs,
     ) -> dict:
@@ -332,10 +332,10 @@ class Api(object):
         self,
         kind: Union[str, type],
         *names: List[str],
-        namespace: str = None,
-        label_selector: Union[str, Dict] = None,
-        field_selector: Union[str, Dict] = None,
-        as_object: object = None,
+        namespace: Optional[str] = None,
+        label_selector: Optional[Union[str, Dict]] = None,
+        field_selector: Optional[Union[str, Dict]] = None,
+        as_object: Optional[object] = None,
         **kwargs,
     ) -> List[object]:
         """
@@ -377,10 +377,10 @@ class Api(object):
         self,
         kind: Union[str, type],
         *names: List[str],
-        namespace: str = None,
-        label_selector: Union[str, Dict] = None,
-        field_selector: Union[str, Dict] = None,
-        as_object: object = None,
+        namespace: Optional[str] = None,
+        label_selector: Optional[Union[str, Dict]] = None,
+        field_selector: Optional[Union[str, Dict]] = None,
+        as_object: Optional[object] = None,
         **kwargs,
     ) -> List[object]:
         headers = {}
@@ -416,10 +416,10 @@ class Api(object):
     async def watch(
         self,
         kind: str,
-        namespace: str = None,
-        label_selector: Union[str, Dict] = None,
-        field_selector: Union[str, Dict] = None,
-        since: str = None,
+        namespace: Optional[str] = None,
+        label_selector: Optional[Union[str, Dict]] = None,
+        field_selector: Optional[Union[str, Dict]] = None,
+        since: Optional[str] = None,
     ):
         """Watch a Kubernetes resource."""
         async for t, object in self.async_watch(
@@ -434,10 +434,10 @@ class Api(object):
     async def async_watch(
         self,
         kind: str,
-        namespace: str = None,
-        label_selector: Union[str, Dict] = None,
-        field_selector: Union[str, Dict] = None,
-        since: str = None,
+        namespace: Optional[str] = None,
+        label_selector: Optional[Union[str, Dict]] = None,
+        field_selector: Optional[Union[str, Dict]] = None,
+        since: Optional[str] = None,
     ) -> Tuple[str, object]:
         """Watch a Kubernetes resource."""
         async with self.async_get_kind(

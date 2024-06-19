@@ -59,7 +59,9 @@ class APIObject:
     scalable_spec = "replicas"
     _asyncio = True
 
-    def __init__(self, resource: dict, namespace: str = None, api: Api = None) -> None:
+    def __init__(
+        self, resource: dict, namespace: Optional[str] = None, api: Optional[Api] = None
+    ) -> None:
         """Initialize an APIObject."""
         with contextlib.suppress(TypeError, ValueError):
             resource = dict(resource)
@@ -196,11 +198,11 @@ class APIObject:
     @classmethod
     async def get(
         cls,
-        name: str = None,
-        namespace: str = None,
-        api: Api = None,
-        label_selector: Union[str, Dict[str, str]] = None,
-        field_selector: Union[str, Dict[str, str]] = None,
+        name: Optional[str] = None,
+        namespace: Optional[str] = None,
+        api: Optional[Api] = None,
+        label_selector: Optional[Union[str, Dict[str, str]]] = None,
+        field_selector: Optional[Union[str, Dict[str, str]]] = None,
         timeout: int = 2,
         **kwargs,
     ) -> APIObjectType:
@@ -281,7 +283,7 @@ class APIObject:
         ) as resp:
             self.raw = resp.json()
 
-    async def delete(self, propagation_policy: str = None) -> None:
+    async def delete(self, propagation_policy: Optional[str] = None) -> None:
         """Delete this object from Kubernetes."""
         data = {}
         if propagation_policy:
@@ -347,7 +349,7 @@ class APIObject:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
-    async def scale(self, replicas: int = None) -> None:
+    async def scale(self, replicas: Optional[int] = None) -> None:
         """Scale this object in Kubernetes."""
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
@@ -438,7 +440,7 @@ class APIObject:
         self,
         conditions: Union[List[str], str],
         mode: Literal["any", "all"] = "any",
-        timeout: int = None,
+        timeout: Optional[int] = None,
     ):
         """Wait for conditions to be met.
 
@@ -489,7 +491,7 @@ class APIObject:
                 if await self._test_conditions(conditions, mode=mode):
                     return
 
-    async def annotate(self, annotations: dict = None, **kwargs) -> None:
+    async def annotate(self, annotations: Optional[dict] = None, **kwargs) -> None:
         """Annotate this object in Kubernetes."""
         if annotations is None:
             annotations = kwargs
@@ -497,7 +499,7 @@ class APIObject:
             raise ValueError("No annotations provided")
         await self.async_patch({"metadata": {"annotations": annotations}})
 
-    async def label(self, labels: dict = None, **kwargs) -> None:
+    async def label(self, labels: Optional[dict] = None, **kwargs) -> None:
         """Add labels to this object in Kubernetes.
 
         Labels can be passed as a dictionary or as keyword arguments.
@@ -896,7 +898,7 @@ class Pod(APIObject):
     def portforward(
         self,
         remote_port: int,
-        local_port: int = None,
+        local_port: Optional[int] = None,
         address: List[str] | str = "127.0.0.1",
     ) -> int:
         """Port forward a pod.
@@ -938,10 +940,10 @@ class Pod(APIObject):
         self,
         command: List[str],
         *,
-        container: str = None,
-        stdin: Union(str | bytes | BinaryIO) = None,
-        stdout: BinaryIO = None,
-        stderr: BinaryIO = None,
+        container: Optional[str] = None,
+        stdin: Optional[Union(str | bytes | BinaryIO)] = None,
+        stdout: Optional[BinaryIO] = None,
+        stderr: Optional[BinaryIO] = None,
         check: bool = True,
         capture_output: bool = True,
     ):
@@ -966,10 +968,10 @@ class Pod(APIObject):
         self,
         command: List[str],
         *,
-        container: str = None,
-        stdin: Union(str | bytes | BinaryIO) = None,
-        stdout: BinaryIO = None,
-        stderr: BinaryIO = None,
+        container: Optional[str] = None,
+        stdin: Optional[Union(str | bytes | BinaryIO)] = None,
+        stdout: Optional[BinaryIO] = None,
+        stderr: Optional[BinaryIO] = None,
         check: bool = True,
         capture_output: bool = True,
     ):
@@ -1264,7 +1266,7 @@ class Service(APIObject):
     def portforward(
         self,
         remote_port: int,
-        local_port: int = None,
+        local_port: Optional[int] = None,
         address: str | List[str] = "127.0.0.1",
     ) -> int:
         """Port forward a service.
@@ -1665,7 +1667,10 @@ def new_class(
 
 
 def object_from_spec(
-    spec: dict, api: Api = None, allow_unknown_type: bool = False, _asyncio: bool = True
+    spec: dict,
+    api: Optional[Api] = None,
+    allow_unknown_type: bool = False,
+    _asyncio: bool = True,
 ) -> APIObject:
     """Create an APIObject from a Kubernetes resource spec.
 
@@ -1691,7 +1696,10 @@ def object_from_spec(
 
 
 async def object_from_name_type(
-    name: str, namespace: str = None, api: Api = None, _asyncio: bool = True
+    name: str,
+    namespace: Optional[str] = None,
+    api: Optional[Api] = None,
+    _asyncio: bool = True,
 ) -> APIObject:
     """Create an APIObject from a Kubernetes resource name.
 
@@ -1722,7 +1730,7 @@ async def object_from_name_type(
 
 async def objects_from_files(
     path: Union[str, pathlib.Path],
-    api: Api = None,
+    api: Optional[Api] = None,
     recursive: bool = False,
     _asyncio: bool = True,
 ) -> List[APIObject]:

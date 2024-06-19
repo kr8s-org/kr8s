@@ -55,7 +55,7 @@ class KubeConfigSet(KubeConfigMixin, object):
     def path(self) -> str:
         return self.get_path()
 
-    def get_path(self, context: str = None) -> str:
+    def get_path(self, context: Optional[str] = None) -> str:
         """Return the path of the config for the current context.
 
         Args:
@@ -297,7 +297,9 @@ class KubeConfig(KubeConfigMixin, object):
                 return user["user"]
         raise ValueError(f"User {user_name} not found")
 
-    async def set(self, pointer: str, value: Any = None, strict: bool = False) -> dict:
+    async def set(
+        self, pointer: str, value: Optional[Any] = None, strict: bool = False
+    ) -> dict:
         """Replace a value using a JSON Pointer."""
         if strict:
             patch = jsonpath.JSONPatch().replace(pointer, value)

@@ -8,7 +8,7 @@ import random
 import socket
 import sys
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, BinaryIO, List
+from typing import TYPE_CHECKING, BinaryIO, List, Optional
 
 import anyio
 import httpx_ws
@@ -77,7 +77,7 @@ class PortForward:
         self,
         resource: APIObject,
         remote_port: int,
-        local_port: int = None,
+        local_port: Optional[int] = None,
         address: List[str] | str = "127.0.0.1",
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
