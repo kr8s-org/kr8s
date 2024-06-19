@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from functools import partial, update_wrapper
+from typing import Optional
 
 import kr8s.objects  # noqa
 
@@ -94,11 +95,11 @@ def get(*args, **kwargs):
 
 
 def api(
-    url: str = None,
-    kubeconfig: str = None,
-    serviceaccount: str = None,
-    namespace: str = None,
-    context: str = None,
+    url: Optional[str] = None,
+    kubeconfig: Optional[str] = None,
+    serviceaccount: Optional[str] = None,
+    namespace: Optional[str] = None,
+    context: Optional[str] = None,
 ) -> Api:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 

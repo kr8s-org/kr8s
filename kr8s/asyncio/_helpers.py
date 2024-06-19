@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from kr8s._api import Api
 
@@ -10,10 +10,10 @@ from ._api import api as _api
 async def get(
     kind: str,
     *names: List[str],
-    namespace: str = None,
-    label_selector: Union[str, Dict] = None,
-    field_selector: Union[str, Dict] = None,
-    as_object: object = None,
+    namespace: Optional[str] = None,
+    label_selector: Optional[Union[str, Dict]] = None,
+    field_selector: Optional[Union[str, Dict]] = None,
+    as_object: Optional[object] = None,
     api=None,
     _asyncio=True,
     **kwargs,
@@ -81,10 +81,10 @@ async def version(api=None, _asyncio=True):
 
 async def watch(
     kind: str,
-    namespace: str = None,
-    label_selector: Union[str, Dict] = None,
-    field_selector: Union[str, Dict] = None,
-    since: str = None,
+    namespace: Optional[str] = None,
+    label_selector: Optional[Union[str, Dict]] = None,
+    field_selector: Optional[Union[str, Dict]] = None,
+    since: Optional[str] = None,
     api=None,
     _asyncio=True,
 ):
