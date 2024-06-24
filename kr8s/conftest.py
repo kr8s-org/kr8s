@@ -119,7 +119,7 @@ def run_id():
 
 
 @pytest.fixture(autouse=True)
-def ns(k8s_cluster, run_id) -> str:
+def ns(k8s_cluster, run_id):
     name = f"kr8s-pytest-{run_id}-{uuid.uuid4().hex[:4]}"
     k8s_cluster.kubectl("create", "namespace", name)
     yield name

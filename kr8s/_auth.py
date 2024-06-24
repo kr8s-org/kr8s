@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import ssl
+from typing import Union
 
 import anyio
 
@@ -24,30 +25,30 @@ class KubeAuth:
         namespace=None,
         context=None,
     ) -> None:
-        self.server = None
-        self.client_cert_file = None
-        self.client_key_file = None
-        self.server_ca_file = None
-        self.token = None
-        self.namespace = namespace
-        self.active_context = None
+        self.server: str = None
+        self.client_cert_file: Union[str, pathlib.Path] = None
+        self.client_key_file: Union[str, pathlib.Path] = None
+        self.server_ca_file: Union[str, pathlib.Path] = None
+        self.token: str = None
+        self.namespace: str = namespace
+        self.active_context: str = None
         self.kubeconfig: KubeConfigSet = None
-        self.tls_server_name = None
-        self._url = url
-        self._insecure_skip_tls_verify = False
-        self._use_context = context
-        self._context = None
-        self._cluster = None
-        self._user = None
-        self._serviceaccount = (
+        self.tls_server_name: str = None
+        self._url: str = url
+        self._insecure_skip_tls_verify: bool = False
+        self._use_context: str = context
+        self._context: dict = None
+        self._cluster: dict = None
+        self._user: dict = None
+        self._serviceaccount: str = (
             serviceaccount
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        self._kubeconfig_path_or_dict = kubeconfig or os.environ.get(
-            "KUBECONFIG", "~/.kube/config"
+        self._kubeconfig_path_or_dict: Union[dict, str, pathlib.Path] = (
+            kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
         )
-        self.__auth_lock = anyio.Lock()
+        self.__auth_lock: anyio.Lock = anyio.Lock()
 
     def __await__(self):
         async def f():
