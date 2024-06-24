@@ -6,7 +6,6 @@ import contextlib
 import json
 import pathlib
 import re
-import sys
 import time
 from typing import (
     Any,
@@ -42,13 +41,6 @@ from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
 JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-
-    APIObjectType = Self
-else:
-    APIObjectType = "APIObject"
 
 
 class APIObject:
@@ -147,7 +139,7 @@ class APIObject:
             raise ValueError("Resource does not have a name")
 
     @property
-    def namespace(self) -> str:
+    def namespace(self) -> Optional[str]:
         """Namespace of the Kubernetes resource."""
         if self.namespaced:
             return self.raw.get("metadata", {}).get("namespace", self.api.namespace)
@@ -210,7 +202,7 @@ class APIObject:
         field_selector: Optional[Union[str, Dict[str, str]]] = None,
         timeout: int = 2,
         **kwargs,
-    ) -> APIObjectType:
+    ) -> APIObject:
         """Get a Kubernetes resource by name or via selectors."""
 
         if api is None:
@@ -241,6 +233,8 @@ class APIObject:
                 )
             else:
                 raise ValueError("Must specify name or selector")
+            if not isinstance(resources, list):
+                resources = [resources]
             if len(resources) == 0:
                 await anyio.sleep(backoff)
                 backoff = min(backoff * 2, 1)
@@ -384,7 +378,7 @@ class APIObject:
             yield event, obj
 
     @classmethod
-    async def list(cls, **kwargs) -> List[APIObjectType]:
+    async def list(cls, **kwargs) -> Union[APIObject, List[APIObject]]:
         """List objects in Kubernetes.
 
         Args:
@@ -397,7 +391,7 @@ class APIObject:
         return await api.async_get(kind=cls, **kwargs)
 
     async def _test_conditions(
-        self, conditions: list, mode: Literal["any", "all"] = "any"
+        self, conditions: List, mode: Literal["any", "all"] = "any"
     ) -> bool:
         """Test if conditions are met.
 
@@ -428,6 +422,10 @@ class APIObject:
                 results.append(not await self.async_exists())
             elif condition.startswith("jsonpath"):
                 matches = re.search(JSONPATH_CONDITION_EXPRESSION, condition)
+                if not matches:
+                    raise ValueError(
+                        f"Invalid jsonpath condition expression '{condition}'"
+                    )
                 expression = matches.group("expression")
                 condition = matches.group("condition")
                 [value] = jsonpath.findall(expression, self.raw)
@@ -528,7 +526,7 @@ class APIObject:
             raise ValueError("No labels provided")
         await self.async_patch({"metadata": {"labels": labels}})
 
-    def keys(self) -> list:
+    def keys(self) -> List:
         """Return the keys of this object."""
         return self.raw.keys()
 
@@ -618,7 +616,7 @@ class APIObject:
 
         """
         try:
-            import pykube
+            import pykube  # type: ignore
         except ImportError:
             raise ImportError("pykube is not installed")
         try:
@@ -820,7 +818,7 @@ class Pod(APIObject):
         limit_bytes=None,
         follow=False,
         timeout=3600,
-    ) -> AsyncGenerator[str, None, None]:
+    ) -> AsyncGenerator[str, None]:
         """Streams logs from a Pod.
 
         Args:
@@ -905,7 +903,7 @@ class Pod(APIObject):
         remote_port: int,
         local_port: Optional[int] = None,
         address: List[str] | str = "127.0.0.1",
-    ) -> int:
+    ) -> Union[SyncPortForward, AsyncPortForward]:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
@@ -946,7 +944,7 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: Optional[str] = None,
-        stdin: Optional[Union[str | bytes | BinaryIO]] = None,
+        stdin: Optional[Union[str | BinaryIO]] = None,
         stdout: Optional[BinaryIO] = None,
         stderr: Optional[BinaryIO] = None,
         check: bool = True,
@@ -974,7 +972,7 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: Optional[str] = None,
-        stdin: Optional[Union[str | bytes | BinaryIO]] = None,
+        stdin: Optional[Union[str | BinaryIO]] = None,
         stdout: Optional[BinaryIO] = None,
         stderr: Optional[BinaryIO] = None,
         check: bool = True,
@@ -1228,7 +1226,7 @@ class Service(APIObject):
     async def proxy_http_post(
         self, path: str, port: Optional[int] = None, **kwargs
     ) -> None:
-        return await self.async_proxy_http_request("POST", path, port, **kwargs)
+        await self.async_proxy_http_request("POST", path, port, **kwargs)
 
     async def proxy_http_put(
         self, path: str, port: Optional[int] = None, **kwargs
@@ -1273,7 +1271,7 @@ class Service(APIObject):
         remote_port: int,
         local_port: Optional[int] = None,
         address: str | List[str] = "127.0.0.1",
-    ) -> int:
+    ) -> Union[SyncPortForward, AsyncPortForward]:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
@@ -1609,7 +1607,8 @@ def get_class(
             ):
                 return cls
             if (
-                not version
+                group
+                and not version
                 and "." in group
                 and cls_group == group.split(".", 1)[1]
                 and cls_version == group.split(".", 1)[0]

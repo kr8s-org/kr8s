@@ -17,7 +17,7 @@ import sniffio
 from ._exceptions import ConnectionClosedError
 
 if TYPE_CHECKING:
-    from .objects import APIObject
+    from ._objects import APIObject
 
 if sys.version_info < (3, 12, 1):
     # contextlib.supress() in Python 3.12.1 supprts ExceptionGroups

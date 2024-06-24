@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import pathlib
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Protocol, Union
 
 import anyio
 import jsonpath
@@ -17,9 +17,18 @@ from kr8s._data_utils import dict_list_pack, list_dict_unpack
 # TODO Implement delete user
 
 
+class KubeConfigProtocol(Protocol):
+    @property
+    def raw(self) -> dict: ...
+
+
 class KubeConfigMixin:
 
-    def get(self, path: Optional[str] = None, pointer: Optional[str] = None) -> Any:
+    def get(
+        self: KubeConfigProtocol,
+        path: Optional[str] = None,
+        pointer: Optional[str] = None,
+    ) -> Any:
         """Get a value from the config using a JSON Path or JSON Pointer."""
         if not path and not pointer:
             raise ValueError("No path or pointer provided")

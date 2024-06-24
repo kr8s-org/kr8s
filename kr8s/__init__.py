@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from functools import partial, update_wrapper
-from typing import Optional
+from typing import Optional, Union
 
 import kr8s.objects  # noqa
 
@@ -100,7 +100,7 @@ def api(
     serviceaccount: Optional[str] = None,
     namespace: Optional[str] = None,
     context: Optional[str] = None,
-) -> Api:
+) -> Union[Api, _AsyncApi]:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments in this thread, it will be returned.

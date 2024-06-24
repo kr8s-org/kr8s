@@ -12,6 +12,7 @@ import anyio
 
 from ._async_utils import NamedTemporaryFile, check_output
 from ._config import KubeConfigSet
+from ._types import PathType
 
 
 class KubeAuth:
@@ -26,9 +27,9 @@ class KubeAuth:
         context=None,
     ) -> None:
         self.server: str = None
-        self.client_cert_file: Union[str, pathlib.Path] = None
-        self.client_key_file: Union[str, pathlib.Path] = None
-        self.server_ca_file: Union[str, pathlib.Path] = None
+        self.client_cert_file: PathType = None
+        self.client_key_file: PathType = None
+        self.server_ca_file: PathType = None
         self.token: str = None
         self.namespace: str = namespace
         self.active_context: str = None

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, BinaryIO, List, Optional, Union
+from typing import TYPE_CHECKING, AsyncGenerator, BinaryIO, List, Optional, Union
 
 from kr8s._exceptions import ExecError
 
@@ -52,7 +52,7 @@ class Exec:
     @asynccontextmanager
     async def run(
         self,
-    ) -> None:
+    ) -> AsyncGenerator[Exec, CompletedExec]:
         async with self._resource.api.open_websocket(
             version=self._resource.version,
             url=f"{self._resource.endpoint}/{self._resource.name}/exec",
@@ -132,7 +132,7 @@ class CompletedExec:
     Similar to subprocess.CompletedProcess.
     """
 
-    args: Union(str | List[str])
+    args: Union[str | List[str]]
     stdout: bytes
     stderr: bytes
     returncode: int

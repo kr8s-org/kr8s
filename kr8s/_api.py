@@ -10,17 +10,29 @@ import ssl
 import threading
 import warnings
 import weakref
-from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    AsyncGenerator,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import httpx
 import httpx_ws
-from asyncache import cached
-from cachetools import TTLCache
+from asyncache import cached  # type: ignore
+from cachetools import TTLCache  # type: ignore
 from cryptography import x509
 
 from ._auth import KubeAuth
 from ._data_utils import dict_to_selector
 from ._exceptions import APITimeoutError, ServerError
+
+if TYPE_CHECKING:
+    from ._objects import APIObject
 
 ALL = "all"
 
@@ -134,7 +146,7 @@ class Api(object):
         raise_for_status: bool = True,
         stream: bool = False,
         **kwargs,
-    ) -> httpx.Response:
+    ) -> AsyncGenerator[httpx.Response, None]:
         """Make a Kubernetes API request."""
         if not self._session or self._session.is_closed:
             await self._create_session()
@@ -284,7 +296,7 @@ class Api(object):
         params: Optional[dict] = None,
         watch: bool = False,
         **kwargs,
-    ) -> dict:
+    ) -> AsyncGenerator[Tuple[Type[APIObject], dict], None]:
         """Get a Kubernetes resource."""
         from ._objects import get_class
 
@@ -331,13 +343,13 @@ class Api(object):
     async def get(
         self,
         kind: Union[str, type],
-        *names: List[str],
+        *names: str,
         namespace: Optional[str] = None,
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
-        as_object: Optional[object] = None,
+        as_object: Optional[Type[APIObject]] = None,
         **kwargs,
-    ) -> List[object]:
+    ) -> Union[APIObject, List[APIObject]]:
         """
         Get Kubernetes resources.
 
@@ -376,13 +388,13 @@ class Api(object):
     async def async_get(
         self,
         kind: Union[str, type],
-        *names: List[str],
+        *names: str,
         namespace: Optional[str] = None,
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
-        as_object: Optional[object] = None,
+        as_object: Optional[Type[APIObject]] = None,
         **kwargs,
-    ) -> List[object]:
+    ) -> Union[APIObject, List[APIObject]]:
         headers = {}
         if as_object:
             group, version = as_object.version.split("/")
@@ -438,7 +450,7 @@ class Api(object):
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
         since: Optional[str] = None,
-    ) -> Tuple[str, object]:
+    ) -> AsyncGenerator[Tuple[str, object], None]:
         """Watch a Kubernetes resource."""
         async with self.async_get_kind(
             kind,
@@ -460,7 +472,7 @@ class Api(object):
     # Cache for 6 hours because kubectl does
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
     @cached(TTLCache(1, 60 * 60 * 6))
-    async def async_api_resources(self) -> dict:
+    async def async_api_resources(self) -> List[Dict]:
         """Get the Kubernetes API resources."""
         resources = []
         async with self.call_api(method="GET", version="", base="/api") as response:
@@ -495,12 +507,12 @@ class Api(object):
             )
         return resources
 
-    async def api_versions(self) -> List[str]:
+    async def api_versions(self) -> AsyncGenerator[str, None]:
         """Get the Kubernetes API versions."""
         async for version in self.async_api_versions():
             yield version
 
-    async def async_api_versions(self) -> List[str]:
+    async def async_api_versions(self) -> AsyncGenerator[str, None]:
         async with self.call_api(method="GET", version="", base="/api") as response:
             core_api_list = response.json()
         for version in core_api_list["versions"]:
