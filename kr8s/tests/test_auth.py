@@ -110,7 +110,7 @@ async def test_kubeconfig_multi_paths_same(k8s_cluster):
 
 
 async def test_kubeconfig_multi_paths_diff(k8s_cluster, tmp_path):
-    kubeconfig1: Path = k8s_cluster.kubeconfig_path
+    kubeconfig1 = k8s_cluster.kubeconfig_path
     kubeconfig2 = Path(tmp_path / "kubeconfig").write_bytes(kubeconfig1.read_bytes())
     kubeconfig_multi_str = f"{kubeconfig1}:{kubeconfig2}"
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_multi_str)

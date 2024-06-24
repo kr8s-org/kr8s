@@ -5,7 +5,7 @@ import os
 
 
 @contextlib.contextmanager
-def set_env(**environ) -> None:
+def set_env(**environ):
     """
     Temporarily set the process environment variables.
 

@@ -54,10 +54,15 @@ else:
 class APIObject:
     """Base class for Kubernetes objects."""
 
-    namespaced = False
-    scalable = False
-    scalable_spec = "replicas"
-    _asyncio = True
+    version: str
+    endpoint: str
+    kind: str
+    plural: str
+    singular: str
+    namespaced: bool = False
+    scalable: bool = False
+    scalable_spec: str = "replicas"
+    _asyncio: bool = True
 
     def __init__(
         self, resource: dict, namespace: Optional[str] = None, api: Optional[Api] = None
@@ -124,7 +129,7 @@ class APIObject:
         self._api = value
 
     @property
-    def raw(self) -> str:
+    def raw(self) -> Any:
         """Raw object returned from the Kubernetes API."""
         self._raw.update({"kind": self.kind, "apiVersion": self.version})
         return self._raw
@@ -862,7 +867,7 @@ class Pod(APIObject):
             ...     print(line)
 
         """
-        params = {}
+        params: dict[Any, Any] = {}
         if follow:
             params["follow"] = "true"
         if container is not None:
@@ -941,7 +946,7 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: Optional[str] = None,
-        stdin: Optional[Union(str | bytes | BinaryIO)] = None,
+        stdin: Optional[Union[str | bytes | BinaryIO]] = None,
         stdout: Optional[BinaryIO] = None,
         stderr: Optional[BinaryIO] = None,
         check: bool = True,
@@ -969,7 +974,7 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: Optional[str] = None,
-        stdin: Optional[Union(str | bytes | BinaryIO)] = None,
+        stdin: Optional[Union[str | bytes | BinaryIO]] = None,
         stdout: Optional[BinaryIO] = None,
         stderr: Optional[BinaryIO] = None,
         check: bool = True,

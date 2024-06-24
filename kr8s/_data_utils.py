@@ -65,7 +65,7 @@ def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
         dot notated key.
     """
     keys = dot_notated_key.split(".")
-    nested_dict = {}
+    nested_dict: dict = {}
     for key in reversed(keys):
         if not nested_dict:
             nested_dict[key] = value
