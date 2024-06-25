@@ -29,9 +29,9 @@ class Exec:
         resource: APIObject,
         command: List[str],
         container: Optional[str] = None,
-        stdin: Optional[Union[str | BinaryIO]] = None,
-        stdout: Optional[Union[str | BinaryIO]] = None,
-        stderr: Optional[Union[str | BinaryIO]] = None,
+        stdin: Optional[Union[str, BinaryIO]] = None,
+        stdout: Optional[BinaryIO] = None,
+        stderr: Optional[BinaryIO] = None,
         check: bool = True,
         capture_output: bool = True,
     ) -> None:
@@ -46,7 +46,7 @@ class Exec:
         self.args = command
         self.stdout = b""
         self.stderr = b""
-        self.returncode = None
+        self.returncode: int
         self.check = check
 
     @asynccontextmanager
@@ -114,7 +114,7 @@ class Exec:
             yield self
 
     async def wait(self) -> CompletedExec:
-        return self.returncode
+        return self.as_completed()
 
     def as_completed(self) -> CompletedExec:
         return CompletedExec(

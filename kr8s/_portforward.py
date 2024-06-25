@@ -8,7 +8,7 @@ import random
 import socket
 import sys
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, BinaryIO, List, Optional
+from typing import TYPE_CHECKING, AsyncGenerator, List, Optional
 
 import anyio
 import httpx_ws
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 if sys.version_info < (3, 12, 1):
     # contextlib.supress() in Python 3.12.1 supprts ExceptionGroups
     # For older versions, we use the exceptiongroup backport
-    from exceptiongroup import suppress  # noqa: F811
+    from exceptiongroup import suppress  # type: ignore # noqa: F811
 
 
 class PortForward:
@@ -87,7 +87,7 @@ class PortForward:
                     "see https://github.com/kr8s-org/kr8s/issues/104"
                 )
         self.server = None
-        self.servers = []
+        self.servers: List[asyncio.Server] = []
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
         if isinstance(address, str):
@@ -102,10 +102,10 @@ class PortForward:
         self._resource = resource
         self.pod = None
         self._loop = asyncio.get_event_loop()
-        self._tasks = []
+        self._tasks: List[asyncio.Task] = []
         self._run_task = None
-        self._bg_future = None
-        self._bg_task = None
+        self._bg_future: Optional[asyncio.Future] = None
+        self._bg_task: Optional[asyncio.Task] = None
 
     async def __aenter__(self, *args, **kwargs):
         self._run_task = self._run()
@@ -117,7 +117,7 @@ class PortForward:
     async def start(self) -> int:
         """Start a background task with the port forward running."""
         if self._bg_task is not None:
-            return
+            return self.local_port
 
         async def f():
             self._bg_future = self._loop.create_future()
@@ -132,7 +132,8 @@ class PortForward:
 
     async def stop(self) -> None:
         """Stop the background task."""
-        self._bg_future.set_result(None)
+        if self._bg_future:
+            self._bg_future.set_result(None)
         self._bg_task = None
 
     async def run_forever(self) -> None:
@@ -150,7 +151,7 @@ class PortForward:
                     await server.serve_forever()
 
     @asynccontextmanager
-    async def _run(self) -> int:
+    async def _run(self) -> AsyncGenerator[int, None]:
         """Start the port forward for multiple bind addresses and yield the local port."""
         if self.local_port == 0:
             self.local_port = self._find_available_port()
@@ -173,7 +174,7 @@ class PortForward:
                 await server.wait_closed()
                 self.servers.remove(server)
 
-    async def _select_pod(self) -> object:
+    async def _select_pod(self) -> APIObject:
         """Select a Pod to forward to."""
         from ._objects import Pod
 
@@ -184,10 +185,11 @@ class PortForward:
             try:
                 return random.choice(await self._resource.async_ready_pods())
             except IndexError:
-                raise RuntimeError("No ready pods found")
+                pass
+        raise RuntimeError("No ready pods found")
 
     @asynccontextmanager
-    async def _connect_websocket(self) -> None:
+    async def _connect_websocket(self):
         """Connect to the Kubernetes portforward websocket."""
         connection_attempts = 0
         while True:
@@ -213,7 +215,7 @@ class PortForward:
                     raise ConnectionClosedError("Unable to connect to Pod") from e
                 await anyio.sleep(0.1 * connection_attempts)
 
-    async def _sync_sockets(self, reader: BinaryIO, writer: BinaryIO) -> None:
+    async def _sync_sockets(self, reader, writer) -> None:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
             async with self._connect_websocket() as ws:
@@ -224,7 +226,7 @@ class PortForward:
         finally:
             writer.close()
 
-    async def _tcp_to_ws(self, ws, reader: BinaryIO) -> None:
+    async def _tcp_to_ws(self, ws, reader) -> None:
         while True:
             data = await reader.read(1024 * 1024)
             if not data:
@@ -237,7 +239,7 @@ class PortForward:
                 except ConnectionResetError:
                     raise ConnectionClosedError("Websocket closed")
 
-    async def _ws_to_tcp(self, ws, writer: BinaryIO) -> None:
+    async def _ws_to_tcp(self, ws, writer) -> None:
         channels = []
         while True:
             message = await ws.receive_bytes()
