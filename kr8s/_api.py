@@ -49,7 +49,7 @@ class Api(object):
     """
 
     _asyncio = True
-    _instances = {}
+    _instances: Dict[str, weakref.WeakValueDictionary] = {}
 
     def __init__(self, **kwargs) -> None:
         if not kwargs.pop("bypass_factory", False):
@@ -61,7 +61,7 @@ class Api(object):
         self._url = kwargs.get("url")
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
-        self._session = None
+        self._session: Optional[httpx.AsyncClient] = None
         self._timeout = None
         self.auth = KubeAuth(
             url=self._url,
@@ -159,11 +159,13 @@ class Api(object):
         while True:
             try:
                 if stream:
+                    assert self._session
                     async with self._session.stream(**kwargs) as response:
                         if raise_for_status:
                             response.raise_for_status()
                         yield response
                 else:
+                    assert self._session
                     response = await self._session.request(**kwargs)
                     if raise_for_status:
                         response.raise_for_status()
@@ -226,9 +228,9 @@ class Api(object):
                     client=self._session, **kwargs
                 ) as response:
                     yield response
-            except httpx_ws.HTTPXWSException as e:
+            except httpx_ws.WebSocketDisconnect as e:
                 if e.code and e.code != 1000:
-                    if e.status in (401, 403) and auth_attempts < 3:
+                    if e.code in (401, 403) and auth_attempts < 3:
                         auth_attempts += 1
                         await self.auth.reauthenticate()
                         continue
@@ -289,14 +291,14 @@ class Api(object):
     @contextlib.asynccontextmanager
     async def async_get_kind(
         self,
-        kind: Union[str, type],
+        kind: Union[str, Type[APIObject]],
         namespace: Optional[str] = None,
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
         params: Optional[dict] = None,
         watch: bool = False,
         **kwargs,
-    ) -> AsyncGenerator[Tuple[Type[APIObject], dict], None]:
+    ) -> AsyncGenerator[Tuple[Type[APIObject], httpx.Response], None]:
         """Get a Kubernetes resource."""
         from ._objects import get_class
 
@@ -328,7 +330,8 @@ class Api(object):
                         break
             except ServerError as e:
                 warnings.warn(str(e))
-            obj_cls = get_class(kind, _asyncio=self._asyncio)
+            if isinstance(kind, str):
+                obj_cls = get_class(kind, _asyncio=self._asyncio)
         params = params or None
         async with self.call_api(
             method="GET",
