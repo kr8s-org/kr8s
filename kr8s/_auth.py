@@ -6,7 +6,7 @@ import json
 import os
 import pathlib
 import ssl
-from typing import Union
+from typing import Optional, Union
 
 import anyio
 
@@ -20,35 +20,44 @@ class KubeAuth:
 
     def __init__(
         self,
-        kubeconfig=None,
-        url=None,
-        serviceaccount=None,
-        namespace=None,
-        context=None,
+        kubeconfig: Optional[PathType] = None,
+        url: Optional[str] = None,
+        serviceaccount: Optional[str] = None,
+        namespace: Optional[str] = None,
+        context: Optional[str] = None,
     ) -> None:
-        self.server: str = None
-        self.client_cert_file: PathType = None
-        self.client_key_file: PathType = None
-        self.server_ca_file: PathType = None
-        self.token: str = None
-        self.namespace: str = namespace
-        self.active_context: str = None
-        self.kubeconfig: KubeConfigSet = None
-        self.tls_server_name: str = None
-        self._url: str = url
+        self.server: str
+        self.client_cert_file: Optional[PathType] = None
+        self.client_key_file: Optional[PathType] = None
+        self.server_ca_file: Optional[PathType] = None
+        self.token: Optional[str] = None
+        self.namespace: str
+        if namespace:
+            self.namespace = namespace
+        self.active_context: str
+        self.kubeconfig: KubeConfigSet
+        self.tls_server_name: Optional[str] = None
+        self._url: str
+        if url:
+            self._url = url
         self._insecure_skip_tls_verify: bool = False
-        self._use_context: str = context
-        self._context: dict = None
-        self._cluster: dict = None
-        self._user: dict = None
+        self._use_context: Optional[str] = context
+        self._context: dict
+        self._cluster: dict
+        self._user: dict
         self._serviceaccount: str = (
             serviceaccount
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        self._kubeconfig_path_or_dict: Union[dict, str, pathlib.Path] = (
-            kubeconfig or os.environ.get("KUBECONFIG", "~/.kube/config")
-        )
+        self._kubeconfig_path_or_dict: Union[dict, PathType]
+        if kubeconfig:
+            self._kubeconfig_path_or_dict = kubeconfig
+        else:
+            self._kubeconfig_path_or_dict = os.environ.get(
+                "KUBECONFIG", "~/.kube/config"
+            )
+
         self.__auth_lock: anyio.Lock = anyio.Lock()
 
     def __await__(self):

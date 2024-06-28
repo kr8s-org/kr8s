@@ -8,6 +8,7 @@ import jsonpath
 import yaml
 
 from kr8s._data_utils import dict_list_pack, list_dict_unpack
+from kr8s._types import PathType
 
 # TODO Implement set cluster
 # TODO Implement delete cluster
@@ -38,7 +39,7 @@ class KubeConfigMixin:
 
 
 class KubeConfigSet(KubeConfigMixin, object):
-    def __init__(self, *paths_or_dicts: Union[List[str], List[Dict]]):
+    def __init__(self, *paths_or_dicts: Union[str, PathType, Dict]):
         self._configs = []
         for path_or_dict in paths_or_dicts:
             try:
