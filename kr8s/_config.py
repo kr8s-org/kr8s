@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import pathlib
+import typing
 from typing import Any, Dict, List, Optional, Protocol, Union
 
 import anyio
+import jsonpath
 import yaml
 
-import kr8s._jsonpath as jsonpath
 from kr8s._data_utils import dict_list_pack, list_dict_unpack
 from kr8s._types import PathType
 
@@ -318,13 +319,13 @@ class KubeConfig(KubeConfigMixin, object):
             patch = jsonpath.JSONPatch().replace(pointer, value)
         else:
             patch = jsonpath.JSONPatch().add(pointer, value)
-        self._raw = patch.apply(self._raw)
+        self._raw = typing.cast(dict, patch.apply(self._raw))
         await self.save()
 
     async def unset(self, pointer: str) -> Any:
         """Remove a value using a JSON Pointer."""
         patch = jsonpath.JSONPatch().remove(pointer)
-        self._raw = patch.apply(self._raw)
+        self._raw = typing.cast(dict, patch.apply(self._raw))
         await self.save()
 
     @property
