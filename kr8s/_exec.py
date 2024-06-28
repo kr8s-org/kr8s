@@ -12,13 +12,13 @@ from kr8s._exceptions import ExecError
 if TYPE_CHECKING:
     from kr8s._objects import APIObject
 
-STDIN_CHANNEL = 0
-STDOUT_CHANNEL = 1
-STDERR_CHANNEL = 2
-ERROR_CHANNEL = 3
-RESIZE_CHANNEL = 4
-CLOSE_CHANNEL = 255
-EXEC_PROTOCOL = "v4.channel.k8s.io"
+STDIN_CHANNEL: int = 0
+STDOUT_CHANNEL: int = 1
+STDERR_CHANNEL: int = 2
+ERROR_CHANNEL: int = 3
+RESIZE_CHANNEL: int = 4
+CLOSE_CHANNEL: int = 255
+EXEC_PROTOCOL: str = "v4.channel.k8s.io"
 
 
 class Exec:
@@ -73,10 +73,10 @@ class Exec:
                         f"{ws.protocol}, only with v5.channel.k8s.io"
                     )
                 if isinstance(self._stdin, str):
-                    await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.encode())
+                    await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.encode())  # type: ignore
                 else:
-                    await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.read())
-                await ws.send_bytes(CLOSE_CHANNEL.to_bytes() + STDIN_CHANNEL.to_bytes())
+                    await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.read())  # type: ignore
+                await ws.send_bytes(CLOSE_CHANNEL.to_bytes() + STDIN_CHANNEL.to_bytes())  # type: ignore
             while True:
                 message = await ws.receive_bytes()
                 channel, message = int(message[0]), message[1:]
