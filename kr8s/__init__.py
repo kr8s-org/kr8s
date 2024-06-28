@@ -130,7 +130,7 @@ def api(
         >>> api = kr8s.api()  # Uses the default kubeconfig
         >>> print(api.version())  # Get the Kubernetes version
     """
-    return _run_sync(_api)(
+    ret = _run_sync(_api)(
         url=url,
         kubeconfig=kubeconfig,
         serviceaccount=serviceaccount,
@@ -138,6 +138,8 @@ def api(
         context=context,
         _asyncio=False,
     )
+    assert isinstance(ret, (Api, _AsyncApi))
+    return ret
 
 
 def whoami():
