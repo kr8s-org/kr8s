@@ -536,6 +536,7 @@ class Api(object):
     @property
     def namespace(self) -> str:
         """Get the default namespace."""
+        assert self.auth.namespace
         return self.auth.namespace
 
     @namespace.setter

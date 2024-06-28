@@ -40,7 +40,7 @@ class KubeConfigMixin:
 
 
 class KubeConfigSet(KubeConfigMixin, object):
-    def __init__(self, *paths_or_dicts: Union[str, Dict]):
+    def __init__(self, *paths_or_dicts: Union[PathType, Dict]):
         self._configs = []
         for path_or_dict in paths_or_dicts:
             try:
