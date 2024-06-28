@@ -4,10 +4,11 @@ import pathlib
 from typing import Any, Dict, List, Optional, Protocol, Union
 
 import anyio
-import jsonpath
 import yaml
 
+import kr8s._jsonpath as jsonpath
 from kr8s._data_utils import dict_list_pack, list_dict_unpack
+from kr8s._types import PathType
 
 # TODO Implement set cluster
 # TODO Implement delete cluster
@@ -34,11 +35,12 @@ class KubeConfigMixin:
             raise ValueError("No path or pointer provided")
         if path:
             return jsonpath.findall(path, self.raw)
-        return jsonpath.pointer.resolve(pointer, self.raw)
+        if pointer:
+            return jsonpath.pointer.resolve(pointer, self.raw)
 
 
 class KubeConfigSet(KubeConfigMixin, object):
-    def __init__(self, *paths_or_dicts: Union[List[str], List[Dict]]):
+    def __init__(self, *paths_or_dicts: Union[str, Dict]):
         self._configs = []
         for path_or_dict in paths_or_dicts:
             try:
@@ -61,10 +63,10 @@ class KubeConfigSet(KubeConfigMixin, object):
             await config.save()
 
     @property
-    def path(self) -> str:
+    def path(self) -> PathType:
         return self.get_path()
 
-    def get_path(self, context: Optional[str] = None) -> str:
+    def get_path(self, context: Optional[str] = None) -> PathType:
         """Return the path of the config for the current context.
 
         Args:
@@ -151,7 +153,7 @@ class KubeConfigSet(KubeConfigMixin, object):
                 return user["user"]
         raise ValueError(f"User {user_name} not found")
 
-    async def set(self, pointer: str, value) -> dict:
+    async def set(self, pointer: str, value) -> None:
         """Replace a value using a JSON Pointer.
 
         Set only applies to the first kubeconfig.
@@ -159,7 +161,7 @@ class KubeConfigSet(KubeConfigMixin, object):
         await self._configs[0].set(pointer=pointer, value=value)
         await anyio.sleep(0)
 
-    async def unset(self, pointer: str) -> dict:
+    async def unset(self, pointer: str) -> None:
         """Remove a value using a JSON Pointer.
 
         Unset applies to all kubeconfigs.
@@ -171,7 +173,7 @@ class KubeConfigSet(KubeConfigMixin, object):
                 pass
 
     @property
-    def preferences(self) -> Dict:
+    def preferences(self) -> List[Dict]:
         return self._configs[0].preferences
 
     @property
@@ -181,9 +183,9 @@ class KubeConfigSet(KubeConfigMixin, object):
             if config.clusters:
                 clusters.extend(config.clusters)
         # Unpack and repack to remove duplicates
-        clusters = list_dict_unpack(clusters, "name", "cluster")
-        clusters = dict_list_pack(clusters, "name", "cluster")
-        return clusters
+        unpacked = list_dict_unpack(clusters, "name", "cluster")
+        repacked = dict_list_pack(unpacked, "name", "cluster")
+        return repacked
 
     @property
     def users(self) -> List[Dict]:
@@ -192,9 +194,9 @@ class KubeConfigSet(KubeConfigMixin, object):
             if config.users:
                 users.extend(config.users)
         # Unpack and repack to remove duplicates
-        users = list_dict_unpack(users, "name", "user")
-        users = dict_list_pack(users, "name", "user")
-        return users
+        unpacked = list_dict_unpack(users, "name", "user")
+        repacked = dict_list_pack(unpacked, "name", "user")
+        return repacked
 
     @property
     def contexts(self) -> List[Dict]:
@@ -203,9 +205,9 @@ class KubeConfigSet(KubeConfigMixin, object):
             if config.contexts:
                 contexts.extend(config.contexts)
         # Unpack and repack to remove duplicates
-        contexts = list_dict_unpack(contexts, "name", "context")
-        contexts = dict_list_pack(contexts, "name", "context")
-        return contexts
+        unpacked = list_dict_unpack(contexts, "name", "context")
+        repacked = dict_list_pack(unpacked, "name", "context")
+        return repacked
 
     @property
     def extensions(self) -> List[Dict]:
@@ -217,9 +219,9 @@ class KubeConfigSet(KubeConfigMixin, object):
 
 
 class KubeConfig(KubeConfigMixin, object):
-    def __init__(self, path_or_config: Union[str, Dict]):
-        self.path = None
-        self._raw = None
+    def __init__(self, path_or_config: Union[PathType, Dict]):
+        self.path: PathType
+        self._raw: dict = {}
 
         if not path_or_config:
             raise ValueError("KubeConfig path_or_config is None or empty string.")
@@ -231,8 +233,10 @@ class KubeConfig(KubeConfigMixin, object):
                 raise IsADirectoryError(
                     f'Error loading config file "{self.path}": is a directory.'
                 )
-        else:
+        elif isinstance(path_or_config, dict):
             self._raw = path_or_config
+        else:
+            raise TypeError("KubeConfig path_or_config must be a string, path or dict.")
 
         self.__write_lock = anyio.Lock()
 
@@ -308,7 +312,7 @@ class KubeConfig(KubeConfigMixin, object):
 
     async def set(
         self, pointer: str, value: Optional[Any] = None, strict: bool = False
-    ) -> dict:
+    ) -> None:
         """Replace a value using a JSON Pointer."""
         if strict:
             patch = jsonpath.JSONPatch().replace(pointer, value)
