@@ -73,16 +73,10 @@ class Exec:
                         f"{ws.protocol}, only with v5.channel.k8s.io"
                     )
                 if isinstance(self._stdin, str):
-                    await ws.send_bytes(
-                        STDIN_CHANNEL.to_bytes(1, "big") + self._stdin.encode()
-                    )
+                    await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.encode())  # type: ignore
                 else:
-                    await ws.send_bytes(
-                        STDIN_CHANNEL.to_bytes(1, "big") + self._stdin.read()
-                    )
-                await ws.send_bytes(
-                    CLOSE_CHANNEL.to_bytes(1, "big") + STDIN_CHANNEL.to_bytes(1, "big")
-                )
+                    await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.read())  # type: ignore
+                await ws.send_bytes(CLOSE_CHANNEL.to_bytes() + STDIN_CHANNEL.to_bytes())  # type: ignore
             while True:
                 message = await ws.receive_bytes()
                 channel, message = int(message[0]), message[1:]
