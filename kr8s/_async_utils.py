@@ -106,11 +106,13 @@ def run_sync(
     if inspect.isasyncgenfunction(coro):
 
         @wraps(coro)
-        def run_sync_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
+        def run_gen_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
             wrapped = partial(coro, *args, **kwargs)
             return iter_over_async(wrapped())
 
-    elif inspect.iscoroutinefunction(coro):
+        return run_gen_inner
+
+    if inspect.iscoroutinefunction(coro):
 
         @wraps(coro)
         def run_sync_inner(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -118,10 +120,9 @@ def run_sync(
             portal = Portal()
             return portal.call(wrapped)
 
-    else:
-        raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
+        return run_sync_inner
 
-    return run_sync_inner
+    raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
 
 
 def iter_over_async(agen: AsyncGenerator) -> Generator:
