@@ -35,6 +35,7 @@ from typing import (
     Generator,
     Tuple,
     TypeVar,
+    Union,
 )
 
 if sys.version_info >= (3, 10):
@@ -90,7 +91,9 @@ class Portal:
         return self._portal.call(func, *args, **kwargs)
 
 
-def run_sync(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
+def run_sync(
+    coro: Callable[P, Union[AsyncGenerator, Awaitable[T]]]
+) -> Callable[P, Union[Generator, T]]:
     """Wraps a coroutine in a function that blocks until it has executed.
 
     Args:
@@ -100,14 +103,22 @@ def run_sync(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
         Callable: A sync function that executes the coroutine via the :class`Portal`.
     """
 
-    @wraps(coro)
-    def run_sync_inner(*args: P.args, **kwargs: P.kwargs) -> T:
-        wrapped = partial(coro, *args, **kwargs)
-        if inspect.isasyncgenfunction(coro):
-            return iter_over_async(wrapped)
-        if inspect.iscoroutinefunction(coro):
+    if inspect.isasyncgenfunction(coro):
+
+        @wraps(coro)
+        def run_sync_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
+            wrapped = partial(coro, *args, **kwargs)
+            return iter_over_async(wrapped())
+
+    elif inspect.iscoroutinefunction(coro):
+
+        @wraps(coro)
+        def run_sync_inner(*args: P.args, **kwargs: P.kwargs) -> T:
+            wrapped = partial(coro, *args, **kwargs)
             portal = Portal()
             return portal.call(wrapped)
+
+    else:
         raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
 
     return run_sync_inner
@@ -122,7 +133,7 @@ def iter_over_async(agen: AsyncGenerator) -> Generator:
     Yields:
         Any: object from async generator
     """
-    ait = agen().__aiter__()
+    ait = agen.__aiter__()
 
     async def get_next() -> Tuple[bool, Any]:
         try:
@@ -223,7 +234,7 @@ async def NamedTemporaryFile(
     """Create a temporary file that is deleted when the context exits."""
     kwargs.update(delete=False)
 
-    def f() -> tempfile.NamedTemporaryFile:
+    def f():
         return tempfile.NamedTemporaryFile(*args, **kwargs)
 
     tmp = await anyio.to_thread.run_sync(f)
