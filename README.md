@@ -7,7 +7,7 @@
 [![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kr8s)](https://pypi.org/project/kr8s/)
-[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.27%7C1.28%7C1.29%7C1.30-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
+[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.28%7C1.29%7C1.30-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
 [![PyPI - Wheel](https://img.shields.io/pypi/wheel/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
 
