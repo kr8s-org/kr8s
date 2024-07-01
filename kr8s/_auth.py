@@ -101,7 +101,7 @@ class KubeAuth:
             return sslcontext
 
     @property
-    def namespace(self):
+    def namespace(self) -> str:
         return self._namespace if self._namespace else "default"
 
     @namespace.setter
