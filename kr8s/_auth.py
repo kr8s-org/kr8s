@@ -101,7 +101,7 @@ class KubeAuth:
             return sslcontext
 
     @property
-    def namespace(self):
+    def namespace(self) -> str:
         return self._namespace if self._namespace else "default"
 
     @namespace.setter
@@ -139,8 +139,8 @@ class KubeAuth:
             self.active_context = self.kubeconfig.contexts[0]["name"]
 
         # Load configuration options from the context
-        if self.namespace is None:
-            self.namespace = self.kubeconfig.current_namespace
+        if self._namespace is None:
+            self._namespace = self.kubeconfig.current_namespace
 
         # If no cluster is found in the context, assume it's a service account
         if not self._context["cluster"]:
