@@ -31,7 +31,7 @@ class KubeAuth:
         self.client_key_file: Optional[PathType] = None
         self.server_ca_file: Optional[PathType] = None
         self.token: Optional[str] = None
-        self.namespace: Optional[str] = namespace
+        self._namespace: Optional[str] = namespace
         self.active_context: str = ""
         self.kubeconfig: KubeConfigSet
         self.tls_server_name: Optional[str] = None
@@ -100,6 +100,14 @@ class KubeAuth:
                 sslcontext.load_verify_locations(cafile=self.server_ca_file)
             return sslcontext
 
+    @property
+    def namespace(self) -> str:
+        return self._namespace if self._namespace else "default"
+
+    @namespace.setter
+    def namespace(self, value: str):
+        self._namespace = value
+
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
         if isinstance(self._kubeconfig_path_or_dict, str) or isinstance(
@@ -131,8 +139,8 @@ class KubeAuth:
             self.active_context = self.kubeconfig.contexts[0]["name"]
 
         # Load configuration options from the context
-        if self.namespace is None:
-            self.namespace = self.kubeconfig.current_namespace
+        if self._namespace is None:
+            self._namespace = self.kubeconfig.current_namespace
 
         # If no cluster is found in the context, assume it's a service account
         if not self._context["cluster"]:
