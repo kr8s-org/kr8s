@@ -151,7 +151,7 @@ async def test_bad_api_version():
             pass  # pragma: no cover
 
 
-@pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
+@pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system", None])
 async def test_get_pods(namespace):
     pods = await kr8s.asyncio.get("pods", namespace=namespace)
     assert isinstance(pods, list)

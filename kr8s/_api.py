@@ -111,6 +111,7 @@ class Api(object):
             headers=headers,
             verify=await self.auth.ssl_context(),
             timeout=self._timeout,
+            follow_redirects=True,
         )
 
     def _construct_url(
@@ -130,7 +131,7 @@ class Api(object):
         parts = [base]
         if version:
             parts.append(version)
-        if namespace is not None:
+        if namespace:
             parts.extend(["namespaces", namespace])
         parts.append(url)
         return "/".join(parts)

@@ -31,7 +31,7 @@ class KubeAuth:
         self.client_key_file: Optional[PathType] = None
         self.server_ca_file: Optional[PathType] = None
         self.token: Optional[str] = None
-        self.namespace: Optional[str] = namespace
+        self._namespace: Optional[str] = namespace
         self.active_context: str = ""
         self.kubeconfig: KubeConfigSet
         self.tls_server_name: Optional[str] = None
@@ -99,6 +99,14 @@ class KubeAuth:
             if self.server_ca_file:
                 sslcontext.load_verify_locations(cafile=self.server_ca_file)
             return sslcontext
+
+    @property
+    def namespace(self):
+        return self._namespace if self._namespace else "default"
+
+    @namespace.setter
+    def namespace(self, value: str):
+        self._namespace = value
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
