@@ -72,5 +72,27 @@ intersphinx_mapping = {
 }
 
 
+def remove_async_property(app, what, name, obj, skip, options):
+    """Remove async property from sync wrapped methods.
+
+    Find all sync classes that inherit from async classes
+    and remove the async property from their wrapped methods.
+    """
+    if (
+        what == "class"
+        and "kr8s.objects" in name
+        and obj.bases
+        and "kr8s._objects" in obj.bases[0]
+    ):
+        for child in obj.children:
+            if child.type == "method":
+                if not child.name.startswith("async_") and not child.name.startswith(
+                    "_"
+                ):
+                    if "async" in child.properties:
+                        child.properties.remove("async")
+
+
 def setup(app):
     app.add_css_file("css/custom.css")
+    app.connect("autoapi-skip-member", remove_async_property)
