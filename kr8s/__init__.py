@@ -3,18 +3,16 @@
 from functools import partial, update_wrapper
 from typing import Optional, Union
 
-import kr8s.objects  # noqa
-
-from ._api import ALL  # noqa
+from ._api import ALL
 from ._api import Api as _AsyncApi
 from ._async_utils import run_sync as _run_sync
-from ._async_utils import sync as _sync  # noqa
+from ._async_utils import sync as _sync
 from ._exceptions import (
-    APITimeoutError,  # noqa
-    ConnectionClosedError,  # noqa
-    ExecError,  # noqa
-    NotFoundError,  # noqa
-    ServerError,  # noqa
+    APITimeoutError,
+    ConnectionClosedError,
+    ExecError,
+    NotFoundError,
+    ServerError,
 )
 from .asyncio import (
     api as _api,
@@ -165,3 +163,21 @@ watch = _run_sync(partial(_watch, _asyncio=False))
 update_wrapper(watch, _watch)
 api_resources = _run_sync(partial(_api_resources, _asyncio=False))
 update_wrapper(api_resources, _api_resources)
+
+__all__ = [
+    "__version__",
+    "__version_tuple__",
+    "ALL",
+    "api",
+    "api_resources",
+    "get",
+    "version",
+    "watch",
+    "whoami",
+    "Api",
+    "APITimeoutError",
+    "ConnectionClosedError",
+    "ExecError",
+    "NotFoundError",
+    "ServerError",
+]
