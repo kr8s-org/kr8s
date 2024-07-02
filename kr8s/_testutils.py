@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import contextlib
 import os
+from typing import Generator
 
 
 @contextlib.contextmanager
-def set_env(**environ):
+def set_env(**environ: str) -> Generator[None, None, None]:
     """
     Temporarily set the process environment variables.
 

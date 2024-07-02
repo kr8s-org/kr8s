@@ -29,5 +29,5 @@ repos:
       rev: 'v1.10.1'
       hooks:
       - id: mypy
-        exclude: "examples"
+        exclude: "examples|tests|venv|ci|docs|conftest.py"
         additional_dependencies: [types-pyyaml>=6.0]

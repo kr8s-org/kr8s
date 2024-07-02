@@ -220,7 +220,7 @@ class APIObject:
                         cls, name, namespace=namespace, **kwargs
                     )
                 except ServerError as e:
-                    if e.response.status_code == 404:
+                    if e.response and e.response.status_code == 404:
                         continue
                     raise e
             elif label_selector or field_selector:
@@ -297,7 +297,7 @@ class APIObject:
             ) as resp:
                 self.raw = resp.json()
         except ServerError as e:
-            if e.response.status_code == 404:
+            if e.response and e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
@@ -316,7 +316,7 @@ class APIObject:
             ) as resp:
                 self.raw = resp.json()
         except ServerError as e:
-            if e.response.status_code == 404:
+            if e.response and e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
@@ -344,7 +344,7 @@ class APIObject:
             ) as resp:
                 self.raw = resp.json()
         except ServerError as e:
-            if e.response.status_code == 404:
+            if e.response and e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 

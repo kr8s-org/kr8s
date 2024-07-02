@@ -1,5 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+
+from typing import Optional
+
+import httpx
+
+
 class NotFoundError(Exception):
     """Unable to find the requested resource."""
 
@@ -27,7 +33,12 @@ class ServerError(Exception):
         The httpx response object
     """
 
-    def __init__(self, message, status=None, response=None):
+    def __init__(
+        self,
+        message: str,
+        status: Optional[str] = None,
+        response: Optional[httpx.Response] = None,
+    ) -> None:
         self.status = status
         self.response = response
         super().__init__(message)
