@@ -77,6 +77,9 @@ def remove_async_property(app, what, name, obj, skip, options):
 
     Find all sync classes that inherit from async classes
     and remove the async property from their wrapped methods.
+
+    Also skip public ``async_`` methods as they are only intended
+    to be used internally by other sync wrapped objects.
     """
     if (
         what == "class"
