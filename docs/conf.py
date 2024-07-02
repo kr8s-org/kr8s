@@ -81,11 +81,14 @@ def remove_async_property(app, what, name, obj, skip, options):
     Also skip public ``async_`` methods as they are only intended
     to be used internally by other sync wrapped objects.
     """
-    if (
-        what == "class"
-        and "kr8s.objects" in name
-        and obj.bases
-        and "kr8s._objects" in obj.bases[0]
+    if what == "class" and (
+        # Infer that the class is a sync wrapped class if it is the kr8s.Api class,
+        # or is in kr8s.objects and inherits from a class in kr8s._objects.
+        name == "kr8s.Api"
+        or ("kr8s.objects" in name and obj.bases and "kr8s._objects" in obj.bases[0])
+        # FIXME: It would be better to just check if the class is decorated with @sync
+        # but sphinx-autoapi does not currently keep track of decorators
+        # See https://github.com/readthedocs/sphinx-autoapi/issues/459
     ):
         for child in obj.children:
             if child.type == "method":
