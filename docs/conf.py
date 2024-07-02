@@ -86,9 +86,10 @@ def remove_async_property(app, what, name, obj, skip, options):
     ):
         for child in obj.children:
             if child.type == "method":
-                if not child.name.startswith("async_") and not child.name.startswith(
-                    "_"
-                ):
+                if child.name.startswith("async_"):
+                    # TODO figure out how to skip this child
+                    continue
+                if not child.name.startswith("_"):
                     if "async" in child.properties:
                         child.properties.remove("async")
 
