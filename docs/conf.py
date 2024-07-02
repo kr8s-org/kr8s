@@ -93,13 +93,14 @@ def remove_async_property(app, what, name, obj, skip, options):
         for child in obj.children:
             if child.type == "method":
                 if child.name.startswith("async_"):
-                    child.properties.append("sync-wrapped")
+                    child.properties.append("private-async-only")
                     continue
                 if not child.name.startswith("_"):
                     if "async" in child.properties:
                         child.properties.remove("async")
+                        child.properties.append("sync-wrapped")
 
-    if what == "method" and "sync-wrapped" in obj.properties:
+    if what == "method" and "private-async-only" in obj.properties:
         skip = True
     return skip
 
