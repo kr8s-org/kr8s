@@ -92,15 +92,19 @@ def remove_async_property(app, what, name, obj, skip, options):
         # See https://github.com/readthedocs/sphinx-autoapi/issues/459
     ):
         for child in obj.children:
-            if child.type == "method":
-                if child.name.startswith("async_"):
-                    child.properties.append("private-async-only")
-                    continue
-                if not child.name.startswith("_"):
-                    if "async" in child.properties:
-                        child.properties.remove("async")
+            if (
+                child.type == "method"
+                and not child.name.startswith("async_")
+                and not child.name.startswith("_")
+                and "async" in child.properties
+            ):
+                child.properties.remove("async")
 
-    if what == "method" and "private-async-only" in obj.properties:
+    if (
+        what == "method"
+        and ("kr8s.objects" in name or "kr8s.asyncio.objects" in name)
+        and obj.name.startswith("async_")
+    ):
         skip = True
     return skip
 
