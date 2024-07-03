@@ -14,6 +14,7 @@ async def get(
     label_selector: Optional[Union[str, Dict]] = None,
     field_selector: Optional[Union[str, Dict]] = None,
     as_object: Optional[object] = None,
+    allow_unknown_type: bool = True,
     api=None,
     _asyncio=True,
     **kwargs,
@@ -34,6 +35,8 @@ async def get(
         The field selector to filter the resources by
     as_object : object, optional
         The object to populate with the resource data
+    allow_unknown_type : bool, optional
+        Automatically create a class for the resource if none exists
     api : Api, optional
         The api to use to get the resource
 
@@ -69,6 +72,7 @@ async def get(
         label_selector=label_selector,
         field_selector=field_selector,
         as_object=as_object,
+        allow_unknown_type=allow_unknown_type,
         **kwargs,
     )
 

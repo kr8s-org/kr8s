@@ -312,3 +312,60 @@ async def test_api_timeout() -> None:
     api.timeout = 0.00001
     with pytest.raises(APITimeoutError):
         await api.version()
+
+
+async def test_lookup_kind():
+    api = await kr8s.asyncio.api()
+
+    assert await api.lookup_kind("no") == ("node/v1", False)
+    assert await api.lookup_kind("nodes") == ("node/v1", False)
+    assert await api.lookup_kind("po") == ("pod/v1", True)
+    assert await api.lookup_kind("pods/v1") == ("pod/v1", True)
+    assert await api.lookup_kind("role") == ("role.rbac.authorization.k8s.io/v1", True)
+    assert await api.lookup_kind("roles") == ("role.rbac.authorization.k8s.io/v1", True)
+    assert await api.lookup_kind("roles.v1.rbac.authorization.k8s.io") == (
+        "role.rbac.authorization.k8s.io/v1",
+        True,
+    )
+    assert await api.lookup_kind("roles.rbac.authorization.k8s.io") == (
+        "role.rbac.authorization.k8s.io/v1",
+        True,
+    )
+
+
+async def test_nonexisting_resource_type():
+    api = await kr8s.asyncio.api()
+
+    with pytest.raises(ValueError):
+        await api.get("foo.bar.baz/v1")
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "csr",
+        "certificatesigningrequest",
+        "certificatesigningrequests",
+        "certificatesigningrequest.certificates.k8s.io",
+        "certificatesigningrequests.certificates.k8s.io",
+        "certificatesigningrequest.v1.certificates.k8s.io",
+        "certificatesigningrequests.v1.certificates.k8s.io",
+        "certificatesigningrequest.certificates.k8s.io/v1",
+        "certificatesigningrequests.certificates.k8s.io/v1",
+    ],
+)
+async def test_dynamic_classes(kind):
+    api = await kr8s.asyncio.api()
+
+    if not any(["istio.io" in r["version"] for r in await api.api_resources()]):
+        pytest.skip("Istio not installed")
+
+    from kr8s.asyncio.objects import get_class
+
+    with pytest.raises(KeyError):
+        get_class("certificatesigningrequest", "certificates.k8s.io/v1")
+
+    with pytest.raises(KeyError):
+        await api.get(kind, allow_unknown_type=False)
+
+    await api.get(kind)

@@ -305,7 +305,11 @@ Instead we have focused on making the API extensible so that if there isn't a bu
 
 ### Extending the objects API
 
-To create your own objects you can subclass [](#kr8s.objects.APIObject), however we recommend you use the {py:func}`new_class <kr8s.objects.new_class>` class factory to ensure all of the required attributes are set. These will be used when constructing API calls by the API client.
+To create your own objects which will be a subclass of [](#kr8s.objects.APIObject), however we recommend you use the {py:func}`new_class <kr8s.objects.new_class>` class factory to ensure all of the required attributes are set. These will be used when constructing API calls by the API client.
+
+```{danger}
+Manually subclassing `APIObject` is considered an advanced topic and requires strong understanding of `kr8s` internals and how the sync/async wrapping works. For now it is recommended that you do not do this.
+```
 
 ```python
 from kr8s.objects import new_class
@@ -314,9 +318,7 @@ CustomObject = new_class(
         kind="CustomObject",
         version="example.org",
         namespaced=True,
-        asyncio=False,
     )
-
 ```
 
 The [](#kr8s.objects.APIObject) base class contains helper methods such as `.create()`, `.delete()`, `.patch()`, `.exists()`, etc.
@@ -332,15 +334,20 @@ CustomScalableObject = new_class(
         namespaced=True,
         scalable=True,
         scalable_spec="replicas",  # The spec key to patch when scaling
-        asyncio=False,
     )
 ```
 
 ### Using custom objects with other `kr8s` functions
 
-When using the [`kr8s` API](client) some methods such as `kr8s.get("pods")` will want to return kr8s objects, in this case a `Pod`. The API client handles this by looking up all of the subclasses of [`APIObject`](#kr8s.objects.APIObject) and matching the `kind` against the kind returned by the API. If the API returns a kind of object that there is no kr8s object to deserialize into it will raise an exception.
+When using the [`kr8s` API](client) some methods such as `kr8s.get("pods")` will want to return kr8s objects, in this case a `Pod`. The API client handles this by looking up all of the subclasses of [`APIObject`](#kr8s.objects.APIObject) and matching the `kind` against the kind returned by the API. If the API returns a kind of object that there is no kr8s object to deserialize into it will create a new class for you automatically.
 
-When you create your own custom objects that subclass [`APIObject`](#kr8s.objects.APIObject) the client is then able to use those objects in its response.
+```python
+import kr8s
+
+cos = kr8s.get("customobjects")  # If a resource called `customobjects` exists on the server a class will be created dynamically for it
+```
+
+When you create your own custom objects with `new_class` the client is then able to use those objects in its response.
 
 ```python
 import kr8s

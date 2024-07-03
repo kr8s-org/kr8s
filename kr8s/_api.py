@@ -181,9 +181,14 @@ class Api(object):
                     continue
                 else:
                     if e.response.status_code >= 400 and e.response.status_code < 500:
-                        error = e.response.json()
+                        try:
+                            error = e.response.json()
+                            error_message = error["message"]
+                        except json.JSONDecodeError:
+                            error = e.response.text
+                            error_message = str(e)
                         raise ServerError(
-                            error["message"], status=error, response=e.response
+                            error_message, status=error, response=e.response
                         ) from e
                     elif e.response.status_code >= 500:
                         raise ServerError(
@@ -289,6 +294,57 @@ class Api(object):
                 [name] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
                 return name.value
 
+    async def async_lookup_kind(self, kind) -> Tuple[str, bool]:
+        """Lookup a Kubernetes resource kind."""
+        from ._objects import parse_kind
+
+        resources = await self.async_api_resources()
+        kind, group, version = parse_kind(kind)
+        if group:
+            version = f"{group}/{version}"
+        for resource in resources:
+            if (not version or version in resource["version"]) and (
+                kind == resource["name"]
+                or kind == resource["kind"]
+                or kind == resource["singularName"]
+                or ("shortNames" in resource and kind in resource["shortNames"])
+            ):
+                if "/" in resource["version"]:
+                    return (
+                        f"{resource['singularName']}.{resource['version']}",
+                        resource["namespaced"],
+                    )
+                return (
+                    f"{resource['singularName']}/{resource['version']}",
+                    resource["namespaced"],
+                )
+        raise ValueError(f"Kind {kind} not found.")
+
+    async def lookup_kind(self, kind) -> Tuple[str, bool]:
+        """Lookup a Kubernetes resource kind.
+
+        Check whether a resource kind exists on the remote server.
+
+        Parameters
+        ----------
+        kind : str
+            The kind of resource to lookup.
+
+        Returns
+        -------
+        str
+            The kind of resource.
+        bool
+            Whether the resource is namespaced
+
+        Raises
+        ------
+
+        ValueError
+            If the kind is not found.
+        """
+        return await self.async_lookup_kind(kind)
+
     @contextlib.asynccontextmanager
     async def async_get_kind(
         self,
@@ -298,10 +354,11 @@ class Api(object):
         field_selector: Optional[Union[str, Dict]] = None,
         params: Optional[dict] = None,
         watch: bool = False,
+        allow_unknown_type: bool = True,
         **kwargs,
     ) -> AsyncGenerator[Tuple[Type[APIObject], httpx.Response], None]:
         """Get a Kubernetes resource."""
-        from ._objects import get_class
+        from ._objects import get_class, new_class
 
         if not namespace:
             namespace = self.namespace
@@ -324,15 +381,19 @@ class Api(object):
             obj_cls = kind
         else:
             try:
-                resources = await self.async_api_resources()
-                for resource in resources:
-                    if "shortNames" in resource and kind in resource["shortNames"]:
-                        kind = resource["name"]
-                        break
+                kind, namespaced = await self.async_lookup_kind(kind)
             except ServerError as e:
                 warnings.warn(str(e))
             if isinstance(kind, str):
-                obj_cls = get_class(kind, _asyncio=self._asyncio)
+                try:
+                    obj_cls = get_class(kind, _asyncio=self._asyncio)
+                except KeyError as e:
+                    if allow_unknown_type:
+                        obj_cls = new_class(
+                            kind, namespaced=namespaced, asyncio=self._asyncio
+                        )
+                    else:
+                        raise e
         params = params or None
         async with self.call_api(
             method="GET",
@@ -352,6 +413,7 @@ class Api(object):
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
         as_object: Optional[Type[APIObject]] = None,
+        allow_unknown_type: bool = True,
         **kwargs,
     ) -> Union[APIObject, List[APIObject]]:
         """
@@ -371,6 +433,8 @@ class Api(object):
             The field selector to filter the resources by.
         as_object : object, optional
             The object to return the resources as.
+        allow_unknown_type:
+            Automatically create a class for the resource if none exists, default True.
         **kwargs
             Additional keyword arguments to pass to the API call.
 
@@ -386,6 +450,7 @@ class Api(object):
             label_selector=label_selector,
             field_selector=field_selector,
             as_object=as_object,
+            allow_unknown_type=allow_unknown_type,
             **kwargs,
         )
 
@@ -397,6 +462,7 @@ class Api(object):
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
         as_object: Optional[Type[APIObject]] = None,
+        allow_unknown_type: bool = True,
         **kwargs,
     ) -> Union[APIObject, List[APIObject]]:
         headers = {}
@@ -411,6 +477,7 @@ class Api(object):
             label_selector=label_selector,
             field_selector=field_selector,
             headers=headers or None,
+            allow_unknown_type=allow_unknown_type,
             **kwargs,
         ) as (obj_cls, response):
             resourcelist = response.json()
@@ -454,6 +521,7 @@ class Api(object):
         label_selector: Optional[Union[str, Dict]] = None,
         field_selector: Optional[Union[str, Dict]] = None,
         since: Optional[str] = None,
+        allow_unknown_type: bool = True,
     ) -> AsyncGenerator[Tuple[str, object], None]:
         """Watch a Kubernetes resource."""
         async with self.async_get_kind(
@@ -464,6 +532,7 @@ class Api(object):
             params={"resourceVersion": since} if since else None,
             watch=True,
             timeout=None,
+            allow_unknown_type=allow_unknown_type,
         ) as (obj_cls, response):
             async for line in response.aiter_lines():
                 event = json.loads(line)

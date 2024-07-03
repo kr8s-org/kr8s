@@ -15,6 +15,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Tuple,
     Type,
     Union,
 )
@@ -1772,3 +1773,40 @@ async def objects_from_files(
                         await obj
                     objects.append(obj)
     return objects
+
+
+def parse_kind(kind: str) -> Tuple[str, str, str]:
+    """Parse a Kubernetes resource kind into a tuple of (kind, group, version).
+
+    Args:
+        kind: The Kubernetes resource kind.
+
+    Returns:
+        A tuple of (kind, group, version).
+
+    Example:
+        >>> parse_kind("Pod")
+        ("pod", "", "")
+        >>> parse_kind("deployment")
+        ("deployment", "", "")
+        >>> parse_kind("services/v1")
+        ("services", "", "v1")
+        >>> parse_kind("ingress.networking.k8s.io/v1")
+        ("ingress", "networking.k8s.io", "v1")
+        >>> parse_kind("role.v1.rbac.authorization.k8s.io")
+        ("role", "rbac.authorization.k8s.io", "v1")
+    """
+    if "/" in kind:
+        kind, version = kind.split("/", 1)
+    else:
+        version = ""
+    if "." in kind:
+        kind, group = kind.split(".", 1)
+    else:
+        group = ""
+    if "." in group:
+        first, potential_group = group.split(".", 1)
+        if re.match(r"v\d[a-z0-9]*", first):
+            version = first
+            group = potential_group
+    return kind.lower(), group.lower(), version.lower()
