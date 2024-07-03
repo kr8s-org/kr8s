@@ -1124,3 +1124,44 @@ def test_object_setter_from_old_spec(example_pod_spec):
     assert new_po.raw["spec"]["containers"][0]["name"] != "bar"
     new_po.raw["spec"] = po.raw["spec"]
     assert new_po.raw["spec"]["containers"][0]["name"] == "bar"
+
+
+def test_parse_kind():
+    from kr8s._objects import parse_kind
+
+    assert parse_kind("Pod") == ("pod", "", "")
+    assert parse_kind("Pods") == ("pods", "", "")
+    assert parse_kind("pod/v1") == ("pod", "", "v1")
+    assert parse_kind("deploy") == ("deploy", "", "")
+    assert parse_kind("gateway") == ("gateway", "", "")
+    assert parse_kind("gateways") == ("gateways", "", "")
+    assert parse_kind("gateway.networking.istio.io") == (
+        "gateway",
+        "networking.istio.io",
+        "",
+    )
+    assert parse_kind("gateways.networking.istio.io") == (
+        "gateways",
+        "networking.istio.io",
+        "",
+    )
+    assert parse_kind("gateway.v1.networking.istio.io") == (
+        "gateway",
+        "networking.istio.io",
+        "v1",
+    )
+    assert parse_kind("gateways.v1.networking.istio.io") == (
+        "gateways",
+        "networking.istio.io",
+        "v1",
+    )
+    assert parse_kind("gateway.networking.istio.io/v1") == (
+        "gateway",
+        "networking.istio.io",
+        "v1",
+    )
+    assert parse_kind("gateways.networking.istio.io/v1") == (
+        "gateways",
+        "networking.istio.io",
+        "v1",
+    )

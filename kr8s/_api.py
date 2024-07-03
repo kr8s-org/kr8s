@@ -181,9 +181,14 @@ class Api(object):
                     continue
                 else:
                     if e.response.status_code >= 400 and e.response.status_code < 500:
-                        error = e.response.json()
+                        try:
+                            error = e.response.json()
+                            error_message = error["message"]
+                        except json.JSONDecodeError:
+                            error = e.response.text
+                            error_message = str(e)
                         raise ServerError(
-                            error["message"], status=error, response=e.response
+                            error_message, status=error, response=e.response
                         ) from e
                     elif e.response.status_code >= 500:
                         raise ServerError(
@@ -289,23 +294,55 @@ class Api(object):
                 [name] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
                 return name.value
 
-    async def async_lookup_kind(self, kind) -> str:
+    async def async_lookup_kind(self, kind) -> Tuple[str, bool]:
         """Lookup a Kubernetes resource kind."""
+        from ._objects import parse_kind
+
         resources = await self.async_api_resources()
-        kind, group = kind.split(".", 1) if "." in kind else (kind, "")
+        kind, group, version = parse_kind(kind)
+        if group:
+            version = f"{group}/{version}"
         for resource in resources:
-            if (not group or group in resource["version"]) and (
+            if (not version or version in resource["version"]) and (
                 kind == resource["name"]
                 or kind == resource["kind"]
                 or kind == resource["singularName"]
                 or ("shortNames" in resource and kind in resource["shortNames"])
             ):
                 if "/" in resource["version"]:
-                    return f"{resource['singularName']}.{resource['version']}"
-                return f"{resource['singularName']}/{resource['version']}"
+                    return (
+                        f"{resource['singularName']}.{resource['version']}",
+                        resource["namespaced"],
+                    )
+                return (
+                    f"{resource['singularName']}/{resource['version']}",
+                    resource["namespaced"],
+                )
         raise ValueError(f"Kind {kind} not found.")
 
-    async def lookup_kind(self, kind) -> str:
+    async def lookup_kind(self, kind) -> Tuple[str, bool]:
+        """Lookup a Kubernetes resource kind.
+
+        Check whether a resource kind exists on the remote server.
+
+        Parameters
+        ----------
+        kind : str
+            The kind of resource to lookup.
+
+        Returns
+        -------
+        str
+            The kind of resource.
+        bool
+            Whether the resource is namespaced
+
+        Raises
+        ------
+
+        ValueError
+            If the kind is not found.
+        """
         return await self.async_lookup_kind(kind)
 
     @contextlib.asynccontextmanager
@@ -343,17 +380,18 @@ class Api(object):
         if isinstance(kind, type):
             obj_cls = kind
         else:
-            if "." not in kind and "/" not in kind:
-                try:
-                    kind = await self.async_lookup_kind(kind)
-                except ServerError as e:
-                    warnings.warn(str(e))
+            try:
+                kind, namespaced = await self.async_lookup_kind(kind)
+            except ServerError as e:
+                warnings.warn(str(e))
             if isinstance(kind, str):
                 try:
                     obj_cls = get_class(kind, _asyncio=self._asyncio)
                 except KeyError as e:
                     if allow_unknown_type:
-                        obj_cls = new_class(kind, asyncio=self._asyncio)
+                        obj_cls = new_class(
+                            kind, namespaced=namespaced, asyncio=self._asyncio
+                        )
                     else:
                         raise e
         params = params or None
@@ -395,6 +433,8 @@ class Api(object):
             The field selector to filter the resources by.
         as_object : object, optional
             The object to return the resources as.
+        allow_unknown_type:
+            Automatically create a class for the resource if none exists, default True.
         **kwargs
             Additional keyword arguments to pass to the API call.
 
