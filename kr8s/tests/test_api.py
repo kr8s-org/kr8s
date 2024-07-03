@@ -355,12 +355,9 @@ async def test_nonexisting_resource_type():
     ],
 )
 async def test_dynamic_classes(kind):
-    api = await kr8s.asyncio.api()
-
-    if not any(["istio.io" in r["version"] for r in await api.api_resources()]):
-        pytest.skip("Istio not installed")
-
     from kr8s.asyncio.objects import get_class
+
+    api = await kr8s.asyncio.api()
 
     with pytest.raises(KeyError):
         get_class("certificatesigningrequest", "certificates.k8s.io/v1")
