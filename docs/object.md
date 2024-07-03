@@ -336,11 +336,21 @@ CustomScalableObject = new_class(
     )
 ```
 
+```{danger}
+Manually subclassing `APIObject` is considered an advanced topic and requires strong understanding of `kr8s` internals and how the sync/async wrapping works. For now it is recommended that you do not do this.
+```
+
 ### Using custom objects with other `kr8s` functions
 
-When using the [`kr8s` API](client) some methods such as `kr8s.get("pods")` will want to return kr8s objects, in this case a `Pod`. The API client handles this by looking up all of the subclasses of [`APIObject`](#kr8s.objects.APIObject) and matching the `kind` against the kind returned by the API. If the API returns a kind of object that there is no kr8s object to deserialize into it will raise an exception.
+When using the [`kr8s` API](client) some methods such as `kr8s.get("pods")` will want to return kr8s objects, in this case a `Pod`. The API client handles this by looking up all of the subclasses of [`APIObject`](#kr8s.objects.APIObject) and matching the `kind` against the kind returned by the API. If the API returns a kind of object that there is no kr8s object to deserialize into it will create a new class for you automatically.
 
-When you create your own custom objects that subclass [`APIObject`](#kr8s.objects.APIObject) the client is then able to use those objects in its response.
+```python
+import kr8s
+
+cos = kr8s.get("customobjects")  # If a resource called `customobjects` exists on the server a class will be created dynamically for it
+```
+
+When you create your own custom objects with `new_class` the client is then able to use those objects in its response.
 
 ```python
 import kr8s
