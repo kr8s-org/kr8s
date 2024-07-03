@@ -305,7 +305,11 @@ Instead we have focused on making the API extensible so that if there isn't a bu
 
 ### Extending the objects API
 
-To create your own objects you can subclass [](#kr8s.objects.APIObject), however we recommend you use the {py:func}`new_class <kr8s.objects.new_class>` class factory to ensure all of the required attributes are set. These will be used when constructing API calls by the API client.
+To create your own objects which will be a subclass of [](#kr8s.objects.APIObject), however we recommend you use the {py:func}`new_class <kr8s.objects.new_class>` class factory to ensure all of the required attributes are set. These will be used when constructing API calls by the API client.
+
+```{danger}
+Manually subclassing `APIObject` is considered an advanced topic and requires strong understanding of `kr8s` internals and how the sync/async wrapping works. For now it is recommended that you do not do this.
+```
 
 ```python
 from kr8s.objects import new_class
@@ -314,9 +318,7 @@ CustomObject = new_class(
         kind="CustomObject",
         version="example.org",
         namespaced=True,
-        asyncio=False,
     )
-
 ```
 
 The [](#kr8s.objects.APIObject) base class contains helper methods such as `.create()`, `.delete()`, `.patch()`, `.exists()`, etc.
@@ -332,12 +334,7 @@ CustomScalableObject = new_class(
         namespaced=True,
         scalable=True,
         scalable_spec="replicas",  # The spec key to patch when scaling
-        asyncio=False,
     )
-```
-
-```{danger}
-Manually subclassing `APIObject` is considered an advanced topic and requires strong understanding of `kr8s` internals and how the sync/async wrapping works. For now it is recommended that you do not do this.
 ```
 
 ### Using custom objects with other `kr8s` functions
