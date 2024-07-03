@@ -312,3 +312,15 @@ async def test_api_timeout() -> None:
     api.timeout = 0.00001
     with pytest.raises(APITimeoutError):
         await api.version()
+
+
+async def test_lookup_kind():
+    api = await kr8s.asyncio.api()
+
+    assert await api.lookup_kind("po") == "pods/v1"
+    assert await api.lookup_kind("role") == "roles.rbac.authorization.k8s.io/v1"
+    assert await api.lookup_kind("roles") == "roles.rbac.authorization.k8s.io/v1"
+    assert (
+        await api.lookup_kind("roles.rbac.authorization.k8s.io")
+        == "roles.rbac.authorization.k8s.io/v1"
+    )
