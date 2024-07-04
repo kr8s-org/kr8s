@@ -618,6 +618,9 @@ async def test_class_registration_multiple_subclass():
 
     assert get_class("MyResource", "foo.kr8s.org/v1alpha1") is MyResource
 
+    r = MyResource({})
+    assert r.my_custom_method() == "foo"
+
 
 async def test_deployment_scale(example_deployment_spec):
     deployment = await Deployment(example_deployment_spec)
