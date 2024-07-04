@@ -354,7 +354,7 @@ async def test_nonexisting_resource_type():
         "certificatesigningrequests.certificates.k8s.io/v1",
     ],
 )
-async def test_dynamic_classes(kind):
+async def test_dynamic_classes(kind, ensure_gc):
     from kr8s.asyncio.objects import get_class
 
     api = await kr8s.asyncio.api()
