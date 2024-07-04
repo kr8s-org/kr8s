@@ -247,9 +247,7 @@ class Api(object):
     async def version(self) -> dict:
         """Get the Kubernetes version information from the API.
 
-        Returns
-        -------
-        dict
+        Returns:
             The Kubernetes version information.
 
         """
@@ -325,23 +323,14 @@ class Api(object):
 
         Check whether a resource kind exists on the remote server.
 
-        Parameters
-        ----------
-        kind : str
-            The kind of resource to lookup.
+        Args:
+            kind: The kind of resource to lookup.
 
-        Returns
-        -------
-        str
-            The kind of resource.
-        bool
-            Whether the resource is namespaced
+        Returns:
+            The kind of resource and whether the resource is namespaced
 
-        Raises
-        ------
-
-        ValueError
-            If the kind is not found.
+        Raises:
+            ValueError: If the kind is not found.
         """
         return await self.async_lookup_kind(kind)
 
@@ -416,31 +405,19 @@ class Api(object):
         allow_unknown_type: bool = True,
         **kwargs,
     ) -> Union[APIObject, List[APIObject]]:
-        """
-        Get Kubernetes resources.
+        """Get Kubernetes resources.
 
-        Parameters
-        ----------
-        kind : str, type
-            The kind of resource to get.
-        *names : List[str], optional
-            The names of specific resources to get.
-        namespace : str, optional
-            The namespace to get the resource from.
-        label_selector : Union[str, Dict], optional
-            The label selector to filter the resources by.
-        field_selector : Union[str, Dict], optional
-            The field selector to filter the resources by.
-        as_object : object, optional
-            The object to return the resources as.
-        allow_unknown_type:
-            Automatically create a class for the resource if none exists, default True.
-        **kwargs
-            Additional keyword arguments to pass to the API call.
+        Args:
+            kind: The kind of resource to get.
+            *names: The names of specific resources to get.
+            namespace: The namespace to get the resource from.
+            label_selector: The label selector to filter the resources by.
+            field_selector: The field selector to filter the resources by.
+            as_object: The object to return the resources as.
+            allow_unknown_type: Automatically create a class for the resource if none exists, default True.
+            **kwargs: Additional keyword arguments to pass to the API call.
 
-        Returns
-        -------
-        List[object]
+        Returns:
             The resources.
         """
         return await self.async_get(

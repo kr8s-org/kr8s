@@ -1,7 +1,13 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+"""
+This module contains `kr8s`, a simple, extensible Python client library for Kubernetes.
+
+At the top level, `kr8s` provides a synchronous API that wraps the asynchronous API provided by `kr8s.asyncio`. 
+Both APIs are functionally identical with the same objects, method signatures and return values. 
+"""
 from functools import partial, update_wrapper
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 
 from . import asyncio, objects, portforward
 from ._api import ALL
@@ -47,39 +53,37 @@ class Api(_AsyncApi):
     __doc__ = _AsyncApi.__doc__
 
 
-def get(*args, **kwargs):
+def get(
+    kind: str,
+    *names: List[str],
+    namespace: Optional[str] = None,
+    label_selector: Optional[Union[str, Dict]] = None,
+    field_selector: Optional[Union[str, Dict]] = None,
+    as_object: Optional[object] = None,
+    allow_unknown_type: bool = True,
+    api=None,
+    **kwargs,
+):
     """Get a resource by name.
 
-    Parameters
-    ----------
-    kind : str
-        The kind of resource to get
-    *names : List[str]
-        The names of the resources to get
-    namespace : str, optional
-        The namespace to get the resource from
-    label_selector : Union[str, Dict], optional
-        The label selector to filter the resources by
-    field_selector : Union[str, Dict], optional
-        The field selector to filter the resources by
-    as_object : object, optional
-        The object to populate with the resource data
-    api : Api, optional
-        The api to use to get the resource
+    Args:
+        kind: The kind of resource to get
+        *names: The names of the resources to get
+        namespace: The namespace to get the resource from
+        label_selector: The label selector to filter the resources by
+        field_selector: The field selector to filter the resources by
+        as_object: The object to populate with the resource data
+        allow_unknown_type: Whether to allow unknown types
+        api: The api to use to get the resource
+        **kwargs: Additional arguments to pass to the API
 
-    Returns
-    -------
-    object
+    Returns:
         The populated object
 
-    Raises
-    ------
-    ValueError
-        If the resource is not found
+    Raises:
+        ValueError: If the resource is not found
 
-    Examples
-    --------
-
+    Examples:
         >>> import kr8s
         >>> # All of these are equivalent
         >>> ings = kr8s.get("ing")                           # Short name
@@ -90,7 +94,18 @@ def get(*args, **kwargs):
         >>> ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
         >>> ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
     """
-    return _run_sync(partial(_get, _asyncio=False))(*args, **kwargs)
+    return _run_sync(_get)(
+        kind,
+        *names,
+        namespace=namespace,
+        label_selector=label_selector,
+        field_selector=field_selector,
+        as_object=as_object,
+        allow_unknown_type=allow_unknown_type,
+        api=api,
+        _asyncio=False,
+        **kwargs,
+    )
 
 
 def api(
@@ -104,27 +119,17 @@ def api(
 
     If a kr8s object already exists with the same arguments in this thread, it will be returned.
 
-    Parameters
-    ----------
-    url : str, optional
-        The URL of the Kubernetes API server
-    kubeconfig : str, optional
-        The path to a kubeconfig file to use
-    serviceaccount : str, optional
-        The path of a service account to use
-    namespace : str, optional
-        The namespace to use
-    context : str, optional
-        The context to use
+    Args:
+        url: The URL of the Kubernetes API server
+        kubeconfig: The path to a kubeconfig file to use
+        serviceaccount: The path of a service account to use
+        namespace: The namespace to use
+        context: The context to use
 
-    Returns
-    -------
-    Api
+    Returns:
         The API object
 
-    Examples
-    --------
-
+    Examples:
         >>> import kr8s
         >>> api = kr8s.api()  # Uses the default kubeconfig
         >>> print(api.version())  # Get the Kubernetes version
@@ -144,14 +149,10 @@ def api(
 def whoami():
     """Get the current user's identity.
 
-    Returns
-    -------
-    str
+    Returns:
         The user's identity
 
-    Examples
-    --------
-
+    Examples:
         >>> import kr8s
         >>> print(kr8s.whoami())
     """

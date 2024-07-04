@@ -25,12 +25,9 @@ class ExecError(Exception):
 class ServerError(Exception):
     """Error from the Kubernetes API server.
 
-    Attributes
-    ----------
-    status : str
-        The Status object from the Kubernetes API server
-    response : httpx.Response
-        The httpx response object
+    Attributes:
+        status: The Status object from the Kubernetes API server
+        response: The httpx response object
     """
 
     def __init__(

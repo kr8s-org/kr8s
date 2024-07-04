@@ -9,18 +9,12 @@ def list_dict_unpack(
 ) -> Dict:
     """Convert a list of dictionaries to a single dictionary.
 
-    Parameters
-    ----------
-    input_list : List[Dict]
-        The list of dictionaries to convert to a single dictionary.
-    key : str, optional
-        The key to use for the new dictionary's keys. Defaults to "key".
-    value : str, optional
-        The key to use for the new dictionary's values. Defaults to "value".
+    Args:
+        input_list: The list of dictionaries to convert to a single dictionary.
+        key: The key to use for the new dictionary's keys. Defaults to "key".
+        value: The key to use for the new dictionary's values. Defaults to "value".
 
-    Returns
-    -------
-    Dict
+    Returns:
         A dictionary with the keys and values from the input list.
     """
     return {i[key]: i[value] for i in input_list}
@@ -31,18 +25,12 @@ def dict_list_pack(
 ) -> List[Dict]:
     """Convert a dictionary to a list of dictionaries.
 
-    Parameters
-    ----------
-    input_dict : Dict
-        The dictionary to convert to a list of dictionaries.
-    key : str, optional
-        The key to use for the input dictionary's keys. Defaults to "key".
-    value : str, optional
-        The key to use for the input dictionary's values. Defaults to "value".
+    Args:
+        input_dict: The dictionary to convert to a list of dictionaries.
+        key: The key to use for the input dictionary's keys. Defaults to "key".
+        value: The key to use for the input dictionary's values. Defaults to "value".
 
-    Returns
-    -------
-    List[Dict]
+    Returns:
         A list of dictionaries with the keys and values from the input dictionary.
     """
     return [{key: k, value: v} for k, v in input_dict.items()]
@@ -51,16 +39,11 @@ def dict_list_pack(
 def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
     """Convert a dot notated key to a nested dictionary.
 
-    Parameters
-    ----------
-    dot_notated_key : str
-        The dot notated key to convert to a nested dictionary.
-    value : Any
-        The value to assign to the innermost key.
+    Args:
+        dot_notated_key: The dot notated key to convert to a nested dictionary.
+        value: The value to assign to the innermost key.
 
-    Returns
-    -------
-    Dict
+    Returns:
         A nested dictionary with the innermost key being the value of the
         dot notated key.
     """
@@ -77,14 +60,10 @@ def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
 def dict_to_selector(selector_dict: Dict) -> str:
     """Convert a dictionary to a Kubernetes selector.
 
-    Parameters
-    ----------
-    selector_dict : Dict
-        The dictionary to convert to a Kubernetes selector.
+    Args:
+        selector_dict: The dictionary to convert to a Kubernetes selector.
 
-    Returns
-    -------
-    str
+    Returns:
         A Kubernetes selector string.
     """
     return ",".join(f"{k}={v}" for k, v in selector_dict.items())
@@ -94,14 +73,11 @@ def xdict(*in_dict, **kwargs):
     """Dictionary constructor that ignores None values.
 
     Args:
-        in_dict : Dict
-            A dict to convert. Only one is allowed.
-        **kwargs
-            Keyword arguments to be converted to a dict.
+        in_dict: A dict to convert. Only one is allowed.
+        **kwargs: Keyword arguments to be converted to a dict.
 
     Returns:
-        Dict
-            A dict with None values removed.
+        A dict with None values removed.
 
     Raises:
         ValueError

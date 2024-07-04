@@ -16,36 +16,25 @@ async def api(
     context: Optional[str] = None,
     _asyncio: bool = True,
 ) -> _AsyncApi:
-    """Create a :class:`kr8s.asyncio.Api` object for interacting with the Kubernetes API.
+    """Create a `kr8s.asyncio.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments in this thread, it will be returned.
 
-    Parameters
-    ----------
-    url : str, optional
-        The URL of the Kubernetes API server
-    kubeconfig : str, optional
-        The path to a kubeconfig file to use
-    serviceaccount : str, optional
-        The path of a service account to use
-    namespace : str, optional
-        The namespace to use
-    context : str, optional
-        The context to use
+    Args:
+        url: The URL of the Kubernetes API server
+        kubeconfig: The path to a kubeconfig file to use
+        serviceaccount: The path of a service account to use
+        namespace: The namespace to use
+        context: The context to use
 
-    Returns
-    -------
-    Api
-        The API object
+    Returns:
+        kr8s.asyncio.Api: The API object
 
-    Examples
-    --------
-
+    Examples:
         >>> import kr8s
         >>> api = await kr8s.asyncio.api()  # Uses the default kubeconfig
         >>> print(await api.version())  # Get the Kubernetes version
     """
-
     from kr8s import Api as _SyncApi
 
     if _asyncio:
