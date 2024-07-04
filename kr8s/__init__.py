@@ -3,6 +3,7 @@
 from functools import partial, update_wrapper
 from typing import Optional, Union
 
+from . import asyncio, objects, portforward
 from ._api import ALL
 from ._api import Api as _AsyncApi
 from ._async_utils import run_sync as _run_sync
@@ -170,7 +171,10 @@ __all__ = [
     "ALL",
     "api",
     "api_resources",
+    "asyncio",
     "get",
+    "objects",
+    "portforward",
     "version",
     "watch",
     "whoami",
