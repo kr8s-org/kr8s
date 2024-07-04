@@ -1575,6 +1575,7 @@ def get_class(
     Raises:
         KeyError: If no object is registered for the given kind and version.
     """
+    result = None
     group = None
     if "/" in kind:
         kind, version = kind.split("/", 1)
@@ -1606,7 +1607,7 @@ def get_class(
             if (group is None or cls_group == group) and (
                 version is None or cls_version == version
             ):
-                return cls
+                result = cls
             if (
                 group
                 and not version
@@ -1614,8 +1615,10 @@ def get_class(
                 and cls_group == group.split(".", 1)[1]
                 and cls_version == group.split(".", 1)[0]
             ):
-                return cls
+                result = cls
 
+    if result:
+        return result
     raise KeyError(
         f"No object registered for {kind}{'.' + group if group else ''}. "
         "See https://docs.kr8s.org/en/stable/object.html#extending-the-objects-api "

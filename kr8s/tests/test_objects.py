@@ -611,6 +611,14 @@ async def test_new_sync_class_registration_from_spec():
     assert not my_sync_resource_instance._asyncio
 
 
+async def test_class_registration_multiple_subclass():
+    class MyResource(new_class("MyResource.foo.kr8s.org/v1alpha1")):
+        def my_custom_method(self) -> str:
+            return "foo"
+
+    assert get_class("MyResource", "foo.kr8s.org/v1alpha1") is MyResource
+
+
 async def test_deployment_scale(example_deployment_spec):
     deployment = await Deployment(example_deployment_spec)
     await deployment.create()
