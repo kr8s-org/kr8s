@@ -228,7 +228,7 @@ async def check_output(*args, **kwargs) -> str:
 
 
 @asynccontextmanager
-async def NamedTemporaryFile(
+async def NamedTemporaryFile(  # noqa: N802
     *args, delete: bool = True, **kwargs
 ) -> AsyncGenerator[anyio.Path, None]:
     """Create a temporary file that is deleted when the context exits."""
