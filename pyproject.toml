@@ -90,8 +90,11 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-select = ["E", "F", "I"]
-ignore = []
+select = ["D", "E", "F", "I"]
+ignore = [
+    "D101", # Missing docstring in public class
+    "D212", # Multi-line docstring summary should start at the first line
+]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["I"]
@@ -128,6 +131,16 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 # Assume Python 3.10.
 target-version = "py310"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"kr8s/tests/*" = ["D"]
+"conftest.py" = ["D"]
+"examples/*" = ["D"]
+"docs/*" = ["D"]
+"ci/*" = ["D"]
 
 [tool.mypy]
 exclude = ["examples", "tests", "venv", "ci", "docs", "conftest.py"]

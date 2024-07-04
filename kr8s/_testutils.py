@@ -7,18 +7,27 @@ from typing import Generator
 
 @contextlib.contextmanager
 def set_env(**environ: str) -> Generator[None, None, None]:
-    """
-    Temporarily set the process environment variables.
+    """Temporarily sets the process environment variables.
 
-    >>> with set_env(PLUGINS_DIR=u'test/plugins'):
-    ...   "PLUGINS_DIR" in os.environ
-    True
+    This context manager allows you to temporarily set the process environment variables
+    within a specific scope. It saves the current environment variables, updates them with
+    the provided values, and restores the original environment variables when the scope
+    is exited.
 
-    >>> "PLUGINS_DIR" in os.environ
-    False
+    Args:
+        **environ: Keyword arguments representing the environment variables to set.
 
-    :type environ: dict[str, unicode]
-    :param environ: Environment variables to set
+    Yields:
+        None
+
+    Examples:
+        >>> with set_env(PLUGINS_DIR='test/plugins'):
+        ...     "PLUGINS_DIR" in os.environ
+        True
+
+        >>> "PLUGINS_DIR" in os.environ
+        False
+
     """
     old_environ = dict(os.environ)
     os.environ.update(environ)

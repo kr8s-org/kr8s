@@ -102,7 +102,6 @@ def run_sync(
     Returns:
         Callable: A sync function that executes the coroutine via the :class`Portal`.
     """
-
     if inspect.isasyncgenfunction(coro):
 
         @wraps(coro)

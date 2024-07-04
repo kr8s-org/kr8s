@@ -21,38 +21,27 @@ async def get(
 ):
     """Get a resource by name.
 
-    Parameters
-    ----------
-    kind : str
-        The kind of resource to get
-    *names : List[str]
-        The names of the resources to get
-    namespace : str, optional
-        The namespace to get the resource from
-    label_selector : Union[str, Dict], optional
-        The label selector to filter the resources by
-    field_selector : Union[str, Dict], optional
-        The field selector to filter the resources by
-    as_object : object, optional
-        The object to populate with the resource data
-    allow_unknown_type : bool, optional
-        Automatically create a class for the resource if none exists
-    api : Api, optional
-        The api to use to get the resource
+    This function retrieves a resource from the Kubernetes cluster based on its kind and name(s).
+    It supports various options for filtering and customization.
 
-    Returns
-    -------
-    object
-        The populated object
+    Args:
+        kind: The kind of resource to get.
+        *names: The names of the resources to get.
+        namespace: The namespace to get the resource from.
+        label_selector: The label selector to filter the resources by.
+        field_selector: The field selector to filter the resources by.
+        as_object: The object to populate with the resource data.
+        allow_unknown_type: Automatically create a class for the resource if none exists.
+        api: The api to use to get the resource.
+        **kwargs: Additional keyword arguments to pass to the `httpx` API call.
 
-    Raises
-    ------
-    ValueError
-        If the resource is not found
+    Returns:
+        List[APIObject]: The Kubernetes resource objects.
 
-    Examples
-    --------
+    Raises:
+        ValueError: If the resource is not found.
 
+    Examples:
         >>> import kr8s
         >>> # All of these are equivalent
         >>> ings = await kr8s.asyncio.get("ing")                           # Short name

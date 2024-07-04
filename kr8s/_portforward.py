@@ -255,22 +255,24 @@ class PortForward:
                 writer.write(message[1:])
                 await writer.drain()
 
-    def _is_port_in_use(self, port: int, host: str = "127.0.0.1"):
-        """
-        Check if a given port is in use on a specified host.
+    def _is_port_in_use(self, port: int, host: str = "127.0.0.1") -> bool:
+        """Check if a given port is in use on a specified host.
 
-        :param port: Port number to check.
-        :param host: Host address to check the port on. Default is localhost.
-        :return: True if the port is in use, False otherwise.
+        Args:
+            port: Port number to check.
+            host: Host address to check the port on. Default is localhost.
+
+        Returns:
+            bool: True if the port is in use, False otherwise.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex((host, port)) == 0
 
     def _find_available_port(self):
-        """
-        Find a random port that is not in use on any of the given addresses.
+        """Find a random port that is not in use on any of the given addresses.
 
-        :return: An available port number.
+        Returns:
+            An available port number.
         """
         while True:
             port = random.randint(10000, 60000)

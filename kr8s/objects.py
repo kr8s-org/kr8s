@@ -1,5 +1,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+"""Objects to represent Kubernetes resources.
+
+This module provides classes that represent Kubernetes resources. 
+These classes are used to interact with resources in the Kubernetes API server.
+"""
 from functools import partial
 
 from ._async_utils import run_sync, sync

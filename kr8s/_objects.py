@@ -205,7 +205,6 @@ class APIObject:
         **kwargs,
     ) -> APIObject:
         """Get a Kubernetes resource by name or via selectors."""
-
         if api is None:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
@@ -1684,6 +1683,7 @@ def object_from_spec(
 
     Args:
         spec: A Kubernetes resource spec.
+        api: An optional API instance to use.
         allow_unknown_type: Whether to allow unknown resource types.
         _asyncio: Whether to use asyncio or not.
 
