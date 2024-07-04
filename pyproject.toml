@@ -90,7 +90,7 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-select = ["D", "E", "F", "I"]
+select = ["D", "E", "W", "F", "I"]
 ignore = [
     "D101", # Missing docstring in public class
     "D212", # Multi-line docstring summary should start at the first line
