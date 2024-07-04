@@ -1,10 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import gc
 import os
 import time
 
 import pytest
 from pytest_kind.cluster import KindCluster
+
+
+@pytest.fixture
+def ensure_gc():
+    """Ensure garbage collection is run before and after the test."""
+    gc.collect()
+    yield
+    gc.collect()
 
 
 @pytest.fixture(scope="session", autouse=True)
