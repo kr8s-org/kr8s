@@ -136,8 +136,8 @@ class APIObject:
         """Name of the Kubernetes resource."""
         try:
             return self.raw["metadata"]["name"]
-        except KeyError:
-            raise ValueError("Resource does not have a name")
+        except KeyError as e:
+            raise ValueError("Resource does not have a name") from e
 
     @property
     def namespace(self) -> Optional[str]:
@@ -596,8 +596,8 @@ class APIObject:
         """Return a lightkube representation of this object."""
         try:
             from lightkube import codecs
-        except ImportError:
-            raise ImportError("lightkube is not installed")
+        except ImportError as e:
+            raise ImportError("lightkube is not installed") from e
         return codecs.from_dict(self.raw)
 
     def to_pykube(self, api) -> Any:
@@ -617,8 +617,8 @@ class APIObject:
         """
         try:
             import pykube  # type: ignore
-        except ImportError:
-            raise ImportError("pykube is not installed")
+        except ImportError as e:
+            raise ImportError("pykube is not installed") from e
         try:
             pykube_cls = getattr(pykube.objects, self.kind)
         except AttributeError:

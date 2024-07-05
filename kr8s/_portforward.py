@@ -236,8 +236,8 @@ class PortForward:
                 # TODO Support multiple channels for multiple ports.
                 try:
                     await ws.send_bytes(b"\x00" + data)
-                except ConnectionResetError:
-                    raise ConnectionClosedError("Websocket closed")
+                except ConnectionResetError as e:
+                    raise ConnectionClosedError("Websocket closed") from e
 
     async def _ws_to_tcp(self, ws, writer) -> None:
         channels = []

@@ -190,7 +190,7 @@ def sync(source: C) -> C:
         43
 
     """
-    setattr(source, "_asyncio", False)
+    setattr(source, "_asyncio", False)  # noqa: B010
     for name in dir(source):
         method = getattr(source, name)
 
@@ -202,10 +202,10 @@ def sync(source: C) -> C:
                 setattr(source, name, run_sync(function))
 
         elif name == "__aenter__" and not hasattr(source, "__enter__"):
-            setattr(source, "__enter__", run_sync(method))
+            setattr(source, "__enter__", run_sync(method))  # noqa: B010
 
         elif name == "__aexit__" and not hasattr(source, "__exit__"):
-            setattr(source, "__exit__", run_sync(method))
+            setattr(source, "__exit__", run_sync(method))  # noqa: B010
 
     return source
 
