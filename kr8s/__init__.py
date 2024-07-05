@@ -3,8 +3,8 @@
 """
 This module contains `kr8s`, a simple, extensible Python client library for Kubernetes.
 
-At the top level, `kr8s` provides a synchronous API that wraps the asynchronous API provided by `kr8s.asyncio`. 
-Both APIs are functionally identical with the same objects, method signatures and return values. 
+At the top level, `kr8s` provides a synchronous API that wraps the asynchronous API provided by `kr8s.asyncio`.
+Both APIs are functionally identical with the same objects, method signatures and return values.
 """
 from functools import partial, update_wrapper
 from typing import Dict, List, Optional, Union

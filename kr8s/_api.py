@@ -372,7 +372,7 @@ class Api(object):
             try:
                 kind, namespaced = await self.async_lookup_kind(kind)
             except ServerError as e:
-                warnings.warn(str(e))
+                warnings.warn(str(e), stacklevel=1)
             if isinstance(kind, str):
                 try:
                     obj_cls = get_class(kind, _asyncio=self._asyncio)
