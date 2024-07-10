@@ -1176,3 +1176,28 @@ def test_parse_kind():
         "networking.istio.io",
         "v1",
     )
+
+
+async def test_setting_attributes():
+    po = await Pod.gen(name="nginx", image="nginx:latest")
+    po.metadata.labels = {"foo": "bar"}
+    assert po.metadata.labels == {"foo": "bar"}
+
+    po.metadata.generateName = po.metadata.pop("name") + "-"
+    assert "generateName" in po.metadata
+    assert "name" not in po.metadata
+
+    po.name = "abc123"
+    assert po.name == "abc123"
+    po.namespace = "bar"
+    assert po.namespace == "bar"
+    po.metadata = {"name": "def", "namespace": "buzz"}
+    assert po.name == "def"
+    po["metadata"] = {"name": "ghi", "namespace": "buzz"}
+    assert po.name == "ghi"
+
+    po.spec.containers[0].image = "wordpress:latest"
+    assert po.spec.containers[0].image == "wordpress:latest"
+
+    with pytest.raises(NotImplementedError):
+        po.replicas = 2
