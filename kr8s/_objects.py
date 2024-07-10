@@ -129,7 +129,7 @@ class APIObject:
 
     @raw.setter
     def raw(self, value: Any) -> None:
-        self._raw = value
+        self._raw = Box(value)
 
     @property
     def name(self) -> str:
@@ -138,6 +138,10 @@ class APIObject:
             return self.raw["metadata"]["name"]
         except KeyError as e:
             raise ValueError("Resource does not have a name") from e
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self.raw["metadata"]["name"] = value
 
     @property
     def namespace(self) -> Optional[str]:
@@ -154,33 +158,53 @@ class APIObject:
     @property
     def metadata(self) -> Box:
         """Metadata of the Kubernetes resource."""
-        return Box(self.raw["metadata"])
+        return self.raw["metadata"]
+
+    @metadata.setter
+    def metadata(self, value: dict) -> None:
+        self.raw["metadata"] = value
 
     @property
     def spec(self) -> Box:
         """Spec of the Kubernetes resource."""
-        return Box(self.raw["spec"])
+        return self.raw["spec"]
+
+    @spec.setter
+    def spec(self, value: dict) -> None:
+        self.raw["spec"] = value
 
     @property
     def status(self) -> Box:
         """Status of the Kubernetes resource."""
-        return Box(self.raw["status"])
+        return self.raw["status"]
+
+    @status.setter
+    def status(self, value: dict) -> None:
+        self.raw["status"] = value
 
     @property
     def labels(self) -> Box:
         """Labels of the Kubernetes resource."""
         try:
-            return Box(self.raw["metadata"]["labels"])
+            return self.raw["metadata"]["labels"]
         except KeyError:
             return Box({})
+
+    @labels.setter
+    def labels(self, value: dict) -> None:
+        self.raw["metadata"]["labels"] = value
 
     @property
     def annotations(self) -> Box:
         """Annotations of the Kubernetes resource."""
         try:
-            return Box(self.raw["metadata"]["annotations"])
+            return self.raw["metadata"]["annotations"]
         except KeyError:
             return Box({})
+
+    @annotations.setter
+    def annotations(self, value: dict) -> None:
+        self.raw["metadata"]["annotations"] = value
 
     @property
     def replicas(self) -> int:
@@ -192,6 +216,15 @@ class APIObject:
                 spec = spec[key]
             return spec
         raise NotImplementedError(f"{self.kind} is not scalable")
+
+    @replicas.setter
+    def replicas(self, value: int) -> None:
+        if self.scalable:
+            raise NotImplementedError(
+                f"Use scale() method to set replicas for {self.kind}"
+            )
+        else:
+            raise NotImplementedError(f"{self.kind} is not scalable")
 
     @classmethod
     async def get(
@@ -534,6 +567,10 @@ class APIObject:
         """Get an item from this object."""
         return self.raw[key]
 
+    def __setitem__(self, key: str, value: Any) -> None:
+        """Set an item in this object."""
+        self.raw[key] = value
+
     async def set_owner(self, owner: APIObject) -> None:
         """Set the owner reference of this object.
 
@@ -677,7 +714,11 @@ class ConfigMap(APIObject):
     @property
     def data(self) -> Box:
         """Data of the ConfigMap."""
-        return Box(self.raw["data"])
+        return self.raw["data"]
+
+    @data.setter
+    def data(self, value: dict) -> None:
+        self.raw["data"] = value
 
 
 class Endpoints(APIObject):
@@ -1166,7 +1207,11 @@ class Secret(APIObject):
     @property
     def data(self) -> Box:
         """Data of the Secret."""
-        return Box(self.raw["data"])
+        return self.raw["data"]
+
+    @data.setter
+    def data(self, value: dict) -> None:
+        self.raw["data"] = value
 
 
 class ServiceAccount(APIObject):
