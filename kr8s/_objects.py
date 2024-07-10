@@ -91,7 +91,11 @@ class APIObject:
 
     def __repr__(self):
         """Return a string representation of the Kubernetes resource."""
-        return f"<{self.kind} {self.name}>"
+        if "name" in self.metadata:
+            return f"<{self.kind} {self.name}>"
+        if "generateName" in self.metadata:
+            return f"<{self.kind} generateName({self.metadata.generateName})>"
+        return f"<{self.kind} UNKNOWN>"
 
     def __str__(self):
         """Return a string representation of the Kubernetes resource."""
@@ -134,10 +138,11 @@ class APIObject:
     @property
     def name(self) -> str:
         """Name of the Kubernetes resource."""
-        try:
-            return self.raw["metadata"]["name"]
-        except KeyError as e:
-            raise ValueError("Resource does not have a name") from e
+        if "name" in self.metadata:
+            return self.metadata.name
+        if "generateName" in self.metadata:
+            raise ValueError("Resource has a generateName that has not been resolved")
+        raise ValueError("Resource does not have a name")
 
     @name.setter
     def name(self, value: str) -> None:
@@ -1063,8 +1068,9 @@ class Pod(APIObject):
     def gen(
         cls,
         *,
-        name,
-        image,
+        name=None,
+        generate_name=None,
+        image=None,
         namespace=None,
         annotations=None,
         command=None,
@@ -1079,6 +1085,7 @@ class Pod(APIObject):
 
         Args:
             name (str): The name of the pod.
+            generate_name (str): Template for generating the name of the pod.
             namespace (str): The namespace of the pod.
             image (str): The image to use.
             annotations (dict): Annotations to add to the pod.
@@ -1114,6 +1121,10 @@ class Pod(APIObject):
             ...               image="nvidia/samples:vectoradd-cuda11.6.0-ubuntu18.04",
             ...               resources={"limits": {"nvidia.com/gpu": 1}})
         """
+        if not image:
+            raise ValueError("Image must be specified")
+        if not name and not generate_name:
+            raise ValueError("Name or generate_name must be specified")
         if ports:
             if isinstance(ports, int):
                 ports = [ports]
@@ -1129,6 +1140,7 @@ class Pod(APIObject):
                 kind="Pod",
                 metadata=xdict(
                     name=name,
+                    generateName=generate_name,
                     namespace=namespace,
                     annotations=annotations,
                     labels=labels,
@@ -1136,7 +1148,7 @@ class Pod(APIObject):
                 spec=xdict(
                     containers=[
                         xdict(
-                            name=name,
+                            name=name if name else "container",
                             image=image,
                             command=command,
                             env=env,

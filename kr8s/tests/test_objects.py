@@ -1201,3 +1201,26 @@ async def test_setting_attributes():
 
     with pytest.raises(NotImplementedError):
         po.replicas = 2
+
+
+async def test_generate_name():
+    po = await kr8s.asyncio.objects.Pod.gen(
+        generate_name="nginx-", image="nginx:latest"
+    )
+
+    assert "generateName" in po.metadata
+    assert po.metadata.generateName == "nginx-"
+    assert "name" not in po.metadata
+    with pytest.raises(ValueError):
+        assert po.name
+
+    assert "generateName(nginx-)" in po.__repr__()
+
+    await po.create()
+    try:
+        assert po.name
+        assert po.name.startswith("nginx-")
+        assert len(po.name) > len(po.metadata.generateName)
+        assert po.metadata.generateName in po.name
+    finally:
+        await po.delete()
