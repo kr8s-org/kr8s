@@ -25,9 +25,15 @@ repos:
           - --use-current-year
           - --no-extra-eol
           - --detect-license-in-X-top-lines=5
-  -   repo: https://github.com/pre-commit/mirrors-mypy
-      rev: 'v1.10.1'
-      hooks:
-      - id: mypy
-        exclude: "examples|tests|venv|ci|docs|conftest.py"
-        additional_dependencies: [types-pyyaml>=6.0]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.10.1'
+    hooks:
+    - id: mypy
+      exclude: "examples|tests|venv|ci|docs|conftest.py"
+      additional_dependencies: [types-pyyaml>=6.0]
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.371
+    hooks:
+    - id: pyright
+      exclude: "examples|tests|venv|ci|docs|conftest.py"
+      additional_dependencies: [".[test]"]

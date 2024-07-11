@@ -7,7 +7,7 @@ At the top level, `kr8s` provides a synchronous API that wraps the asynchronous 
 Both APIs are functionally identical with the same objects, method signatures and return values.
 """
 from functools import partial, update_wrapper
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Type, Union
 
 from . import asyncio, objects, portforward
 from ._api import ALL
@@ -55,11 +55,11 @@ class Api(_AsyncApi):
 
 def get(
     kind: str,
-    *names: List[str],
+    *names: str,
     namespace: Optional[str] = None,
     label_selector: Optional[Union[str, Dict]] = None,
     field_selector: Optional[Union[str, Dict]] = None,
-    as_object: Optional[object] = None,
+    as_object: Optional[Type] = None,
     allow_unknown_type: bool = True,
     api=None,
     **kwargs,

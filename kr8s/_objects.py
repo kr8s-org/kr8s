@@ -18,6 +18,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 
 import anyio
@@ -76,7 +77,7 @@ class APIObject:
                 "resource must be a dict, string, have an obj attribute or a to_dict method"
             )
         if namespace is not None:
-            self.raw["metadata"]["namespace"] = namespace
+            self.raw["metadata"]["namespace"] = namespace  # type: ignore
         self._api = api
         if self._api is None and not self._asyncio:
             self._api = kr8s.api()
@@ -152,6 +153,7 @@ class APIObject:
     def namespace(self) -> Optional[str]:
         """Namespace of the Kubernetes resource."""
         if self.namespaced:
+            assert self.api
             return self.raw.get("metadata", {}).get("namespace", self.api.namespace)
         return None
 
@@ -293,6 +295,7 @@ class APIObject:
     async def async_exists(self, ensure=False) -> bool:
         """Check if this object exists in Kubernetes."""
         try:
+            assert self.api
             async with self.api.call_api(
                 "GET",
                 version=self.version,
@@ -311,6 +314,7 @@ class APIObject:
 
     async def create(self) -> None:
         """Create this object in Kubernetes."""
+        assert self.api
         async with self.api.call_api(
             "POST",
             version=self.version,
@@ -326,6 +330,7 @@ class APIObject:
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
         try:
+            assert self.api
             async with self.api.call_api(
                 "DELETE",
                 version=self.version,
@@ -346,6 +351,7 @@ class APIObject:
     async def async_refresh(self) -> None:
         """Refresh this object from Kubernetes."""
         try:
+            assert self.api
             async with self.api.call_api(
                 "GET",
                 version=self.version,
@@ -372,6 +378,7 @@ class APIObject:
         if subresource:
             url = f"{url}/{subresource}"
         try:
+            assert self.api
             async with self.api.call_api(
                 "PATCH",
                 version=self.version,
@@ -401,6 +408,7 @@ class APIObject:
     async def async_watch(self):
         """Watch this object in Kubernetes."""
         since = self.metadata.get("resourceVersion")
+        assert self.api
         async for event, obj in self.api.async_watch(
             self.endpoint,
             namespace=self.namespace,
@@ -932,6 +940,7 @@ class Pod(APIObject):
             params["limitBytes"] = int(limit_bytes)
 
         with contextlib.suppress(httpx.ReadTimeout):
+            assert self.api
             async with self.api.call_api(
                 "GET",
                 version=self.version,
@@ -990,7 +999,7 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: Optional[str] = None,
-        stdin: Optional[Union[str | BinaryIO]] = None,
+        stdin: Optional[Union[str, BinaryIO]] = None,
         stdout: Optional[BinaryIO] = None,
         stderr: Optional[BinaryIO] = None,
         check: bool = True,
@@ -1018,7 +1027,7 @@ class Pod(APIObject):
         command: List[str],
         *,
         container: Optional[str] = None,
-        stdin: Optional[Union[str | BinaryIO]] = None,
+        stdin: Optional[Union[str, BinaryIO]] = None,
         stdout: Optional[BinaryIO] = None,
         stderr: Optional[BinaryIO] = None,
         check: bool = True,
@@ -1266,6 +1275,7 @@ class Service(APIObject):
     ) -> httpx.Response:
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
+        assert self.api
         async with self.api.call_api(
             method,
             version=self.version,
@@ -1301,11 +1311,20 @@ class Service(APIObject):
 
     async def async_ready_pods(self) -> List[Pod]:
         """Return a list of ready Pods for this Service."""
+        assert self.api
         pods = await self.api.async_get(
             "pods",
             label_selector=dict_to_selector(self.spec["selector"]),
             namespace=self.namespace,
         )
+        if isinstance(pods, Pod):
+            pods = [pods]
+        elif isinstance(pods, List) and all(isinstance(pod, Pod) for pod in pods):
+            # The all(isinstance(...) for ...) check doesn't seem to narrow the type
+            # correctly in pyright so we need to explicitly use cast
+            pods = cast(List[Pod], pods)
+        else:
+            raise TypeError(f"Unexpected type {type(pods)} returned from API")
         return [pod for pod in pods if await pod.async_ready()]
 
     async def ready(self) -> bool:
@@ -1397,12 +1416,19 @@ class Deployment(APIObject):
 
     async def pods(self) -> List[Pod]:
         """Return a list of Pods for this Deployment."""
+        assert self.api
         pods = await self.api.async_get(
             "pods",
             label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
             namespace=self.namespace,
         )
-        return pods
+        if isinstance(pods, Pod):
+            return [pods]
+        if isinstance(pods, List) and all(isinstance(pod, Pod) for pod in pods):
+            # The all(isinstance(...) for ...) check doesn't seem to narrow the type
+            # correctly in pyright so we need to explicitly use cast
+            return cast(List[Pod], pods)
+        raise TypeError(f"Unexpected type {type(pods)} returned from API")
 
     async def ready(self):
         """Check if the deployment is ready."""

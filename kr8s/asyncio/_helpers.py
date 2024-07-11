@@ -1,19 +1,20 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Type, Union
 
 from kr8s._api import Api
+from kr8s._objects import APIObject
 
 from ._api import api as _api
 
 
 async def get(
     kind: str,
-    *names: List[str],
+    *names: str,
     namespace: Optional[str] = None,
     label_selector: Optional[Union[str, Dict]] = None,
     field_selector: Optional[Union[str, Dict]] = None,
-    as_object: Optional[object] = None,
+    as_object: Optional[Type[APIObject]] = None,
     allow_unknown_type: bool = True,
     api=None,
     _asyncio=True,

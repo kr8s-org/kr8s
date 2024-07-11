@@ -192,7 +192,9 @@ class Api(object):
                         ) from e
                     elif e.response.status_code >= 500:
                         raise ServerError(
-                            str(e), status=e.response.status_code, response=e.response
+                            str(e),
+                            status=str(e.response.status_code),
+                            response=e.response,
                         ) from e
                     raise
             except ssl.SSLCertVerificationError:
@@ -369,6 +371,7 @@ class Api(object):
         if isinstance(kind, type):
             obj_cls = kind
         else:
+            namespaced: Optional[bool] = None
             try:
                 kind, namespaced = await self.async_lookup_kind(kind)
             except ServerError as e:
@@ -378,9 +381,12 @@ class Api(object):
                     obj_cls = get_class(kind, _asyncio=self._asyncio)
                 except KeyError as e:
                     if allow_unknown_type:
-                        obj_cls = new_class(
-                            kind, namespaced=namespaced, asyncio=self._asyncio
-                        )
+                        if namespaced is not None:
+                            obj_cls = new_class(
+                                kind, namespaced=namespaced, asyncio=self._asyncio
+                            )
+                        else:
+                            obj_cls = new_class(kind, asyncio=self._asyncio)
                     else:
                         raise e
         params = params or None
@@ -499,7 +505,7 @@ class Api(object):
         field_selector: Optional[Union[str, Dict]] = None,
         since: Optional[str] = None,
         allow_unknown_type: bool = True,
-    ) -> AsyncGenerator[Tuple[str, object], None]:
+    ) -> AsyncGenerator[Tuple[str, APIObject], None]:
         """Watch a Kubernetes resource."""
         async with self.async_get_kind(
             kind,
@@ -515,7 +521,7 @@ class Api(object):
                 event = json.loads(line)
                 yield event["type"], obj_cls(event["object"], api=self)
 
-    async def api_resources(self) -> dict:
+    async def api_resources(self) -> List[Dict]:
         """Get the Kubernetes API resources."""
         return await self.async_api_resources()
 

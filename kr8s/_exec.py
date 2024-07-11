@@ -53,6 +53,7 @@ class Exec:
     async def run(
         self,
     ) -> AsyncGenerator[Exec, CompletedExec]:
+        assert self._resource.api
         async with self._resource.api.open_websocket(
             version=self._resource.version,
             url=f"{self._resource.endpoint}/{self._resource.name}/exec",
@@ -70,7 +71,7 @@ class Exec:
                 if ws.subprotocol != "v5.channel.k8s.io":
                     raise ExecError(
                         "Stdin is not supported with protocol "
-                        f"{ws.protocol}, only with v5.channel.k8s.io"
+                        f"{ws.subprotocol}, only with v5.channel.k8s.io"
                     )
                 if isinstance(self._stdin, str):
                     await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.encode())  # type: ignore
@@ -132,7 +133,7 @@ class CompletedExec:
     Similar to subprocess.CompletedProcess.
     """
 
-    args: Union[str | List[str]]
+    args: Union[str, List[str]]
     stdout: bytes
     stderr: bytes
     returncode: int

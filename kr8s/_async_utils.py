@@ -44,6 +44,8 @@ else:
     from typing_extensions import ParamSpec
 
 import anyio
+import anyio.from_thread
+import anyio.to_thread
 
 T = TypeVar("T")
 C = TypeVar("C")
@@ -65,11 +67,12 @@ class Portal:
 
     """
 
-    _instance = None
-    _portal = None
+    _instance: Portal
+    _portal: anyio.from_thread.BlockingPortal
+    thread: Thread
 
     def __new__(cls):
-        if cls._instance is None:
+        if not hasattr(cls, "_instance"):
             cls._instance = super(Portal, cls).__new__(cls)
             cls._instance.thread = Thread(
                 target=anyio.run, args=[cls._instance._run], name="Kr8sSyncRunnerThread"
@@ -86,7 +89,7 @@ class Portal:
     def call(self, func: Callable[P, Awaitable[T]], *args, **kwargs) -> T:
         """Call a coroutine in the runner loop and return the result."""
         # On first call the thread has to start the loop, so we need to wait for it
-        while not self._portal:
+        while not hasattr(self, "_portal"):
             pass
         return self._portal.call(func, *args, **kwargs)
 
