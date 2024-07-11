@@ -31,9 +31,3 @@ repos:
     - id: mypy
       exclude: "examples|tests|venv|ci|docs|conftest.py"
       additional_dependencies: [types-pyyaml>=6.0]
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.371
-    hooks:
-    - id: pyright
-      exclude: "examples|tests|venv|ci|docs|conftest.py"
-      additional_dependencies: [".[test]"]
