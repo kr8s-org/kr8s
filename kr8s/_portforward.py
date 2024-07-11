@@ -15,6 +15,7 @@ import httpx_ws
 import sniffio
 
 from ._exceptions import ConnectionClosedError
+from ._types import APIObjectWithPods
 
 if TYPE_CHECKING:
     from ._objects import APIObject
@@ -112,6 +113,7 @@ class PortForward:
         return await self._run_task.__aenter__(*args, **kwargs)
 
     async def __aexit__(self, *args, **kwargs):
+        assert self._run_task
         return await self._run_task.__aexit__(*args, **kwargs)
 
     async def start(self) -> int:
@@ -181,7 +183,7 @@ class PortForward:
         if isinstance(self._resource, Pod):
             return self._resource
 
-        if hasattr(self._resource, "async_ready_pods"):
+        if isinstance(self._resource, APIObjectWithPods):
             try:
                 return random.choice(await self._resource.async_ready_pods())
             except IndexError:
@@ -196,6 +198,7 @@ class PortForward:
             if not self.pod:
                 self.pod = await self._select_pod()
             try:
+                assert self.pod.api
                 async with self.pod.api.open_websocket(
                     version=self.pod.version,
                     url=f"{self.pod.endpoint}/{self.pod.name}/portforward",

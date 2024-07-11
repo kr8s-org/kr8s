@@ -144,3 +144,13 @@ convention = "google"
 
 [tool.mypy]
 exclude = ["examples", "tests", "venv", "ci", "docs", "conftest.py"]
+
+[tool.pyright]
+exclude = ["examples", "**/tests", "venv", "ci", "docs", "conftest.py"]
+
+# We often override corotuines with sync methods so this is not useful
+reportIncompatibleMethodOverride = "none"
+
+# When run with pre-commit, we don't want to report missing imports
+reportMissingImports = "none"
+reportMissingModuleSource = "none"
