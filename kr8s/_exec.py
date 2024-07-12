@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, AsyncGenerator, BinaryIO, List, Optional, Union
+from typing import TYPE_CHECKING, AsyncGenerator, BinaryIO
 
 from kr8s._exceptions import ExecError
 
@@ -27,11 +27,11 @@ class Exec:
     def __init__(
         self,
         resource: APIObject,
-        command: List[str],
-        container: Optional[str] = None,
-        stdin: Optional[Union[str, BinaryIO]] = None,
-        stdout: Optional[BinaryIO] = None,
-        stderr: Optional[BinaryIO] = None,
+        command: list[str],
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
     ) -> None:
@@ -133,7 +133,7 @@ class CompletedExec:
     Similar to subprocess.CompletedProcess.
     """
 
-    args: Union[str, List[str]]
+    args: str | list[str]
     stdout: bytes
     stderr: bytes
     returncode: int

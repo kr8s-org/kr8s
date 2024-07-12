@@ -40,7 +40,7 @@ class KubeConfigMixin:
             return jsonpath.pointer.resolve(pointer, self.raw)
 
 
-class KubeConfigSet(KubeConfigMixin, object):
+class KubeConfigSet(KubeConfigMixin):
     def __init__(self, *paths_or_dicts: Union[PathType, Dict]):
         self._configs = []
         for path_or_dict in paths_or_dicts:
@@ -219,7 +219,7 @@ class KubeConfigSet(KubeConfigMixin, object):
         return extensions
 
 
-class KubeConfig(KubeConfigMixin, object):
+class KubeConfig(KubeConfigMixin):
     def __init__(self, path_or_config: Union[PathType, Dict]):
         self.path: PathType
         self._raw: dict = {}

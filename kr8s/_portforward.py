@@ -8,7 +8,7 @@ import random
 import socket
 import sys
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, AsyncGenerator, List, Optional
+from typing import TYPE_CHECKING, AsyncGenerator
 
 import anyio
 import httpx_ws
@@ -78,8 +78,8 @@ class PortForward:
         self,
         resource: APIObject,
         remote_port: int,
-        local_port: Optional[int] = None,
-        address: List[str] | str = "127.0.0.1",
+        local_port: int | None = None,
+        address: list[str] | str = "127.0.0.1",
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
             if sniffio.current_async_library() != "asyncio":
@@ -88,7 +88,7 @@ class PortForward:
                     "see https://github.com/kr8s-org/kr8s/issues/104"
                 )
         self.server = None
-        self.servers: List[asyncio.Server] = []
+        self.servers: list[asyncio.Server] = []
         self.remote_port = remote_port
         self.local_port = local_port if local_port is not None else 0
         if isinstance(address, str):
@@ -103,10 +103,10 @@ class PortForward:
         self._resource = resource
         self.pod = None
         self._loop = asyncio.get_event_loop()
-        self._tasks: List[asyncio.Task] = []
+        self._tasks: list[asyncio.Task] = []
         self._run_task = None
-        self._bg_future: Optional[asyncio.Future] = None
-        self._bg_task: Optional[asyncio.Task] = None
+        self._bg_future: asyncio.Future | None = None
+        self._bg_task: asyncio.Task | None = None
 
     async def __aenter__(self, *args, **kwargs):
         self._run_task = self._run()

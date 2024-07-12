@@ -31,3 +31,8 @@ repos:
     - id: mypy
       exclude: "examples|tests|venv|ci|docs|conftest.py"
       additional_dependencies: [types-pyyaml>=6.0]
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.16.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py38-plus]

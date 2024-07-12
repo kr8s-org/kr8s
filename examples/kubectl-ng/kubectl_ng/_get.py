@@ -132,7 +132,7 @@ async def get(
             raise typer.BadParameter("you may only specify a single resource type")
     # Support kubectl-ng get pod [name]
     elif len(resources) == 2:
-        resources, resource_names = [[r] for r in resources]
+        resources, resource_names = ([r] for r in resources)
     else:
         raise typer.BadParameter(
             f"Format '{' '.join(resources)}' not currently supported."
