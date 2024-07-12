@@ -33,9 +33,7 @@ from typing import (
     Awaitable,
     Callable,
     Generator,
-    Tuple,
     TypeVar,
-    Union,
 )
 
 if sys.version_info >= (3, 10):
@@ -73,7 +71,7 @@ class Portal:
 
     def __new__(cls):
         if not hasattr(cls, "_instance"):
-            cls._instance = super(Portal, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.thread = Thread(
                 target=anyio.run, args=[cls._instance._run], name="Kr8sSyncRunnerThread"
             )
@@ -95,8 +93,8 @@ class Portal:
 
 
 def run_sync(
-    coro: Callable[P, Union[AsyncGenerator, Awaitable[T]]]
-) -> Callable[P, Union[Generator, T]]:
+    coro: Callable[P, AsyncGenerator | Awaitable[T]]
+) -> Callable[P, Generator | T]:
     """Wraps a coroutine in a function that blocks until it has executed.
 
     Args:
@@ -138,7 +136,7 @@ def iter_over_async(agen: AsyncGenerator) -> Generator:
     """
     ait = agen.__aiter__()
 
-    async def get_next() -> Tuple[bool, Any]:
+    async def get_next() -> tuple[bool, Any]:
         try:
             obj = await ait.__anext__()
             return False, obj

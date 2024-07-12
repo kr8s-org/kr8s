@@ -11,13 +11,8 @@ from typing import (
     Any,
     AsyncGenerator,
     BinaryIO,
-    Dict,
     List,
     Literal,
-    Optional,
-    Tuple,
-    Type,
-    Union,
     cast,
 )
 
@@ -59,7 +54,7 @@ class APIObject:
     _asyncio: bool = True
 
     def __init__(
-        self, resource: dict, namespace: Optional[str] = None, api: Optional[Api] = None
+        self, resource: dict, namespace: str | None = None, api: Api | None = None
     ) -> None:
         """Initialize an APIObject."""
         with contextlib.suppress(TypeError, ValueError):
@@ -150,7 +145,7 @@ class APIObject:
         self.raw["metadata"]["name"] = value
 
     @property
-    def namespace(self) -> Optional[str]:
+    def namespace(self) -> str | None:
         """Namespace of the Kubernetes resource."""
         if self.namespaced:
             assert self.api
@@ -236,11 +231,11 @@ class APIObject:
     @classmethod
     async def get(
         cls,
-        name: Optional[str] = None,
-        namespace: Optional[str] = None,
-        api: Optional[Api] = None,
-        label_selector: Optional[Union[str, Dict[str, str]]] = None,
-        field_selector: Optional[Union[str, Dict[str, str]]] = None,
+        name: str | None = None,
+        namespace: str | None = None,
+        api: Api | None = None,
+        label_selector: str | dict[str, str] | None = None,
+        field_selector: str | dict[str, str] | None = None,
         timeout: int = 2,
         **kwargs,
     ) -> APIObject:
@@ -324,7 +319,7 @@ class APIObject:
         ) as resp:
             self.raw = resp.json()
 
-    async def delete(self, propagation_policy: Optional[str] = None) -> None:
+    async def delete(self, propagation_policy: str | None = None) -> None:
         """Delete this object from Kubernetes."""
         data = {}
         if propagation_policy:
@@ -368,7 +363,7 @@ class APIObject:
         """Patch this object in Kubernetes."""
         await self.async_patch(patch, subresource=subresource, type=type)
 
-    async def async_patch(self, patch: Dict, *, subresource=None, type=None) -> None:
+    async def async_patch(self, patch: dict, *, subresource=None, type=None) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if type == "json":
@@ -393,7 +388,7 @@ class APIObject:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
             raise e
 
-    async def scale(self, replicas: Optional[int] = None) -> None:
+    async def scale(self, replicas: int | None = None) -> None:
         """Scale this object in Kubernetes."""
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
@@ -423,21 +418,8 @@ class APIObject:
         async for event, obj in self.async_watch():
             yield event, obj
 
-    @classmethod
-    async def list(cls, **kwargs) -> Union[APIObject, List[APIObject]]:
-        """List objects in Kubernetes.
-
-        Args:
-            **kwargs: Keyword arguments to pass to :func:`kr8s.get`.
-
-        Returns:
-            A list of objects.
-        """
-        api = await kr8s.asyncio.api()
-        return await api.async_get(kind=cls, **kwargs)
-
     async def _test_conditions(
-        self, conditions: List, mode: Literal["any", "all"] = "any"
+        self, conditions: list, mode: Literal["any", "all"] = "any"
     ) -> bool:
         """Test if conditions are met.
 
@@ -487,9 +469,9 @@ class APIObject:
 
     async def wait(
         self,
-        conditions: Union[List[str], str],
+        conditions: list[str] | str,
         mode: Literal["any", "all"] = "any",
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ):
         """Wait for conditions to be met.
 
@@ -540,7 +522,7 @@ class APIObject:
                 if await self._test_conditions(conditions, mode=mode):
                     return
 
-    async def annotate(self, annotations: Optional[dict] = None, **kwargs) -> None:
+    async def annotate(self, annotations: dict | None = None, **kwargs) -> None:
         """Annotate this object in Kubernetes."""
         if annotations is None:
             annotations = kwargs
@@ -548,7 +530,7 @@ class APIObject:
             raise ValueError("No annotations provided")
         await self.async_patch({"metadata": {"annotations": annotations}})
 
-    async def label(self, labels: Optional[dict] = None, **kwargs) -> None:
+    async def label(self, labels: dict | None = None, **kwargs) -> None:
         """Add labels to this object in Kubernetes.
 
         Labels can be passed as a dictionary or as keyword arguments.
@@ -572,7 +554,7 @@ class APIObject:
             raise ValueError("No labels provided")
         await self.async_patch({"metadata": {"labels": labels}})
 
-    def keys(self) -> List:
+    def keys(self) -> list:
         """Return the keys of this object."""
         return self.raw.keys()
 
@@ -687,6 +669,20 @@ class APIObject:
     @classmethod
     def gen(cls, *args, **kwargs):
         raise NotImplementedError("gen is not implemented for this object")
+
+    # Must be the last method defined due to https://github.com/python/mypy/issues/17517
+    @classmethod
+    async def list(cls, **kwargs) -> APIObject | list[APIObject]:
+        """List objects in Kubernetes.
+
+        Args:
+            **kwargs: Keyword arguments to pass to :func:`kr8s.get`.
+
+        Returns:
+            A list of objects.
+        """
+        api = await kr8s.asyncio.api()
+        return await api.async_get(kind=cls, **kwargs)
 
 
 ## v1 objects
@@ -956,9 +952,9 @@ class Pod(APIObject):
     def portforward(
         self,
         remote_port: int,
-        local_port: Optional[int] = None,
-        address: List[str] | str = "127.0.0.1",
-    ) -> Union[SyncPortForward, AsyncPortForward]:
+        local_port: int | None = None,
+        address: list[str] | str = "127.0.0.1",
+    ) -> SyncPortForward | AsyncPortForward:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
@@ -996,12 +992,12 @@ class Pod(APIObject):
 
     async def async_exec(
         self,
-        command: List[str],
+        command: list[str],
         *,
-        container: Optional[str] = None,
-        stdin: Optional[Union[str, BinaryIO]] = None,
-        stdout: Optional[BinaryIO] = None,
-        stderr: Optional[BinaryIO] = None,
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
     ):
@@ -1024,12 +1020,12 @@ class Pod(APIObject):
 
     async def exec(
         self,
-        command: List[str],
+        command: list[str],
         *,
-        container: Optional[str] = None,
-        stdin: Optional[Union[str, BinaryIO]] = None,
-        stdout: Optional[BinaryIO] = None,
-        stderr: Optional[BinaryIO] = None,
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
     ):
@@ -1257,7 +1253,7 @@ class Service(APIObject):
     namespaced = True
 
     async def proxy_http_request(
-        self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
+        self, method: str, path: str, port: int | None = None, **kwargs: Any
     ) -> httpx.Response:
         """Issue a HTTP request with specific HTTP method to proxy of a Service.
 
@@ -1271,7 +1267,7 @@ class Service(APIObject):
         return await self.async_proxy_http_request(method, path, port, **kwargs)
 
     async def async_proxy_http_request(
-        self, method: str, path: str, port: Optional[int] = None, **kwargs: Any
+        self, method: str, path: str, port: int | None = None, **kwargs: Any
     ) -> httpx.Response:
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
@@ -1286,30 +1282,30 @@ class Service(APIObject):
             return response
 
     async def proxy_http_get(
-        self, path: str, port: Optional[int] = None, **kwargs
+        self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
         return await self.async_proxy_http_request("GET", path, port, **kwargs)
 
     async def proxy_http_post(
-        self, path: str, port: Optional[int] = None, **kwargs
+        self, path: str, port: int | None = None, **kwargs
     ) -> None:
         await self.async_proxy_http_request("POST", path, port, **kwargs)
 
     async def proxy_http_put(
-        self, path: str, port: Optional[int] = None, **kwargs
+        self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
         return await self.async_proxy_http_request("PUT", path, port, **kwargs)
 
     async def proxy_http_delete(
-        self, path: str, port: Optional[int] = None, **kwargs
+        self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
         return await self.async_proxy_http_request("DELETE", path, port, **kwargs)
 
-    async def ready_pods(self) -> List[Pod]:
+    async def ready_pods(self) -> list[Pod]:
         """Return a list of ready Pods for this Service."""
         return await self.async_ready_pods()
 
-    async def async_ready_pods(self) -> List[Pod]:
+    async def async_ready_pods(self) -> list[Pod]:
         """Return a list of ready Pods for this Service."""
         assert self.api
         pods = await self.api.async_get(
@@ -1345,9 +1341,9 @@ class Service(APIObject):
     def portforward(
         self,
         remote_port: int,
-        local_port: Optional[int] = None,
-        address: str | List[str] = "127.0.0.1",
-    ) -> Union[SyncPortForward, AsyncPortForward]:
+        local_port: int | None = None,
+        address: str | list[str] = "127.0.0.1",
+    ) -> SyncPortForward | AsyncPortForward:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
@@ -1414,7 +1410,7 @@ class Deployment(APIObject):
     namespaced = True
     scalable = True
 
-    async def pods(self) -> List[Pod]:
+    async def pods(self) -> list[Pod]:
         """Return a list of Pods for this Deployment."""
         assert self.api
         pods = await self.api.async_get(
@@ -1630,21 +1626,21 @@ class Table(APIObject):
     namespaced = False
 
     @property
-    def rows(self) -> List[Dict]:
+    def rows(self) -> list[dict]:
         """Table rows."""
         return self.raw["rows"]
 
     @property
-    def column_definitions(self) -> List[Dict]:
+    def column_definitions(self) -> list[dict]:
         """Table column definitions."""
         return self.raw["columnDefinitions"]
 
 
 def get_class(
     kind: str,
-    version: Optional[str] = None,
+    version: str | None = None,
     _asyncio: bool = True,
-) -> Type[APIObject]:
+) -> type[APIObject]:
     """Get an APIObject subclass by kind and version.
 
     Args:
@@ -1710,13 +1706,13 @@ def get_class(
 
 def new_class(
     kind: str,
-    version: Optional[str] = None,
+    version: str | None = None,
     asyncio: bool = True,
     namespaced=True,
-    scalable: Optional[bool] = None,
-    scalable_spec: Optional[str] = None,
-    plural: Optional[str] = None,
-) -> Type[APIObject]:
+    scalable: bool | None = None,
+    scalable_spec: str | None = None,
+    plural: str | None = None,
+) -> type[APIObject]:
     """Create a new APIObject subclass.
 
     Args:
@@ -1758,7 +1754,7 @@ def new_class(
 
 def object_from_spec(
     spec: dict,
-    api: Optional[Api] = None,
+    api: Api | None = None,
     allow_unknown_type: bool = False,
     _asyncio: bool = True,
 ) -> APIObject:
@@ -1788,8 +1784,8 @@ def object_from_spec(
 
 async def object_from_name_type(
     name: str,
-    namespace: Optional[str] = None,
-    api: Optional[Api] = None,
+    namespace: str | None = None,
+    api: Api | None = None,
     _asyncio: bool = True,
 ) -> APIObject:
     """Create an APIObject from a Kubernetes resource name.
@@ -1820,11 +1816,11 @@ async def object_from_name_type(
 
 
 async def objects_from_files(
-    path: Union[str, pathlib.Path],
-    api: Optional[Api] = None,
+    path: str | pathlib.Path,
+    api: Api | None = None,
     recursive: bool = False,
     _asyncio: bool = True,
-) -> List[APIObject]:
+) -> list[APIObject]:
     """Create APIObjects from Kubernetes resource files.
 
     Args:
@@ -1849,7 +1845,7 @@ async def objects_from_files(
         api = await kr8s.asyncio.api(_asyncio=_asyncio)
     objects = []
     for file in files:
-        with open(file, "r") as f:
+        with open(file) as f:
             for doc in yaml.safe_load_all(f):
                 if doc is not None:
                     obj = object_from_spec(
@@ -1861,7 +1857,7 @@ async def objects_from_files(
     return objects
 
 
-def parse_kind(kind: str) -> Tuple[str, str, str]:
+def parse_kind(kind: str) -> tuple[str, str, str]:
     """Parse a Kubernetes resource kind into a tuple of (kind, group, version).
 
     Args:

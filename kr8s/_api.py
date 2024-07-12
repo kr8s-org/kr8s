@@ -13,12 +13,6 @@ import weakref
 from typing import (
     TYPE_CHECKING,
     AsyncGenerator,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
 )
 
 import httpx
@@ -37,7 +31,7 @@ if TYPE_CHECKING:
 ALL = "all"
 
 
-class Api(object):
+class Api:
     """A kr8s object for interacting with the Kubernetes API.
 
     .. warning::
@@ -49,7 +43,7 @@ class Api(object):
     """
 
     _asyncio = True
-    _instances: Dict[str, weakref.WeakValueDictionary] = {}
+    _instances: dict[str, weakref.WeakValueDictionary] = {}
 
     def __init__(self, **kwargs) -> None:
         if not kwargs.pop("bypass_factory", False):
@@ -61,7 +55,7 @@ class Api(object):
         self._url = kwargs.get("url")
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
-        self._session: Optional[httpx.AsyncClient] = None
+        self._session: httpx.AsyncClient | None = None
         self._timeout = None
         self.auth = KubeAuth(
             url=self._url,
@@ -118,7 +112,7 @@ class Api(object):
         self,
         version: str = "v1",
         base: str = "",
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         url: str = "",
     ) -> str:
         if not base:
@@ -142,7 +136,7 @@ class Api(object):
         method: str = "GET",
         version: str = "v1",
         base: str = "",
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         url: str = "",
         raise_for_status: bool = True,
         stream: bool = False,
@@ -218,7 +212,7 @@ class Api(object):
         self,
         version: str = "v1",
         base: str = "",
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         url: str = "",
         **kwargs,
     ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession, None]:
@@ -294,7 +288,7 @@ class Api(object):
                 [name] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
                 return name.value
 
-    async def async_lookup_kind(self, kind) -> Tuple[str, bool]:
+    async def async_lookup_kind(self, kind) -> tuple[str, bool]:
         """Lookup a Kubernetes resource kind."""
         from ._objects import parse_kind
 
@@ -320,7 +314,7 @@ class Api(object):
                 )
         raise ValueError(f"Kind {kind} not found.")
 
-    async def lookup_kind(self, kind) -> Tuple[str, bool]:
+    async def lookup_kind(self, kind) -> tuple[str, bool]:
         """Lookup a Kubernetes resource kind.
 
         Check whether a resource kind exists on the remote server.
@@ -339,15 +333,15 @@ class Api(object):
     @contextlib.asynccontextmanager
     async def async_get_kind(
         self,
-        kind: Union[str, Type[APIObject]],
-        namespace: Optional[str] = None,
-        label_selector: Optional[Union[str, Dict]] = None,
-        field_selector: Optional[Union[str, Dict]] = None,
-        params: Optional[dict] = None,
+        kind: str | type[APIObject],
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        params: dict | None = None,
         watch: bool = False,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> AsyncGenerator[Tuple[Type[APIObject], httpx.Response], None]:
+    ) -> AsyncGenerator[tuple[type[APIObject], httpx.Response], None]:
         """Get a Kubernetes resource."""
         from ._objects import get_class, new_class
 
@@ -371,7 +365,7 @@ class Api(object):
         if isinstance(kind, type):
             obj_cls = kind
         else:
-            namespaced: Optional[bool] = None
+            namespaced: bool | None = None
             try:
                 kind, namespaced = await self.async_lookup_kind(kind)
             except ServerError as e:
@@ -402,15 +396,15 @@ class Api(object):
 
     async def get(
         self,
-        kind: Union[str, type],
+        kind: str | type,
         *names: str,
-        namespace: Optional[str] = None,
-        label_selector: Optional[Union[str, Dict]] = None,
-        field_selector: Optional[Union[str, Dict]] = None,
-        as_object: Optional[Type[APIObject]] = None,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> Union[APIObject, List[APIObject]]:
+    ) -> APIObject | list[APIObject]:
         """Get Kubernetes resources.
 
         Args:
@@ -439,15 +433,15 @@ class Api(object):
 
     async def async_get(
         self,
-        kind: Union[str, type],
+        kind: str | type,
         *names: str,
-        namespace: Optional[str] = None,
-        label_selector: Optional[Union[str, Dict]] = None,
-        field_selector: Optional[Union[str, Dict]] = None,
-        as_object: Optional[Type[APIObject]] = None,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> Union[APIObject, List[APIObject]]:
+    ) -> APIObject | list[APIObject]:
         headers = {}
         if as_object:
             group, version = as_object.version.split("/")
@@ -482,10 +476,10 @@ class Api(object):
     async def watch(
         self,
         kind: str,
-        namespace: Optional[str] = None,
-        label_selector: Optional[Union[str, Dict]] = None,
-        field_selector: Optional[Union[str, Dict]] = None,
-        since: Optional[str] = None,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        since: str | None = None,
     ):
         """Watch a Kubernetes resource."""
         async for t, object in self.async_watch(
@@ -500,12 +494,12 @@ class Api(object):
     async def async_watch(
         self,
         kind: str,
-        namespace: Optional[str] = None,
-        label_selector: Optional[Union[str, Dict]] = None,
-        field_selector: Optional[Union[str, Dict]] = None,
-        since: Optional[str] = None,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        since: str | None = None,
         allow_unknown_type: bool = True,
-    ) -> AsyncGenerator[Tuple[str, APIObject], None]:
+    ) -> AsyncGenerator[tuple[str, APIObject], None]:
         """Watch a Kubernetes resource."""
         async with self.async_get_kind(
             kind,
@@ -521,14 +515,14 @@ class Api(object):
                 event = json.loads(line)
                 yield event["type"], obj_cls(event["object"], api=self)
 
-    async def api_resources(self) -> List[Dict]:
+    async def api_resources(self) -> list[dict]:
         """Get the Kubernetes API resources."""
         return await self.async_api_resources()
 
     # Cache for 6 hours because kubectl does
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
     @cached(TTLCache(1, 60 * 60 * 6))
-    async def async_api_resources(self) -> List[Dict]:
+    async def async_api_resources(self) -> list[dict]:
         """Get the Kubernetes API resources."""
         resources = []
         async with self.call_api(method="GET", version="", base="/api") as response:
