@@ -252,7 +252,11 @@ class APIObject:
             if name:
                 try:
                     resources = await api.async_get(
-                        cls, name, namespace=namespace, **kwargs
+                        cls,
+                        name,
+                        namespace=namespace,
+                        field_selector={"metadata.name": name},
+                        **kwargs,
                     )
                 except ServerError as e:
                     if e.response and e.response.status_code == 404:
