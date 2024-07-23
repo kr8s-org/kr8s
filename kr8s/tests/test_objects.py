@@ -130,9 +130,9 @@ async def test_pod_object_from_name_type(example_pod_spec):
     pod2 = await object_from_name_type(f"pod/{pod.name}", namespace=pod.namespace)
     pod3 = await object_from_name_type(f"pod.v1/{pod.name}", namespace=pod.namespace)
     assert pod2.name == pod.name
-    assert type(pod2) == type(pod)
+    assert type(pod2) is type(pod)
     assert pod3.name == pod.name
-    assert type(pod3) == type(pod)
+    assert type(pod3) is type(pod)
     await pod.delete()
 
 
