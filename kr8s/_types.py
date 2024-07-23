@@ -34,14 +34,12 @@ class SupportsKeysAndGetItem(Protocol[_KT, _VT_co]):
     def __getitem__(self, key: _KT, /) -> _VT_co: ...
 
 
-@runtime_checkable
 class SupportsToDict(Protocol):
     """An object that can be converted to a dictionary."""
 
     def to_dict(self) -> dict: ...
 
 
-@runtime_checkable
 class SupportsObjAttr(Protocol):
     """An object that has an `obj` dict attribute."""
 
