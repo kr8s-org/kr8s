@@ -34,6 +34,7 @@ from kr8s._data_utils import (
 )
 from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import Exec
+from kr8s._types import SpecType, SupportsKeysAndGetItem
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -54,10 +55,10 @@ class APIObject:
     _asyncio: bool = True
 
     def __init__(
-        self, resource: dict, namespace: str | None = None, api: Api | None = None
+        self, resource: SpecType, namespace: str | None = None, api: Api | None = None
     ) -> None:
         """Initialize an APIObject."""
-        with contextlib.suppress(TypeError, ValueError):
+        if isinstance(resource, SupportsKeysAndGetItem):
             resource = dict(resource)
         if isinstance(resource, str):
             self.raw = {"metadata": {"name": resource}}
