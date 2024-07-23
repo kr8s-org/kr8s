@@ -34,6 +34,7 @@ from kr8s._data_utils import (
 )
 from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import Exec
+from kr8s._types import SpecType, SupportsKeysAndGetItem
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -54,22 +55,22 @@ class APIObject:
     _asyncio: bool = True
 
     def __init__(
-        self, resource: dict, namespace: str | None = None, api: Api | None = None
+        self, resource: SpecType, namespace: str | None = None, api: Api | None = None
     ) -> None:
         """Initialize an APIObject."""
-        with contextlib.suppress(TypeError, ValueError):
-            resource = dict(resource)
-        if isinstance(resource, str):
-            self.raw = {"metadata": {"name": resource}}
-        elif isinstance(resource, dict):
+        if isinstance(resource, dict):
             self.raw = resource
+        elif isinstance(resource, SupportsKeysAndGetItem):
+            self.raw = dict(resource)
+        elif isinstance(resource, str):
+            self.raw = {"metadata": {"name": resource}}
         elif hasattr(resource, "to_dict"):
             self.raw = resource.to_dict()
-        elif hasattr(resource, "obj"):
+        elif hasattr(resource, "obj") and isinstance(resource.obj, dict):
             self.raw = resource.obj
         else:
             raise ValueError(
-                "resource must be a dict, string, have an obj attribute or a to_dict method"
+                "resource must be a dict, string, have a to_dict method or an obj attribute containing a dict"
             )
         if namespace is not None:
             self.raw["metadata"]["namespace"] = namespace  # type: ignore
