@@ -102,7 +102,7 @@ class PortForward:
             )
         self._resource = resource
         self.pod = None
-        self._loop = asyncio.get_event_loop()
+        self._loop: asyncio.AbstractEventLoop | None = None
         self._tasks: list[asyncio.Task] = []
         self._run_task = None
         self._bg_future: asyncio.Future | None = None
@@ -118,6 +118,8 @@ class PortForward:
 
     async def start(self) -> int:
         """Start a background task with the port forward running."""
+        if self._loop is None:
+            self._loop = asyncio.get_event_loop()
         if self._bg_task is not None:
             return self.local_port
 
