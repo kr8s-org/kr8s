@@ -155,7 +155,7 @@ class PortForward:
                     await server.serve_forever()
 
     @asynccontextmanager
-    async def _run(self) -> AsyncGenerator[int, None]:
+    async def _run(self) -> AsyncGenerator[int]:
         """Start the port forward for multiple bind addresses and yield the local port."""
         if self.local_port == 0:
             self.local_port = self._find_available_port()

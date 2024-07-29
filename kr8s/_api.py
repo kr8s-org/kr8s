@@ -141,7 +141,7 @@ class Api:
         raise_for_status: bool = True,
         stream: bool = False,
         **kwargs,
-    ) -> AsyncGenerator[httpx.Response, None]:
+    ) -> AsyncGenerator[httpx.Response]:
         """Make a Kubernetes API request."""
         if not self._session or self._session.is_closed:
             await self._create_session()
@@ -215,7 +215,7 @@ class Api:
         namespace: str | None = None,
         url: str = "",
         **kwargs,
-    ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession, None]:
+    ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession]:
         """Open a websocket connection to a Kubernetes API endpoint."""
         if not self._session or self._session.is_closed:
             await self._create_session()
@@ -341,7 +341,7 @@ class Api:
         watch: bool = False,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> AsyncGenerator[tuple[type[APIObject], httpx.Response], None]:
+    ) -> AsyncGenerator[tuple[type[APIObject], httpx.Response]]:
         """Get a Kubernetes resource."""
         from ._objects import get_class, new_class
 
@@ -499,7 +499,7 @@ class Api:
         field_selector: str | dict | None = None,
         since: str | None = None,
         allow_unknown_type: bool = True,
-    ) -> AsyncGenerator[tuple[str, APIObject], None]:
+    ) -> AsyncGenerator[tuple[str, APIObject]]:
         """Watch a Kubernetes resource."""
         async with self.async_get_kind(
             kind,
@@ -557,12 +557,12 @@ class Api:
             )
         return resources
 
-    async def api_versions(self) -> AsyncGenerator[str, None]:
+    async def api_versions(self) -> AsyncGenerator[str]:
         """Get the Kubernetes API versions."""
         async for version in self.async_api_versions():
             yield version
 
-    async def async_api_versions(self) -> AsyncGenerator[str, None]:
+    async def async_api_versions(self) -> AsyncGenerator[str]:
         async with self.call_api(method="GET", version="", base="/api") as response:
             core_api_list = response.json()
         for version in core_api_list["versions"]:

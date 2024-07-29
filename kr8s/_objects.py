@@ -869,7 +869,7 @@ class Pod(APIObject):
         limit_bytes=None,
         follow=False,
         timeout=3600,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[str]:
         """Streams logs from a Pod.
 
         Args:
