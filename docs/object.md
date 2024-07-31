@@ -320,7 +320,7 @@ from kr8s.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
     )
 ```
@@ -333,7 +333,7 @@ from kr8s.asyncio.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
     )
 ```
@@ -354,7 +354,7 @@ from kr8s.objects import new_class
 
 CustomScalableObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         scalable=True,
         scalable_spec="replicas",  # The spec key to patch when scaling
@@ -369,7 +369,7 @@ from kr8s.asyncio.objects import new_class
 
 CustomScalableObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         scalable=True,
         scalable_spec="replicas",  # The spec key to patch when scaling
@@ -449,7 +449,7 @@ from kr8s.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         asyncio=False,
     )
@@ -466,7 +466,7 @@ from kr8s.asyncio.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         asyncio=False,
     )
