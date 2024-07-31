@@ -320,7 +320,7 @@ from kr8s.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
     )
 ```
@@ -333,7 +333,7 @@ from kr8s.asyncio.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
     )
 ```
@@ -354,7 +354,7 @@ from kr8s.objects import new_class
 
 CustomScalableObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         scalable=True,
         scalable_spec="replicas",  # The spec key to patch when scaling
@@ -369,7 +369,7 @@ from kr8s.asyncio.objects import new_class
 
 CustomScalableObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         scalable=True,
         scalable_spec="replicas",  # The spec key to patch when scaling
@@ -388,7 +388,7 @@ If you wish to extend the API of your custom class you can directly subclass the
 ```python
 from kr8s.objects import new_class
 
-class CustomObject(new_class("CustomObject", version="example.org", namespaced=True)):
+class CustomObject(new_class("CustomObject", version="example.org/v1", namespaced=True)):
 
     def my_custom_method(self) -> str:
         return "foo"
@@ -400,7 +400,7 @@ class CustomObject(new_class("CustomObject", version="example.org", namespaced=T
 ```python
 from kr8s.asyncio.objects import new_class
 
-class CustomObject(new_class("CustomObject", version="example.org", namespaced=True)):
+class CustomObject(new_class("CustomObject", version="example.org/v1", namespaced=True)):
 
     async def my_custom_method(self) -> str:
         return "foo"
@@ -449,7 +449,7 @@ from kr8s.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         asyncio=False,
     )
@@ -466,7 +466,7 @@ from kr8s.asyncio.objects import new_class
 
 CustomObject = new_class(
         kind="CustomObject",
-        version="example.org",
+        version="example.org/v1",
         namespaced=True,
         asyncio=False,
     )
