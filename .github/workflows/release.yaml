@@ -37,7 +37,11 @@ jobs:
       - name: Update kr8s pin in kubectl-ng
         run: |
           pushd examples/kubectl-ng
-          poetry add kr8s==${RELEASE_VERSION}
+          until false; do
+            poetry add kr8s==${RELEASE_VERSION} && break
+            echo "Waiting for kr8s==${RELEASE_VERSION} to be available on PyPI..."
+            sleep 15
+          done
           poetry lock
           popd
       - name: Push new pins back to the repo
