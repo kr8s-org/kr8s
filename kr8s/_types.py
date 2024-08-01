@@ -4,6 +4,7 @@ from os import PathLike
 from typing import (
     TYPE_CHECKING,
     Iterable,
+    List,
     Protocol,
     TypeVar,
     Union,
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 class APIObjectWithPods(Protocol):
     """An APIObject subclass that contains other Pod objects."""
 
-    async def async_ready_pods(self) -> list[Pod]: ...
+    async def async_ready_pods(self) -> List["Pod"]: ...
 
 
 @runtime_checkable
