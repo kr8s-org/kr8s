@@ -13,7 +13,10 @@ from typing import (
 
 _KT = TypeVar("_KT")
 _VT_co = TypeVar("_VT_co", covariant=True)
-PathType = Union[str, PathLike[str]]
+PathType = Union[
+    str,
+    "PathLike[str]",  # Can remove quotes when Python 3.9 is the minimum version.
+]
 
 if TYPE_CHECKING:
     from ._objects import Pod
