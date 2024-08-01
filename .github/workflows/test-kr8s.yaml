@@ -38,7 +38,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install hatch
-        run: pipx install hatch
+        run: |
+          python3 -m pip install --user pipx
+          python3 -m pipx install hatch
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
