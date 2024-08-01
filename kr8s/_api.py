@@ -288,7 +288,7 @@ class Api:
                 [name] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
                 return name.value
 
-    async def async_lookup_kind(self, kind) -> tuple[str, bool]:
+    async def async_lookup_kind(self, kind) -> tuple[str, str, bool]:
         """Lookup a Kubernetes resource kind."""
         from ._objects import parse_kind
 
@@ -306,15 +306,17 @@ class Api:
                 if "/" in resource["version"]:
                     return (
                         f"{resource['singularName']}.{resource['version']}",
+                        resource["name"],
                         resource["namespaced"],
                     )
                 return (
                     f"{resource['singularName']}/{resource['version']}",
+                    resource["name"],
                     resource["namespaced"],
                 )
         raise ValueError(f"Kind {kind} not found.")
 
-    async def lookup_kind(self, kind) -> tuple[str, bool]:
+    async def lookup_kind(self, kind) -> tuple[str, str, bool]:
         """Lookup a Kubernetes resource kind.
 
         Check whether a resource kind exists on the remote server.
@@ -323,7 +325,7 @@ class Api:
             kind: The kind of resource to lookup.
 
         Returns:
-            The kind of resource and whether the resource is namespaced
+            The kind of resource, the plural form and whether the resource is namespaced
 
         Raises:
             ValueError: If the kind is not found.
@@ -367,7 +369,7 @@ class Api:
         else:
             namespaced: bool | None = None
             try:
-                kind, namespaced = await self.async_lookup_kind(kind)
+                kind, plural, namespaced = await self.async_lookup_kind(kind)
             except ServerError as e:
                 warnings.warn(str(e), stacklevel=1)
             if isinstance(kind, str):
@@ -377,10 +379,15 @@ class Api:
                     if allow_unknown_type:
                         if namespaced is not None:
                             obj_cls = new_class(
-                                kind, namespaced=namespaced, asyncio=self._asyncio
+                                kind,
+                                namespaced=namespaced,
+                                asyncio=self._asyncio,
+                                plural=plural,
                             )
                         else:
-                            obj_cls = new_class(kind, asyncio=self._asyncio)
+                            obj_cls = new_class(
+                                kind, asyncio=self._asyncio, plural=plural
+                            )
                     else:
                         raise e
         params = params or None
