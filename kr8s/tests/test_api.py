@@ -317,18 +317,28 @@ async def test_api_timeout() -> None:
 async def test_lookup_kind():
     api = await kr8s.asyncio.api()
 
-    assert await api.lookup_kind("no") == ("node/v1", False)
-    assert await api.lookup_kind("nodes") == ("node/v1", False)
-    assert await api.lookup_kind("po") == ("pod/v1", True)
-    assert await api.lookup_kind("pods/v1") == ("pod/v1", True)
-    assert await api.lookup_kind("role") == ("role.rbac.authorization.k8s.io/v1", True)
-    assert await api.lookup_kind("roles") == ("role.rbac.authorization.k8s.io/v1", True)
+    assert await api.lookup_kind("no") == ("node/v1", "nodes", False)
+    assert await api.lookup_kind("nodes") == ("node/v1", "nodes", False)
+    assert await api.lookup_kind("po") == ("pod/v1", "pods", True)
+    assert await api.lookup_kind("pods/v1") == ("pod/v1", "pods", True)
+    assert await api.lookup_kind("role") == (
+        "role.rbac.authorization.k8s.io/v1",
+        "roles",
+        True,
+    )
+    assert await api.lookup_kind("roles") == (
+        "role.rbac.authorization.k8s.io/v1",
+        "roles",
+        True,
+    )
     assert await api.lookup_kind("roles.v1.rbac.authorization.k8s.io") == (
         "role.rbac.authorization.k8s.io/v1",
+        "roles",
         True,
     )
     assert await api.lookup_kind("roles.rbac.authorization.k8s.io") == (
         "role.rbac.authorization.k8s.io/v1",
+        "roles",
         True,
     )
 
@@ -366,3 +376,17 @@ async def test_dynamic_classes(kind, ensure_gc):
         await api.get(kind, allow_unknown_type=False)
 
     await api.get(kind)
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "ingress.networking.k8s.io",
+        "networkpolicies.networking.k8s.io",
+        "csistoragecapacities.storage.k8s.io",
+        "CSIStorageCapacity",
+    ],
+)
+async def test_get_dynamic_plurals(kind, ensure_gc):
+    api = await kr8s.asyncio.api()
+    assert isinstance(await api.get(kind), list)
