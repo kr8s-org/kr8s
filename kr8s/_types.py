@@ -4,7 +4,6 @@ from os import PathLike
 from typing import (
     TYPE_CHECKING,
     Iterable,
-    List,
     Protocol,
     TypeVar,
     Union,
@@ -13,7 +12,7 @@ from typing import (
 
 _KT = TypeVar("_KT")
 _VT_co = TypeVar("_VT_co", covariant=True)
-PathType = Union[str, PathLike[str]]
+PathType = Union[str, "PathLike[str]"]
 
 if TYPE_CHECKING:
     from ._objects import Pod
@@ -23,7 +22,7 @@ if TYPE_CHECKING:
 class APIObjectWithPods(Protocol):
     """An APIObject subclass that contains other Pod objects."""
 
-    async def async_ready_pods(self) -> List["Pod"]: ...
+    async def async_ready_pods(self) -> list[Pod]: ...
 
 
 @runtime_checkable
