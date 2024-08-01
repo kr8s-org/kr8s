@@ -321,6 +321,11 @@ async def test_lookup_kind():
     assert await api.lookup_kind("nodes") == ("node/v1", "nodes", False)
     assert await api.lookup_kind("po") == ("pod/v1", "pods", True)
     assert await api.lookup_kind("pods/v1") == ("pod/v1", "pods", True)
+    assert await api.lookup_kind("CSIStorageCapacity") == (
+        "csistoragecapacity.storage.k8s.io/v1",
+        "csistoragecapacities",
+        True,
+    )
     assert await api.lookup_kind("role") == (
         "role.rbac.authorization.k8s.io/v1",
         "roles",
