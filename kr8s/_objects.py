@@ -334,7 +334,7 @@ class APIObject:
                 namespace=self.namespace,
                 data=json.dumps(data),
             ) as resp:
-                self.raw = resp.json()
+                pass
         except ServerError as e:
             if e.response and e.response.status_code == 404:
                 raise NotFoundError(f"Object {self.name} does not exist") from e
