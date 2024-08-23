@@ -305,7 +305,7 @@ class APIObject:
         if status == 200:
             return True
         if ensure:
-            raise NotFoundError(f"Object {self.name} does not exist")
+            raise NotFoundError(f"Object {self.name} does not exist in {self.namespace}")
         return False
 
     async def create(self) -> None:
@@ -337,7 +337,7 @@ class APIObject:
                 self.raw = resp.json()
         except ServerError as e:
             if e.response and e.response.status_code == 404:
-                raise NotFoundError(f"Object {self.name} does not exist") from e
+                raise NotFoundError(f"Object {self.name} does not exist in {self.namespace}") from e
             raise e
 
     async def refresh(self) -> None:
@@ -357,7 +357,7 @@ class APIObject:
                 self.raw = resp.json()
         except ServerError as e:
             if e.response and e.response.status_code == 404:
-                raise NotFoundError(f"Object {self.name} does not exist") from e
+                raise NotFoundError(f"Object {self.name} does not exist in {self.namespace}") from e
             raise e
 
     async def patch(self, patch, *, subresource=None, type=None) -> None:
@@ -386,7 +386,7 @@ class APIObject:
                 self.raw = resp.json()
         except ServerError as e:
             if e.response and e.response.status_code == 404:
-                raise NotFoundError(f"Object {self.name} does not exist") from e
+                raise NotFoundError(f"Object {self.name} does not exist in {self.namespace}") from e
             raise e
 
     async def scale(self, replicas: int | None = None) -> None:
