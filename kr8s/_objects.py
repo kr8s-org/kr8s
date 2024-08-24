@@ -333,7 +333,7 @@ class APIObject:
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
                 data=json.dumps(data),
-            ) as resp:
+            ):
                 pass
         except ServerError as e:
             if e.response and e.response.status_code == 404:
