@@ -1019,6 +1019,15 @@ async def test_secret_data(ns):
     await secret.delete()
 
 
+async def test_secret_create_delete_not_changed(ns):
+    [secret] = await objects_from_files(CURRENT_DIR / "resources" / "secret.yaml")
+    secret.namespace = ns
+    await secret.create()
+    await secret.delete()
+    exists = await secret.exists()
+    assert not exists
+
+
 async def test_validate_pod(example_pod_spec):
     kubernetes_validate = pytest.importorskip("kubernetes_validate")
     pod = await Pod(example_pod_spec)
