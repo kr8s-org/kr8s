@@ -1,11 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
+import concurrent.futures
 import contextlib
 import queue
 import threading
 import unittest.mock
-import concurrent.futures
 
 import anyio
 import anyio.from_thread
@@ -361,7 +361,9 @@ async def test_api_gone(example_pod_spec):
             "async_get_kind",
             wraps=mock_async_get_kind,
         ) as mock:
-            with anyio.from_thread.start_blocking_portal(backend=sniffio.current_async_library()) as portal:
+            with anyio.from_thread.start_blocking_portal(
+                backend=sniffio.current_async_library()
+            ) as portal:
                 watch_task = portal.start_task_soon(watch_pod, pod)
                 counter_task = portal.start_task_soon(counter, mock)
                 counter_task.add_done_callback(lambda task: watch_task.cancel())
