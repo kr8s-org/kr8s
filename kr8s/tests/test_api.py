@@ -1,10 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import asyncio
+import contextlib
 import queue
 import threading
+import unittest.mock
+import concurrent.futures
 
 import anyio
+import anyio.from_thread
 import pytest
+import sniffio
 
 import kr8s
 import kr8s.asyncio
@@ -312,6 +318,66 @@ async def test_api_timeout() -> None:
     api.timeout = 0.00001
     with pytest.raises(APITimeoutError):
         await api.version()
+
+
+async def test_api_gone(example_pod_spec):
+    """Ensure that the 410 Gone response is handled by restarting a watch request."""
+
+    async def watch_pod(pod):
+        """Start a watch request on the pod."""
+        async for _, obj in pod.async_watch():
+            assert obj.raw["kind"] == Pod.kind
+        # A problem occurs during the watch, because it is finished.
+        assert False
+
+    async def counter(mock_async_get_kind):
+        """Check every second how many call are made on the `mock_async_get_kind` method."""
+        while True:
+            if mock_async_get_kind.call_count >= 2:
+                # If two calls have been made, this means that the watch request has been successfully restarted.
+                return
+            await asyncio.sleep(1)
+
+    class MockResponse:
+        async def aiter_lines(self):
+            for _ in range(5):
+                yield (
+                    '{"type":"ERROR","object":{"kind":"Status","apiVersion":"v1","metadata":{},'
+                    '"status":"Failure","message":"too old resource version: 1 (585682157)",'
+                    '"reason":"Expired","code":410}}'
+                )
+
+    @contextlib.asynccontextmanager
+    async def mock_async_get_kind(*args, **kwargs):
+        await asyncio.sleep(1)
+        yield Pod, MockResponse()
+
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+
+    try:
+        with unittest.mock.patch.object(
+            pod.api,
+            "async_get_kind",
+            wraps=mock_async_get_kind,
+        ) as mock:
+            with anyio.from_thread.start_blocking_portal(backend=sniffio.current_async_library()) as portal:
+                watch_task = portal.start_task_soon(watch_pod, pod)
+                counter_task = portal.start_task_soon(counter, mock)
+                counter_task.add_done_callback(lambda task: watch_task.cancel())
+
+                try:
+                    watch_task.result()
+                    #  This should never happen.
+                    assert False
+                except concurrent.futures.CancelledError:
+                    # This is the normal behavior if the counter task has been ended,
+                    # all other exceptions must be raised.
+                    pass
+                finally:
+                    counter_task.cancel()
+    finally:
+        await pod.delete()
 
 
 async def test_lookup_kind():
