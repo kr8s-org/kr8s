@@ -4,7 +4,6 @@ import queue
 import threading
 
 import anyio
-import anyio.from_thread
 import pytest
 
 import kr8s
