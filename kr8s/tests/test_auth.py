@@ -52,6 +52,55 @@ async def kubeconfig_with_token(k8s_cluster, k8s_token):
 
 
 @pytest.fixture
+async def kubeconfig_with_decoded_certs(k8s_cluster):
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"] = (
+        base64.b64decode(
+            kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
+        )
+    ).decode()
+    kubeconfig["users"][0]["user"]["client-certificate-data"] = (
+        base64.b64decode(kubeconfig["users"][0]["user"]["client-certificate-data"])
+    ).decode()
+    kubeconfig["users"][0]["user"]["client-key-data"] = (
+        base64.b64decode(kubeconfig["users"][0]["user"]["client-key-data"])
+    ).decode()
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name
+
+
+@pytest.fixture
+async def kubeconfig_with_line_breaks_in_certs(k8s_cluster):
+    def insert_every(instring: str, substring: str, interval: int) -> str:
+        """Insert a substring every interval characters in instring.
+
+        Example:
+            >>> insert_every("abcdefghi", ".", 3)
+            "abc.def.ghi"
+        """
+        return substring.join(
+            instring[i : i + interval] for i in range(0, len(instring), interval)
+        )
+
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"] = insert_every(
+        kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"], "\n", 64
+    )
+    kubeconfig["users"][0]["user"]["client-certificate-data"] = insert_every(
+        kubeconfig["users"][0]["user"]["client-certificate-data"], "\n", 64
+    )
+    kubeconfig["users"][0]["user"]["client-key-data"] = insert_every(
+        kubeconfig["users"][0]["user"]["client-key-data"], "\n", 64
+    )
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name
+
+
+@pytest.fixture
 async def kubeconfig_with_second_context(k8s_cluster):
     # Open kubeconfig and extract the certificates
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
@@ -258,3 +307,13 @@ async def test_certs_on_disk(kubeconfig_with_certs_on_disk, absolute):
     with kubeconfig_with_certs_on_disk(absolute=absolute) as kubeconfig:
         api = await kr8s.asyncio.api(kubeconfig=kubeconfig)
         assert await api.get("pods", namespace=kr8s.ALL)
+
+
+async def test_certs_not_encoded(kubeconfig_with_decoded_certs):
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_decoded_certs)
+    assert await api.get("pods", namespace=kr8s.ALL)
+
+
+async def test_certs_with_encoded_line_breaks(kubeconfig_with_line_breaks_in_certs):
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_line_breaks_in_certs)
+    assert await api.get("pods", namespace=kr8s.ALL)
