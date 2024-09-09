@@ -52,6 +52,27 @@ async def kubeconfig_with_token(k8s_cluster, k8s_token):
 
 
 @pytest.fixture
+async def kubeconfig_with_decoded_certs(k8s_cluster, k8s_token):
+    # Open kubeconfig and extract the certificates
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"] = (
+        base64.b64decode(
+            kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
+        )
+    ).decode()
+    kubeconfig["users"][0]["user"]["client-certificate-data"] = (
+        base64.b64decode(kubeconfig["users"][0]["user"]["client-certificate-data"])
+    ).decode()
+    kubeconfig["users"][0]["user"]["client-key-data"] = (
+        base64.b64decode(kubeconfig["users"][0]["user"]["client-key-data"])
+    ).decode()
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name
+
+
+@pytest.fixture
 async def kubeconfig_with_second_context(k8s_cluster):
     # Open kubeconfig and extract the certificates
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
@@ -258,3 +279,8 @@ async def test_certs_on_disk(kubeconfig_with_certs_on_disk, absolute):
     with kubeconfig_with_certs_on_disk(absolute=absolute) as kubeconfig:
         api = await kr8s.asyncio.api(kubeconfig=kubeconfig)
         assert await api.get("pods", namespace=kr8s.ALL)
+
+
+async def test_certs_not_encoded(kubeconfig_with_decoded_certs):
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_decoded_certs)
+    assert await api.get("pods", namespace=kr8s.ALL)
