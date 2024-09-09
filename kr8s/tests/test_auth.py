@@ -73,9 +73,15 @@ async def kubeconfig_with_decoded_certs(k8s_cluster):
 
 @pytest.fixture
 async def kubeconfig_with_line_breaks_in_certs(k8s_cluster):
-    def insert_every(input_str: str, substring: str, interval: int) -> str:
+    def insert_every(instring: str, substring: str, interval: int) -> str:
+        """Insert a substring every interval characters in instring.
+
+        Example:
+            >>> insert_every("abcdefghi", ".", 3)
+            "abc.def.ghi"
+        """
         return substring.join(
-            input_str[i : i + interval] for i in range(0, len(input_str), interval)
+            instring[i : i + interval] for i in range(0, len(instring), interval)
         )
 
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
