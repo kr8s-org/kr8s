@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 """Utilities for working with Kubernetes data structures."""
-from typing import Any, Dict, List
+import re
+from typing import Any, Callable, Dict, List
 
 
 def list_dict_unpack(
@@ -102,3 +103,58 @@ def xdict(*in_dict, **kwargs):
     if len(in_dict) == 1:
         [kwargs] = in_dict
     return {k: v for k, v in kwargs.items() if v is not None}
+
+
+def sort_versions(
+    versions: list[Any], key: Callable = lambda x: x, reverse: bool = False
+) -> list[Any]:
+    """Sort a list of Kubernetes versions by priority.
+
+    Follows the spcification
+    https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/#version-priority
+
+    Args:
+        versions: A list of Kubernetes versions to sort.
+        key: A function to extract the version string from each element in the list.
+            Defaults to the identity function
+        reverse: If True, sort in descending order. Defaults to False
+
+    Returns:
+        A list of Kubernetes versions sorted by priority.
+
+    Examples:
+        >>> sort_versions(["v1", "v2", "v2beta1"])
+        ["v2", "v1", "v2beta1"]
+
+        >>> sort_versions(["v1beta2", "foo1", "foo10", "v1"])
+        ["v1", "v1beta2", "foo1", "foo10"]
+    """
+    pattern = r"^v\d+((alpha|beta)\d+)?$"
+    stable = []
+    alphas = []
+    betas = []
+    others = []
+    for version in versions:
+        if re.match(pattern, key(version)) is not None:
+            if "alpha" in key(version):
+                alphas.append(version)
+            elif "beta" in key(version):
+                betas.append(version)
+            else:
+                stable.append(version)
+        else:
+            others.append(version)
+
+    stable = sorted(stable, key=lambda v: int(key(v)[1:]), reverse=True)
+    betas = sorted(
+        betas, key=lambda v: tuple(map(int, key(v)[1:].split("beta"))), reverse=True
+    )
+    alphas = sorted(
+        alphas, key=lambda v: tuple(map(int, key(v)[1:].split("alpha"))), reverse=True
+    )
+    others = sorted(others, key=lambda v: key(v))
+
+    output = stable + betas + alphas + others
+    if reverse:
+        output.reverse()
+    return output

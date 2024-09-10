@@ -23,7 +23,7 @@ from cachetools import TTLCache  # type: ignore
 from cryptography import x509
 
 from ._auth import KubeAuth
-from ._data_utils import dict_to_selector
+from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
 
 if TYPE_CHECKING:
@@ -570,18 +570,21 @@ class Api:
         async with self.call_api(method="GET", version="", base="/apis") as response:
             api_list = response.json()
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
-            version = api["versions"][0]["groupVersion"]
-            async with self.call_api(
-                method="GET", version="", base="/apis", url=version
-            ) as response:
-                resource = response.json()
-            resources.extend(
-                [
-                    {"version": version, **r}
-                    for r in resource["resources"]
-                    if "/" not in r["name"]
-                ]
-            )
+            for api_version in sort_versions(
+                api["versions"], key=lambda x: x["groupVersion"]
+            ):
+                version = api_version["groupVersion"]
+                async with self.call_api(
+                    method="GET", version="", base="/apis", url=version
+                ) as response:
+                    resource = response.json()
+                resources.extend(
+                    [
+                        {"version": version, **r}
+                        for r in resource["resources"]
+                        if "/" not in r["name"]
+                    ]
+                )
         return resources
 
     async def api_versions(self) -> AsyncGenerator[str]:
