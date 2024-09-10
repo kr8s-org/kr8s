@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import random
+
 import pytest
 
 from kr8s._data_utils import (
@@ -7,6 +9,7 @@ from kr8s._data_utils import (
     dict_to_selector,
     dot_to_nested_dict,
     list_dict_unpack,
+    sort_versions,
     xdict,
 )
 
@@ -70,3 +73,50 @@ def test_xdict():
             "foo": "bar",
             "baz": "qux",
         }
+
+
+def test_sort_version_priorities():
+    # Sample list based on list from Kubernetes documentation
+    # https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/#version-priority
+    versions = [
+        "v200",
+        "v10",
+        "v2",
+        "v1",
+        "v11beta2",
+        "v10beta3",
+        "v3beta1",
+        "v12alpha1",
+        "v11alpha2",
+        "v11alpha1",
+        "v3alpha1",
+        "12345",
+        "foo1",
+        "foo10",
+        "helloworld",
+        "vfoobaralpha1",
+    ]
+
+    # Select some random permutations of the above list and ensure they get correctly sorted
+    sample = versions.copy()  # Create a copy that we can shuffle
+    random.seed(42)  # Ensure the same random order each time for deterministic tests
+    for _ in range(30):
+        random.shuffle(sample)
+        assert sort_versions(list(sample)) == versions
+
+
+def test_sort_version_priorities_key():
+    versions = [
+        {"version": "v2"},
+        {"version": "v1"},
+        {"version": "v1beta2"},
+        {"version": "v1beta1"},
+        {"version": "v1alpha1"},
+    ]
+
+    # Select some random permutations of the above list and ensure they get correctly sorted
+    sample = versions.copy()  # Create a copy that we can shuffle
+    random.seed(42)  # Ensure the same random order each time for deterministic tests
+    for _ in range(30):
+        random.shuffle(sample)
+        assert sort_versions(list(sample), key=lambda x: x["version"]) == versions
