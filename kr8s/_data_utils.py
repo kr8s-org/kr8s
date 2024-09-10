@@ -1,13 +1,15 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 """Utilities for working with Kubernetes data structures."""
+from __future__ import annotations
+
 import re
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 
 def list_dict_unpack(
-    input_list: List[Dict], key: str = "key", value: str = "value"
-) -> Dict:
+    input_list: list[dict], key: str = "key", value: str = "value"
+) -> dict:
     """Convert a list of dictionaries to a single dictionary.
 
     Args:
@@ -22,8 +24,8 @@ def list_dict_unpack(
 
 
 def dict_list_pack(
-    input_dict: Dict, key: str = "key", value: str = "value"
-) -> List[Dict]:
+    input_dict: dict, key: str = "key", value: str = "value"
+) -> list[dict]:
     """Convert a dictionary to a list of dictionaries.
 
     Args:
@@ -37,7 +39,7 @@ def dict_list_pack(
     return [{key: k, value: v} for k, v in input_dict.items()]
 
 
-def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
+def dot_to_nested_dict(dot_notated_key: str, value: Any) -> dict:
     """Convert a dot notated key to a nested dictionary.
 
     Args:
@@ -58,7 +60,7 @@ def dot_to_nested_dict(dot_notated_key: str, value: Any) -> Dict:
     return nested_dict
 
 
-def dict_to_selector(selector_dict: Dict) -> str:
+def dict_to_selector(selector_dict: dict) -> str:
     """Convert a dictionary to a Kubernetes selector.
 
     Args:
