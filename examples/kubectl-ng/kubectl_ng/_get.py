@@ -144,11 +144,16 @@ async def get(
         kubernetes.namespace = kr8s.ALL
 
     data = await get_resources(resources, label_selector, field_selector)
-    for kind, response in data.items():
-        table = await draw_table(kind, response, resource_names)
+
     if not watch:
-        console.print(table)
+        for kind, response in data.items():
+            table = await draw_table(kind, response, resource_names)
+            if table:
+                console.print(table)
     else:
+        kind = list(data)[0]
+        response = data[kind]
+        table = await draw_table(kind, response, resource_names)
         with Live(table, console=console, auto_refresh=False) as live:
             while True:
                 await anyio.sleep(5)
