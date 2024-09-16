@@ -29,7 +29,7 @@ repos:
     rev: 'v1.11.2'
     hooks:
     - id: mypy
-      exclude: "examples|tests|venv|ci|docs|conftest.py"
+      exclude: "examples|venv|ci|docs|conftest.py"
       additional_dependencies: [types-pyyaml>=6.0]
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.17.0

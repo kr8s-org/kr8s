@@ -35,7 +35,7 @@ async def test_api_factory(serviceaccount) -> None:
     assert p.api is not k3
 
 
-def test_api_factory_threaded() -> None:
+def test_api_factory_threaded():
     assert len(kr8s.Api._instances) == 0
 
     q = queue.Queue()
@@ -96,13 +96,13 @@ async def test_api_factory_with_kubeconfig(k8s_cluster, serviceaccount) -> None:
     assert p3.api is not k2
 
 
-def test_version_sync() -> None:
+def test_version_sync():
     api = kr8s.api()
     version = api.version()
     assert "major" in version
 
 
-async def test_version_sync_in_async() -> None:
+async def test_version_sync_in_async():
     api = kr8s.api()
     version = api.version()
     assert "major" in version
@@ -129,7 +129,7 @@ async def test_concurrent_api_creation() -> None:
             tg.start_soon(get_api)
 
 
-async def test_both_api_creation_methods_together() -> None:
+async def test_both_api_creation_methods_together():
     async_api = await kr8s.asyncio.api()
     api = kr8s.api()
 
@@ -206,7 +206,7 @@ async def test_api_versions() -> None:
     assert "apps/v1" in versions
 
 
-def test_api_versions_sync() -> None:
+def test_api_versions_sync():
     api = kr8s.api()
     versions = [version for version in api.api_versions()]
     assert "apps/v1" in versions
@@ -253,7 +253,7 @@ def test_sync_get_returns_sync_objects() -> None:
     assert pods[0]._asyncio is False
 
 
-def test_sync_api_returns_sync_objects() -> None:
+def test_sync_api_returns_sync_objects():
     api = kr8s.api()
     pods = api.get("pods", namespace=kr8s.ALL)
     assert pods[0]._asyncio is False
