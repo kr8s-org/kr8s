@@ -1057,6 +1057,12 @@ async def test_pod_list():
     assert {p.name for p in pods1} == {p.name for p in pods2}
 
 
+def test_sync_pod_list() -> None:
+    pods1: list[SyncPod] = SyncPod.list(namespace=kr8s.ALL)
+    assert pods1
+    assert all(isinstance(p, SyncPod) for p in pods1)
+
+
 @pytest.mark.parametrize(
     "ports",
     [
