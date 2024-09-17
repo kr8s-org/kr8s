@@ -1343,7 +1343,7 @@ class Service(APIObject):
         # If the service is of type LoadBalancer, check if it has endpoints
         if (
             self.spec.type == "LoadBalancer"
-            and len(self.status.load_balancer.ingress or []) == 0
+            and len(self.status.loadBalancer.ingress or []) == 0
         ):
             return False
 
