@@ -5,6 +5,7 @@ on:
       - "v*.*.*"
 jobs:
   publish-kr8s:
+    if: github.repository == 'kr8s-org/kr8s'
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -20,6 +21,7 @@ jobs:
       - name: Publish kr8s
         uses: pypa/gh-action-pypi-publish@release/v1
   publish-kubectl-ng:
+    if: github.repository == 'kr8s-org/kr8s'
     runs-on: ubuntu-latest
     needs: publish-kr8s
     timeout-minutes: 30
