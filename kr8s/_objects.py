@@ -13,6 +13,7 @@ from typing import (
     BinaryIO,
     List,
     Literal,
+    Sequence,
     cast,
 )
 
@@ -21,6 +22,7 @@ import httpx
 import jsonpath
 import yaml
 from box import Box
+from typing_extensions import Self
 
 import kr8s
 import kr8s.asyncio
@@ -239,7 +241,7 @@ class APIObject:
         field_selector: str | dict[str, str] | None = None,
         timeout: int = 2,
         **kwargs,
-    ) -> APIObject:
+    ) -> Self:
         """Get a Kubernetes resource by name or via selectors."""
         if api is None:
             if cls._asyncio:
@@ -283,6 +285,7 @@ class APIObject:
                 raise ValueError(
                     f"Expected exactly one {cls.kind} object. Use selectors to narrow down the search."
                 )
+            assert isinstance(resources[0], cls)
             return resources[0]
         raise NotFoundError(
             f"Could not find {cls.kind} {name} in namespace {namespace}."
@@ -685,7 +688,7 @@ class APIObject:
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
     @classmethod
-    async def list(cls, **kwargs) -> APIObject | list[APIObject]:
+    async def list(cls, **kwargs) -> Sequence[Self]:
         """List objects in Kubernetes.
 
         Args:
@@ -695,7 +698,10 @@ class APIObject:
             A list of objects.
         """
         api = await kr8s.asyncio.api()
-        return await api.async_get(kind=cls, **kwargs)
+        resources = await api.async_get(kind=cls, **kwargs)
+        if not isinstance(resources, list):
+            resources = [resources]
+        return [resource for resource in resources if isinstance(resource, cls)]
 
 
 ## v1 objects
