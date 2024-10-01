@@ -5,6 +5,7 @@ import typer
 from ._api_resources import api_resources
 from ._api_versions import api_versions
 from ._config import config
+from ._cordon_uncordon import cordon, uncordon
 from ._create import create
 from ._delete import delete
 from ._exec import kexec
@@ -16,6 +17,8 @@ from ._wait import wait
 app = typer.Typer(no_args_is_help=True)
 register(app, api_resources)
 register(app, api_versions)
+register(app, cordon)
+register(app, uncordon)
 register(app, create)
 register(app, delete)
 register(app, get)
