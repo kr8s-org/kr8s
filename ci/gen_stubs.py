@@ -5,7 +5,6 @@ import ast
 import subprocess
 
 ELLIPSIS_NODE = ast.parse("...").body
-# TODO: Preserve docstrings in method/function definitions
 # TODO: Remove unused imports
 
 # Load the AST for the base object definitions
@@ -54,12 +53,14 @@ for node_index, node in enumerate(tree.body):
                 # Replace all methods with type stubs
                 for subnode_index, subnode in enumerate(base_node.body):
                     if isinstance(subnode, ast.FunctionDef):
-                        subnode.body = ELLIPSIS_NODE
+                        comment = [subnode.body[0]]  if isinstance(subnode.body[0], ast.Expr) else []
+                        subnode.body = comment + ELLIPSIS_NODE
                     elif isinstance(subnode, ast.AsyncFunctionDef):
+                        comment = [subnode.body[0]]  if isinstance(subnode.body[0], ast.Expr) else []
                         base_node.body[subnode_index] = ast.FunctionDef(
                             name=subnode.name,
                             args=subnode.args,
-                            body=ELLIPSIS_NODE,
+                            body=comment + ELLIPSIS_NODE,
                             decorator_list=subnode.decorator_list,
                             returns=subnode.returns,
                             type_comment=subnode.type_comment,
@@ -83,10 +84,11 @@ for node_index, node in enumerate(tree.body):
                 or isinstance(base_node, ast.AsyncFunctionDef)
             ) and base_node.name == node.name:
                 # Replace the function definition
+                comment = [base_node.body[0]]  if isinstance(base_node.body[0], ast.Expr) else []
                 tree.body[node_index] = ast.FunctionDef(
                     name=base_node.name,
                     args=base_node.args,
-                    body=ELLIPSIS_NODE,
+                    body=comment+ELLIPSIS_NODE,
                     decorator_list=base_node.decorator_list,
                     returns=base_node.returns,
                     type_comment=base_node.type_comment,
