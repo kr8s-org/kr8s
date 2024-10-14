@@ -8,7 +8,7 @@ import random
 import socket
 import sys
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator, Literal
 
 import anyio
 import httpx_ws
@@ -16,6 +16,8 @@ import sniffio
 
 from ._exceptions import ConnectionClosedError
 from ._types import APIObjectWithPods
+
+LocalPortType = Literal["match", "auto"] | int | None
 
 if TYPE_CHECKING:
     from ._objects import APIObject
@@ -39,14 +41,16 @@ class PortForward:
         Currently Port Forwards only work when using ``asyncio`` and not ``trio``.
 
     Args:
-        ``resource`` (Pod or Resource): The Pod or Resource to forward to.
-
-        ``remote_port`` (int): The port on the Pod to forward to.
-
-        ``local_port`` (int, optional): The local port to listen on. Defaults to 0, which will choose a random port.
-
-        ``address``(List[str] | str, optional): List of addresses or address to listen on. Defaults to ["127.0.0.1"],
-         will listen only on 127.0.0.1
+        resource:
+            The Pod or Resource to forward to.
+        remote_port:
+            The port on the Pod to forward to.
+        local_port:
+            The local port to listen on. Defaults to ``"match"``, which will match the ``remote_port``.
+            Set to ``"auto"`` or ``None`` to find an available high port.
+            Set to an ``int`` to specify a specific port.
+        address:
+            List of addresses or address to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1.
 
     Example:
         This class can be used as a an async context manager or with explicit start/stop methods.
@@ -78,7 +82,7 @@ class PortForward:
         self,
         resource: APIObject,
         remote_port: int,
-        local_port: int | None = None,
+        local_port: LocalPortType = "match",
         address: list[str] | str = "127.0.0.1",
     ) -> None:
         with suppress(sniffio.AsyncLibraryNotFoundError):
@@ -90,7 +94,14 @@ class PortForward:
         self.server = None
         self.servers: list[asyncio.Server] = []
         self.remote_port = remote_port
-        self.local_port = local_port if local_port is not None else 0
+        if local_port == "match":
+            self.local_port = remote_port
+        elif local_port == "auto" or local_port is None:
+            self.local_port = 0
+        elif isinstance(local_port, int):
+            self.local_port = local_port
+        else:
+            raise TypeError("local_port must be 'match', 'auto', an int or None")
         if isinstance(address, str):
             address = [address]
         self.address = address
