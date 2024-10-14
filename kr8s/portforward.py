@@ -4,11 +4,16 @@
 
 This module provides a class for managing a port forward connection to a Kubernetes Pod or Service.
 """
+from __future__ import annotations
+
 import threading
 import time
 
 from ._async_utils import sync
+from ._portforward import LocalPortType
 from ._portforward import PortForward as _PortForward
+
+__all__ = ["PortForward", "LocalPortType"]
 
 
 @sync

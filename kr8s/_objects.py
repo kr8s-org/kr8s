@@ -38,6 +38,7 @@ from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import Exec
 from kr8s._types import SpecType, SupportsKeysAndGetItem
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
+from kr8s.portforward import LocalPortType
 from kr8s.portforward import PortForward as SyncPortForward
 
 JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
@@ -971,12 +972,22 @@ class Pod(APIObject):
     def portforward(
         self,
         remote_port: int,
-        local_port: int | None = None,
+        local_port: LocalPortType = "match",
         address: list[str] | str = "127.0.0.1",
     ) -> SyncPortForward | AsyncPortForward:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
+
+        Args:
+            remote_port:
+                The port on the Pod to forward to.
+            local_port:
+                The local port to listen on. Defaults to ``"match"``, which will match the ``remote_port``.
+                Set to ``"auto"`` or ``None`` to find an available high port.
+                Set to an ``int`` to specify a specific port.
+            address:
+                List of addresses or address to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1.
 
         Example:
             This can be used as a an async context manager or with explicit start/stop methods.
@@ -1360,12 +1371,22 @@ class Service(APIObject):
     def portforward(
         self,
         remote_port: int,
-        local_port: int | None = None,
+        local_port: LocalPortType = "match",
         address: str | list[str] = "127.0.0.1",
     ) -> SyncPortForward | AsyncPortForward:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.
+
+        Args:
+            remote_port:
+                The port on the Pod to forward to.
+            local_port:
+                The local port to listen on. Defaults to ``"match"``, which will match the ``remote_port``.
+                Set to ``"auto"`` or ``None`` to find an available high port.
+                Set to an ``int`` to specify a specific port.
+            address:
+                List of addresses or address to listen on. Defaults to ["127.0.0.1"], will listen only on 127.0.0.1.
 
         Example:
             This can be used as a an async context manager or with explicit start/stop methods.
