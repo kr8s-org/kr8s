@@ -8,7 +8,7 @@ import random
 import socket
 import sys
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, AsyncGenerator, Literal
+from typing import TYPE_CHECKING, AsyncGenerator, Literal, Union
 
 import anyio
 import httpx_ws
@@ -17,7 +17,7 @@ import sniffio
 from ._exceptions import ConnectionClosedError
 from ._types import APIObjectWithPods
 
-LocalPortType = Literal["match", "auto"] | int | None
+LocalPortType = Union[Literal["match", "auto"], int, None]
 
 if TYPE_CHECKING:
     from ._objects import APIObject
