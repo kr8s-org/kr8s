@@ -4,6 +4,8 @@
 
 This module provides a class for managing a port forward connection to a Kubernetes Pod or Service.
 """
+from __future__ import annotations
+
 import threading
 import time
 
