@@ -668,7 +668,7 @@ async def test_pod_logs(example_pod_spec):
 
 async def test_pod_port_forward_context_manager(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
-    async with nginx_pod.portforward(80) as port:
+    async with nginx_pod.portforward(80, local_port=None) as port:
         async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
             resp = await session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
@@ -683,7 +683,7 @@ def test_pod_port_forward_context_manager_sync(nginx_service):
     nginx_service = SyncService.get(
         nginx_service.name, namespace=nginx_service.namespace
     )
-    with nginx_service.portforward(80) as port:
+    with nginx_service.portforward(80, local_port=None) as port:
         with httpx.Client(timeout=DEFAULT_TIMEOUT) as session:
             resp = session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
@@ -708,7 +708,7 @@ async def test_pod_port_forward_context_manager_manual(nginx_service):
 async def test_pod_port_forward_start_stop(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     for _ in range(5):
-        pf = nginx_pod.portforward(80)
+        pf = nginx_pod.portforward(80, local_port=None)
         assert pf._bg_task is None
         port = await pf.start()
         assert pf._bg_task is not None
@@ -725,7 +725,7 @@ async def test_pod_port_forward_start_stop(nginx_service):
 
 
 async def test_service_port_forward_context_manager(nginx_service):
-    async with nginx_service.portforward(80) as port:
+    async with nginx_service.portforward(80, local_port=None) as port:
         async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
             resp = await session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
@@ -734,7 +734,7 @@ async def test_service_port_forward_context_manager(nginx_service):
 
 
 async def test_service_port_forward_start_stop(nginx_service):
-    pf = nginx_service.portforward(80)
+    pf = nginx_service.portforward(80, local_port=None)
     assert pf._bg_task is None
     port = await pf.start()
     assert pf._bg_task is not None
@@ -752,9 +752,9 @@ async def test_service_port_forward_start_stop(nginx_service):
 async def test_unsupported_port_forward():
     pv = await PersistentVolume({"metadata": {"name": "foo"}})
     with pytest.raises(AttributeError):
-        await pv.portforward(80)
+        await pv.portforward(80, local_port=None)
     with pytest.raises(ValueError):
-        await PortForward(pv, 80).start()
+        await PortForward(pv, 80, local_port=None).start()
 
 
 @pytest.mark.skipif(
