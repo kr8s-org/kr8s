@@ -107,8 +107,7 @@ def run_sync(
 
         @wraps(coro)
         def run_gen_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
-            wrapped = partial(coro, *args, **kwargs)
-            return iter_over_async(wrapped())
+            return iter_over_async(coro(*args, **kwargs))
 
         return run_gen_inner
 
