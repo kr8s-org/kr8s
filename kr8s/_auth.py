@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import base64
+import ipaddress
 import json
 import os
 import pathlib
@@ -256,9 +257,10 @@ class KubeAuth:
         self._serviceaccount = os.path.expanduser(self._serviceaccount)
         if not os.path.isdir(self._serviceaccount):
             return
-        host = os.environ["KUBERNETES_SERVICE_HOST"]
-        port = os.environ["KUBERNETES_SERVICE_PORT"]
-        self.server = f"https://{host}:{port}"
+        self.server = self._format_server_address(
+            os.environ["KUBERNETES_SERVICE_HOST"],
+            os.environ["KUBERNETES_SERVICE_PORT"],
+        )
         async with await anyio.open_file(
             os.path.join(self._serviceaccount, "token")
         ) as f:
@@ -269,3 +271,11 @@ class KubeAuth:
                 os.path.join(self._serviceaccount, "namespace")
             ) as f:
                 self.namespace = await f.read()
+
+    @staticmethod
+    def _format_server_address(host, port):
+        try:
+            ipaddress.IPv6Address(host)
+            return f"https://[{host}]:{port}"
+        except ipaddress.AddressValueError:
+            return f"https://{host}:{port}"
