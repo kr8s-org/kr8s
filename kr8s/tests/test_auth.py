@@ -325,7 +325,7 @@ async def test_certs_with_encoded_line_breaks(kubeconfig_with_line_breaks_in_cer
     [
         ("localhost", "8080", "https://localhost:8080"),
         ("9.9.9.9", "1234", "https://9.9.9.9:1234"),
-        ("2001:db8::", "8080", "https://[2001:db8::]:8080"),
+        ("fd97:3495:4300::1", "443", "https://[fd97:3495:4300::1]:443"),
         ("kubernetes.default.svc", "8080", "https://kubernetes.default.svc:8080"),
     ],
 )
