@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 import kr8s
+from kr8s._auth import KubeAuth
 from kr8s._config import KubeConfig
 from kr8s._testutils import set_env
 
@@ -317,3 +318,16 @@ async def test_certs_not_encoded(kubeconfig_with_decoded_certs):
 async def test_certs_with_encoded_line_breaks(kubeconfig_with_line_breaks_in_certs):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_line_breaks_in_certs)
     assert await api.get("pods", namespace=kr8s.ALL)
+
+
+@pytest.mark.parametrize(
+    "host,port,expected",
+    [
+        ("localhost", "8080", "https://localhost:8080"),
+        ("9.9.9.9", "1234", "https://9.9.9.9:1234"),
+        ("2001:db8::", "8080", "https://[2001:db8::]:8080"),
+        ("kubernetes.default.svc", "8080", "https://kubernetes.default.svc:8080"),
+    ],
+)
+def test_url_formatting(host, port, expected):
+    assert KubeAuth._format_server_address(host, port) == expected
