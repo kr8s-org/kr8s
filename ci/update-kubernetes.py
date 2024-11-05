@@ -43,12 +43,17 @@ def get_azure_aks_versions():
     print(f"Loading Azure AKS versions from {url}...")
     with urllib.request.urlopen(url) as payload:
         data = json.load(payload)
+
+        # Workaround for https://github.com/kr8s-org/kr8s/issues/514
+        # Ensure that the `eol` date is the original date and the`lts` date is the extended date.
+        for x in data:
+            if "lts" in x and x["lts"]:
+                x["eol"], x["lts"] = sorted([x["eol"], x["lts"]])
+
         data = [
             {
                 "cycle": x["cycle"],
-                "eol": datetime.strptime(
-                    x["eol"] if not x["lts"] else x["support"], DATE_FORMAT
-                ),
+                "eol": datetime.strptime(x["eol"], DATE_FORMAT),
             }
             for x in data
             if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
