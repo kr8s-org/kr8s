@@ -45,11 +45,10 @@ def get_azure_aks_versions():
         data = json.load(payload)
 
         # Workaround for https://github.com/kr8s-org/kr8s/issues/514
+        # Ensure that the `eol` date is the original date and the`lts` date is the extended date.
         for x in data:
-            if x["cycle"] == "1.27":
-                dates = [x["eol"], x["lts"]]
-                dates.sort()
-                x["eol"], x["lts"] = dates
+            if "lts" in x and x["lts"]:
+                x["eol"], x["lts"] = sorted([x["eol"], x["lts"]])
 
         data = [
             {
