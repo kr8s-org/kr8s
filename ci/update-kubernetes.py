@@ -47,7 +47,7 @@ def get_azure_aks_versions():
             {
                 "cycle": x["cycle"],
                 "eol": datetime.strptime(
-                    x["eol"] if not x["lts"] else x["support"], DATE_FORMAT
+                    x["eol"] if not x["lts"] else x["lts"], DATE_FORMAT
                 ),
             }
             for x in data
