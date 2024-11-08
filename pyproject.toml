@@ -18,6 +18,7 @@ dependencies = [
     "httpx>=0.24.1",
     "httpx-ws>=0.5.2",
     "python-box>=7.0.1",
+    "typing_extensions>=4.12.2",
 ]
 [project.optional-dependencies]
 test = [
