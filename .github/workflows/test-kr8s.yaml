@@ -16,20 +16,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deps:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.12"
-      - name: Create k8s Kind Cluster
-        uses: helm/kind-action@v1
-      - name: Install kr8s
-        run: pip install -e .
-      - name: Ensure kr8s works
-        run: python -c "import kr8s; print(kr8s.get('nodes'))"
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -64,3 +50,23 @@ jobs:
       - name: Debug k8s resources
         if: always()
         run: kubectl get all -A
+
+  minimal-deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        # Test the minimal and maximal Python versions only
+        python-version: ["3.8", "3.12"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1
+      - name: Install kr8s
+        run: pip install -e .
+      - name: Ensure kr8s works
+        run: python -c "import kr8s; print(kr8s.get('nodes'))"
