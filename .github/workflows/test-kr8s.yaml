@@ -59,6 +59,7 @@ jobs:
       matrix:
         # Test the minimal and maximal Python versions only
         python-version: ["3.8", "3.12"]
+        kubernetes-version: ["1.31.2"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -66,6 +67,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1
+        with:
+          node_image: kindest/node:v${{ matrix.kubernetes-version }}
       - name: Install kr8s
         run: pip install -e .
       - name: Ensure kr8s works

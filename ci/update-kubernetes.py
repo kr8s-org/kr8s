@@ -154,9 +154,14 @@ def get_versions():
 def update_workflow(versions, workflow_path):
     workflow_path = Path(workflow_path)
     workflow = yaml.load(workflow_path)
-    workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][0] = versions[
+    latest_kind_container = versions[0]["latest_kind_container"]
+    if "minimal-deps" in workflow["jobs"]:
+        workflow["jobs"]["minimal-deps"]["strategy"]["matrix"]["kubernetes-version"][
+            0
+        ] = latest_kind_container
+    workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][
         0
-    ]["latest_kind_container"]
+    ] = latest_kind_container
     workflow["jobs"]["test"]["strategy"]["matrix"]["include"] = []
     for version in versions[1:]:
         workflow["jobs"]["test"]["strategy"]["matrix"]["include"].append(
