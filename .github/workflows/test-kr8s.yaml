@@ -16,6 +16,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1
+      - name: Install kr8s
+        run: pip install -e .
+      - name: Ensure kr8s works
+        run: python -c "import kr8s; print(kr8s.get('nodes'))"
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
