@@ -57,7 +57,7 @@ Changelog = "https://github.com/kr8s-org/kr8s/releases"
 addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml --cov-report lcov"
 timeout = 300
 xfail_strict = true
-reruns = 3
+reruns = 0
 reruns_delay = 1
 asyncio_mode = "auto"
 

@@ -14,6 +14,7 @@ import httpx
 import pytest
 
 import kr8s
+from kr8s._async_utils import anext
 from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,
@@ -259,7 +260,7 @@ def test_pod_create_and_delete_sync(example_pod_spec):
 
 async def test_list_and_ensure():
     api = await kr8s.asyncio.api()
-    pods = await api.get("pods", namespace=kr8s.ALL)
+    pods = [pod async for pod in api.get("pods", namespace=kr8s.ALL)]
     assert len(pods) > 0
     for pod in pods:
         await pod.refresh()
@@ -397,7 +398,10 @@ async def test_label_selector(example_pod_spec, selector):
     await pod.create()
 
     api = await kr8s.asyncio.api()
-    pods = await api.get("pods", namespace=kr8s.ALL, label_selector=selector)
+    pods = [
+        pod
+        async for pod in api.get("pods", namespace=kr8s.ALL, label_selector=selector)
+    ]
     assert len(pods) >= 0
 
     await pod.delete()
@@ -408,14 +412,20 @@ async def test_field_selector(example_pod_spec):
     await pod.create()
 
     api = await kr8s.asyncio.api()
-    pods = await api.get(
-        "pods", namespace=kr8s.ALL, field_selector={"metadata.name": pod.name}
-    )
+    pods = [
+        pod
+        async for pod in api.get(
+            "pods", namespace=kr8s.ALL, field_selector={"metadata.name": pod.name}
+        )
+    ]
     assert len(pods) == 1
 
-    pods = await api.get(
-        "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + "foo-bar-baz"
-    )
+    pods = [
+        pod
+        async for pod in api.get(
+            "pods", namespace=kr8s.ALL, field_selector="metadata.name=" + "foo-bar-baz"
+        )
+    ]
     assert len(pods) == 0
 
     await pod.delete()
@@ -639,7 +649,7 @@ async def test_deployment_scale(example_deployment_spec):
 
 async def test_node():
     api = await kr8s.asyncio.api()
-    nodes = await api.get("nodes")
+    nodes = [node async for node in api.get("nodes")]
     assert len(nodes) > 0
     for node in nodes:
         assert node.unschedulable is False
@@ -650,7 +660,7 @@ async def test_node():
 
 async def test_service_proxy():
     api = await kr8s.asyncio.api()
-    [service] = await api.get("services", "kubernetes")
+    service = await anext(api.get("services", "kubernetes"))
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
     assert isinstance(data, httpx.Response)
@@ -1048,8 +1058,8 @@ async def test_pod_errors(bad_pod_spec):
 
 
 async def test_pod_list():
-    pods1 = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
-    pods2 = await Pod.list(namespace=kr8s.ALL)
+    pods1 = [pod async for pod in kr8s.asyncio.get("pods", namespace=kr8s.ALL)]
+    pods2 = [pod async for pod in Pod.list(namespace=kr8s.ALL)]
     assert pods1 and pods2
     assert len(pods1) == len(pods2)
     assert all(isinstance(p, Pod) for p in pods1)
