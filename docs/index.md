@@ -54,7 +54,7 @@ for node in kr8s.get("nodes"):
 ```python
 import kr8s.asyncio
 
-for node in await kr8s.asyncio.get("nodes"):
+async for node in kr8s.asyncio.get("nodes"):
     print(node.name)
 ```
 ````
@@ -162,7 +162,7 @@ import kr8s
 
 selector = {'component': 'kube-scheduler'}
 
-for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL, label_selector=selector):
+async for pod in kr8s.asyncio.get("pods", namespace=kr8s.ALL, label_selector=selector):
     print(pod.namespace, pod.name)
 ```
 ````

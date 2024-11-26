@@ -9,7 +9,7 @@ Responses from the Client API are usually objects from {py:func}`kr8s.objects <k
 ```python
 import kr8s
 
-pods = kr8s.get("pods", namespace=kr8s.ALL)
+pods = list(kr8s.get("pods", namespace=kr8s.ALL))
 pod = pods[0]
 print(type(pod))
 # <class 'kr8s.objects.Pod'>
@@ -21,7 +21,7 @@ print(type(pod))
 ```python
 import kr8s
 
-pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+pods = [po async for po in kr8s.asyncio.get("pods", namespace=kr8s.ALL)]
 pod = pods[0]
 print(type(pod))
 # <class 'kr8s.asyncio.objects.Pod'>
@@ -422,7 +422,7 @@ When using the [`kr8s` API](client) some methods such as `kr8s.get("pods")` will
 ```python
 import kr8s
 
-cos = kr8s.get("customobjects")  # If a resource called `customobjects` exists on the server a class will be created dynamically for it
+cos = [co for co in kr8s.get("customobjects")]  # If a resource called `customobjects` exists on the server a class will be created dynamically for it
 ```
 ````
 
@@ -431,7 +431,7 @@ cos = kr8s.get("customobjects")  # If a resource called `customobjects` exists o
 ```python
 import kr8s.asyncio
 
-cos = await kr8s.asyncio.get("customobjects")  # If a resource called `customobjects` exists on the server a class will be created dynamically for it
+cos = [co async for co in kr8s.asyncio.get("customobjects")]  # If a resource called `customobjects` exists on the server a class will be created dynamically for it
 ```
 ````
 
