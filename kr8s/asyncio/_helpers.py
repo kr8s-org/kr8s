@@ -55,7 +55,7 @@ async def get(
     """
     if api is None:
         api = await _api(_asyncio=_asyncio)
-    return await api.async_get(
+    async for resource in api.async_get(
         kind,
         *names,
         namespace=namespace,
@@ -64,7 +64,8 @@ async def get(
         as_object=as_object,
         allow_unknown_type=allow_unknown_type,
         **kwargs,
-    )
+    ):
+        yield resource
 
 
 async def version(api=None, _asyncio=True):

@@ -413,7 +413,7 @@ class Api:
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> APIObject | list[APIObject]:
+    ) -> AsyncGenerator[APIObject]:
         """Get Kubernetes resources.
 
         Args:
@@ -429,7 +429,7 @@ class Api:
         Returns:
             The resources.
         """
-        return await self.async_get(
+        async for resource in self.async_get(
             kind,
             *names,
             namespace=namespace,
@@ -438,7 +438,8 @@ class Api:
             as_object=as_object,
             allow_unknown_type=allow_unknown_type,
             **kwargs,
-        )
+        ):
+            yield resource
 
     async def async_get(
         self,
@@ -450,37 +451,48 @@ class Api:
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> APIObject | list[APIObject]:
+    ) -> AsyncGenerator[APIObject]:
         headers = {}
+        params = {}
+        continue_paging = True
         if as_object:
             group, version = as_object.version.split("/")
             headers["Accept"] = (
                 f"application/json;as={as_object.kind};v={version};g={group}"
             )
-        async with self.async_get_kind(
-            kind,
-            namespace=namespace,
-            label_selector=label_selector,
-            field_selector=field_selector,
-            headers=headers or None,
-            allow_unknown_type=allow_unknown_type,
-            **kwargs,
-        ) as (obj_cls, response):
-            resourcelist = response.json()
-            if (
-                as_object
-                and "kind" in resourcelist
-                and resourcelist["kind"] == as_object.kind
-            ):
-                return as_object(resourcelist, api=self)
-            else:
-                if "items" in resourcelist:
-                    return [
-                        obj_cls(item, api=self)
-                        for item in resourcelist["items"]
-                        if not names or item["metadata"]["name"] in names
-                    ]
-                return []
+        else:
+            params["limit"] = 100
+        while continue_paging:
+            async with self.async_get_kind(
+                kind,
+                namespace=namespace,
+                label_selector=label_selector,
+                field_selector=field_selector,
+                headers=headers or None,
+                allow_unknown_type=allow_unknown_type,
+                params=params,
+                **kwargs,
+            ) as (obj_cls, response):
+                resourcelist = response.json()
+                if (
+                    as_object
+                    and "kind" in resourcelist
+                    and resourcelist["kind"] == as_object.kind
+                ):
+                    yield as_object(resourcelist, api=self)
+                else:
+                    if "items" in resourcelist:
+                        for item in resourcelist["items"]:
+                            if not names or item["metadata"]["name"] in names:
+                                yield obj_cls(item, api=self)
+                if (
+                    "metadata" in resourcelist
+                    and "continue" in resourcelist["metadata"]
+                ):
+                    continue_paging = True
+                    params["continue"] = resourcelist["metadata"]["continue"]
+                else:
+                    continue_paging = False
 
     async def watch(
         self,

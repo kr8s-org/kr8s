@@ -140,8 +140,8 @@ async def test_both_api_creation_methods_together():
     assert await async_api.version() == api.version()
     assert await async_api.whoami() == api.whoami()
 
-    assert (await async_api.get("ns"))[0]._asyncio is True
-    assert api.get("ns")[0]._asyncio is False
+    assert (await anext(async_api.get("ns")))._asyncio is True
+    assert next(api.get("ns"))._asyncio is False
 
 
 async def test_bad_api_version() -> None:
@@ -153,7 +153,7 @@ async def test_bad_api_version() -> None:
 
 @pytest.mark.parametrize("namespace", [kr8s.ALL, "kube-system"])
 async def test_get_pods(namespace) -> None:
-    pods = await kr8s.asyncio.get("pods", namespace=namespace)
+    pods = [po async for po in kr8s.asyncio.get("pods", namespace=namespace)]
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
@@ -161,10 +161,10 @@ async def test_get_pods(namespace) -> None:
 
 async def test_get_pods_as_table() -> None:
     api = await kr8s.asyncio.api()
-    pods = await api.get("pods", namespace="kube-system", as_object=Table)
-    assert isinstance(pods, Table)
-    assert len(pods.rows) > 0
-    assert not await pods.exists()  # Cannot exist in the Kubernetes API
+    async for pods in api.get("pods", namespace="kube-system", as_object=Table):
+        assert isinstance(pods, Table)
+        assert len(pods.rows) > 0
+        assert not await pods.exists()  # Cannot exist in the Kubernetes API
 
 
 async def test_watch_pods(example_pod_spec, ns) -> None:
@@ -188,13 +188,13 @@ async def test_watch_pods(example_pod_spec, ns) -> None:
 
 async def test_get_deployments() -> None:
     api = await kr8s.asyncio.api()
-    deployments = await api.get("deployments")
+    deployments = [dply async for dply in api.get("deployments")]
     assert isinstance(deployments, list)
 
 
 async def test_get_class() -> None:
     api = await kr8s.asyncio.api()
-    pods = await api.get(Pod, namespace=kr8s.ALL)
+    pods = [pod async for pod in api.get(Pod, namespace=kr8s.ALL)]
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
@@ -244,35 +244,50 @@ async def test_ns(ns) -> None:
 
 
 async def test_async_get_returns_async_objects() -> None:
-    pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+    pods = [po async for po in kr8s.asyncio.get("pods", namespace=kr8s.ALL)]
     assert pods[0]._asyncio is True
 
 
 def test_sync_get_returns_sync_objects() -> None:
     pods = kr8s.get("pods", namespace=kr8s.ALL)
-    assert pods[0]._asyncio is False
+    assert list(pods)[0]._asyncio is False
 
 
 def test_sync_api_returns_sync_objects():
     api = kr8s.api()
     pods = api.get("pods", namespace=kr8s.ALL)
-    assert pods[0]._asyncio is False
+    assert next(pods)._asyncio is False
 
 
 async def test_api_names(example_pod_spec: dict, ns: str) -> None:
     pod = await Pod(example_pod_spec)
     await pod.create()
-    assert pod in await kr8s.asyncio.get("pods", namespace=ns)
-    assert pod in await kr8s.asyncio.get("pods/v1", namespace=ns)
-    assert pod in await kr8s.asyncio.get("Pod", namespace=ns)
-    assert pod in await kr8s.asyncio.get("pod", namespace=ns)
-    assert pod in await kr8s.asyncio.get("po", namespace=ns)
+    assert pod in [pod async for pod in kr8s.asyncio.get("pods", namespace=ns)]
+    assert pod in [pod async for pod in kr8s.asyncio.get("pods/v1", namespace=ns)]
+    assert pod in [pod async for pod in kr8s.asyncio.get("Pod", namespace=ns)]
+    assert pod in [pod async for pod in kr8s.asyncio.get("pod", namespace=ns)]
+    assert pod in [pod async for pod in kr8s.asyncio.get("po", namespace=ns)]
     await pod.delete()
 
-    await kr8s.asyncio.get("roles", namespace=ns)
-    await kr8s.asyncio.get("roles.rbac.authorization.k8s.io", namespace=ns)
-    await kr8s.asyncio.get("roles.v1.rbac.authorization.k8s.io", namespace=ns)
-    await kr8s.asyncio.get("roles.rbac.authorization.k8s.io/v1", namespace=ns)
+    [role async for role in kr8s.asyncio.get("roles", namespace=ns)]
+    [
+        role
+        async for role in kr8s.asyncio.get(
+            "roles.rbac.authorization.k8s.io", namespace=ns
+        )
+    ]
+    [
+        role
+        async for role in kr8s.asyncio.get(
+            "roles.v1.rbac.authorization.k8s.io", namespace=ns
+        )
+    ]
+    [
+        role
+        async for role in kr8s.asyncio.get(
+            "roles.rbac.authorization.k8s.io/v1", namespace=ns
+        )
+    ]
 
 
 async def test_whoami() -> None:
@@ -352,7 +367,8 @@ async def test_nonexisting_resource_type():
     api = await kr8s.asyncio.api()
 
     with pytest.raises(ValueError):
-        await api.get("foo.bar.baz/v1")
+        async for _ in api.get("foo.bar.baz/v1"):
+            pass
 
 
 @pytest.mark.parametrize(
@@ -378,9 +394,11 @@ async def test_dynamic_classes(kind, ensure_gc):
         get_class("certificatesigningrequest", "certificates.k8s.io/v1")
 
     with pytest.raises(KeyError):
-        await api.get(kind, allow_unknown_type=False)
+        async for _ in api.get(kind, allow_unknown_type=False):
+            pass
 
-    await api.get(kind)
+    async for _ in api.get(kind):
+        pass
 
 
 @pytest.mark.parametrize(
@@ -394,4 +412,4 @@ async def test_dynamic_classes(kind, ensure_gc):
 )
 async def test_get_dynamic_plurals(kind, ensure_gc):
     api = await kr8s.asyncio.api()
-    assert isinstance(await api.get(kind), list)
+    assert isinstance([resource async for resource in api.get(kind)], list)
