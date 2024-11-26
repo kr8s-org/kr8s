@@ -8,6 +8,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
+from kr8s._async_utils import anext
 from kr8s._exceptions import APITimeoutError
 from kr8s.asyncio.objects import Pod, Table
 

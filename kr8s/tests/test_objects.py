@@ -14,6 +14,7 @@ import httpx
 import pytest
 
 import kr8s
+from kr8s._async_utils import anext
 from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,

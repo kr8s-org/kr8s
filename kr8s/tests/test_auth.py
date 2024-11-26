@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 import kr8s
+from kr8s._async_utils import anext
 from kr8s._auth import KubeAuth
 from kr8s._config import KubeConfig
 from kr8s._testutils import set_env
