@@ -429,17 +429,29 @@ class Api:
         Returns:
             The resources.
         """
-        async for resource in self.async_get(
-            kind,
-            *names,
-            namespace=namespace,
-            label_selector=label_selector,
-            field_selector=field_selector,
-            as_object=as_object,
-            allow_unknown_type=allow_unknown_type,
-            **kwargs,
-        ):
-            yield resource
+        # Normalized field_selector to a string, so that we can combine it with a
+        # name selector later
+        field_selector_str: str
+        if isinstance(field_selector, dict):
+            field_selector_str = dict_to_selector(field_selector)
+        elif field_selector is None:
+            field_selector_str = ""
+        else:
+            field_selector_str = field_selector
+
+        for name in names:
+            field_selector_with_name = f"metadata.name={name},{field_selector_str}"
+            async for resource in self.async_get(
+                kind,
+                name,
+                namespace=namespace,
+                label_selector=label_selector,
+                field_selector=field_selector_with_name,
+                as_object=as_object,
+                allow_unknown_type=allow_unknown_type,
+                **kwargs,
+            ):
+                yield resource
 
     async def async_get(
         self,

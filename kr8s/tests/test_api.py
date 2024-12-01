@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import queue
 import threading
+import uuid
+from copy import deepcopy
 
 import anyio
 import pytest
@@ -414,3 +416,25 @@ async def test_dynamic_classes(kind, ensure_gc):
 async def test_get_dynamic_plurals(kind, ensure_gc):
     api = await kr8s.asyncio.api()
     assert isinstance([resource async for resource in api.get(kind)], list)
+
+
+async def test_two_pods(example_pod_spec, ns):
+    pod1 = await Pod(example_pod_spec)
+
+    example_pod_spec_2 = deepcopy(example_pod_spec)
+    example_pod_spec_2["metadata"]["name"] = "example-" + uuid.uuid4().hex[:10]
+    pod2 = await Pod(example_pod_spec_2)
+
+    pods = [pod1, pod2]
+    for pod in pods:
+        await pod.create()
+        while not await pod.ready():
+            await anyio.sleep(0.1)
+
+    async_api = await kr8s.asyncio.api()
+
+    pods_api = [pod async for pod in async_api.get("Pod", pod1.name, pod2.name, namespace=ns)]
+    assert len(pods_api) == 2
+
+    for pod in pods:
+        await pod.delete()
