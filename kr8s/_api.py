@@ -462,7 +462,7 @@ class Api:
                 field_selector=field_selector,
                 as_object=as_object,
                 allow_unknown_type=allow_unknown_type,
-                **kwargs
+                **kwargs,
             ):
                 yield resource
 

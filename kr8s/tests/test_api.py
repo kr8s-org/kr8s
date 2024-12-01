@@ -433,7 +433,9 @@ async def test_two_pods(example_pod_spec, ns):
 
     async_api = await kr8s.asyncio.api()
 
-    pods_api = [pod async for pod in async_api.get("Pod", pod1.name, pod2.name, namespace=ns)]
+    pods_api = [
+        pod async for pod in async_api.get("Pod", pod1.name, pod2.name, namespace=ns)
+    ]
     assert len(pods_api) == 2
 
     for pod in pods:
