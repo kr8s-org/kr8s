@@ -429,29 +429,17 @@ class Api:
         Returns:
             The resources.
         """
-        # Normalized field_selector to a string, so that we can combine it with a
-        # name selector later
-        field_selector_str: str
-        if isinstance(field_selector, dict):
-            field_selector_str = dict_to_selector(field_selector)
-        elif field_selector is None:
-            field_selector_str = ""
-        else:
-            field_selector_str = field_selector
-
-        for name in names:
-            field_selector_with_name = f"metadata.name={name},{field_selector_str}"
-            async for resource in self.async_get(
-                kind,
-                name,
-                namespace=namespace,
-                label_selector=label_selector,
-                field_selector=field_selector_with_name,
-                as_object=as_object,
-                allow_unknown_type=allow_unknown_type,
-                **kwargs,
-            ):
-                yield resource
+        async for resource in self.async_get(
+            kind,
+            *names,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            as_object=as_object,
+            allow_unknown_type=allow_unknown_type,
+            **kwargs,
+        ):
+            yield resource
 
     async def async_get(
         self,
@@ -464,6 +452,43 @@ class Api:
         allow_unknown_type: bool = True,
         **kwargs,
     ) -> AsyncGenerator[APIObject]:
+        names_list = [None] if not names else names
+        for name in names_list:
+            async for resource in self._async_get_single(
+                kind,
+                name,
+                namespace=namespace,
+                label_selector=label_selector,
+                field_selector=field_selector,
+                as_object=as_object,
+                allow_unknown_type=allow_unknown_type,
+                **kwargs
+            ):
+                yield resource
+
+    async def _async_get_single(
+        self,
+        kind: str | type,
+        name: str | None = None,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        as_object: type[APIObject] | None = None,
+        allow_unknown_type: bool = True,
+        **kwargs,
+    ) -> AsyncGenerator[APIObject]:
+
+        if name is not None:
+            # Normalized field_selector to a string
+            field_selector_str: str
+            if isinstance(field_selector, dict):
+                field_selector_str = dict_to_selector(field_selector)
+            elif field_selector is None:
+                field_selector_str = ""
+            else:
+                field_selector_str = field_selector
+            field_selector = f"metadata.name={name},{field_selector_str}"
+
         headers = {}
         params = {}
         continue_paging = True
@@ -495,7 +520,7 @@ class Api:
                 else:
                     if "items" in resourcelist:
                         for item in resourcelist["items"]:
-                            if not names or item["metadata"]["name"] in names:
+                            if name is None or item["metadata"]["name"] == name:
                                 yield obj_cls(item, api=self)
                 if (
                     "metadata" in resourcelist
