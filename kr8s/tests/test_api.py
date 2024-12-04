@@ -425,11 +425,15 @@ async def test_two_pods(example_pod_spec, ns):
     example_pod_spec_2["metadata"]["name"] = "example-" + uuid.uuid4().hex[:10]
     pod2 = await Pod(example_pod_spec_2)
 
-    pods = [pod1, pod2]
-    for pod in pods:
+    async def _create_and_wait(pod):
         await pod.create()
         while not await pod.ready():
             await anyio.sleep(0.1)
+
+    pods = [pod1, pod2]
+    async with anyio.create_task_group() as tg:
+        for pod in pods:
+            tg.start_soon(_create_and_wait, pod)
 
     async_api = await kr8s.asyncio.api()
 
@@ -438,5 +442,6 @@ async def test_two_pods(example_pod_spec, ns):
     ]
     assert len(pods_api) == 2
 
-    for pod in pods:
-        await pod.delete()
+    async with anyio.create_task_group() as tg:
+        for pod in pods:
+            tg.start_soon(pod.delete)
