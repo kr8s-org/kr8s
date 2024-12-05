@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import queue
 import threading
-import uuid
-from copy import deepcopy
 
 import anyio
 import pytest
@@ -418,27 +416,27 @@ async def test_get_dynamic_plurals(kind, ensure_gc):
     assert isinstance([resource async for resource in api.get(kind)], list)
 
 
-async def test_two_pods(example_pod_spec, ns):
-    pod1 = await Pod(example_pod_spec)
+async def test_two_pods(ns):
+    gen_kwargs = {
+        "generate_name": "example-",
+        "image": "gcr.io/google_containers/pause",
+        "namespace": ns,
+    }
+    pods = [await Pod.gen(**gen_kwargs), await Pod.gen(**gen_kwargs)]
 
-    example_pod_spec_2 = deepcopy(example_pod_spec)
-    example_pod_spec_2["metadata"]["name"] = "example-" + uuid.uuid4().hex[:10]
-    pod2 = await Pod(example_pod_spec_2)
-
-    async def _create_and_wait(pod):
-        await pod.create()
-        while not await pod.ready():
-            await anyio.sleep(0.1)
-
-    pods = [pod1, pod2]
     async with anyio.create_task_group() as tg:
         for pod in pods:
-            tg.start_soon(_create_and_wait, pod)
+            tg.start_soon(pod.create)
 
-    async_api = await kr8s.asyncio.api()
+    async with anyio.create_task_group() as tg:
+        for pod in pods:
+            tg.start_soon(pod.wait, "condition=Ready")
 
     pods_api = [
-        pod async for pod in async_api.get("Pod", pod1.name, pod2.name, namespace=ns)
+        pod
+        async for pod in kr8s.asyncio.get(
+            "Pod", pods[0].name, pods[1].name, namespace=ns
+        )
     ]
     assert len(pods_api) == 2
 
