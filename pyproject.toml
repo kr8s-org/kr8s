@@ -67,6 +67,7 @@ features = ["test"]
 [tool.hatch.envs.test.scripts]
 default = "pytest kr8s"
 run = "pytest kr8s"
+ci = "pytest kr8s --reruns=3"
 
 [tool.hatch.envs.docs]
 features = ["docs"]
