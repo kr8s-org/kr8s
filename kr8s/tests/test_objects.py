@@ -648,6 +648,21 @@ async def test_node():
         await node.uncordon()
 
 
+async def test_node_taint():
+    api = await kr8s.asyncio.api()
+    nodes = [node async for node in api.get("nodes")]
+    assert len(nodes) > 0
+    node = nodes[0]
+
+    await node.taint(key="key1", value="value1", effect="NoSchedule")
+    assert any(
+        taint["key"] == "key1" and taint["value"] == "value1" for taint in node.taints
+    )
+
+    await node.taint(key="key1", value="value1", effect="NoSchedule-")
+    assert not node.taints
+
+
 async def test_service_proxy():
     api = await kr8s.asyncio.api()
     [service] = await api.get("services", "kubernetes")
