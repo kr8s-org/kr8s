@@ -5,6 +5,8 @@
 This module provides classes that represent Kubernetes resources.
 These classes are used to interact with resources in the Kubernetes API server.
 """
+from __future__ import annotations
+
 from functools import partial
 
 from ._async_utils import run_sync, sync
@@ -347,8 +349,21 @@ class Table(_Table):
     _asyncio = False
 
 
-object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
-objects_from_files = run_sync(partial(_objects_from_files, _asyncio=False))
-get_class = partial(_get_class, _asyncio=False)
-new_class = partial(_new_class, asyncio=False)
-object_from_spec = partial(_object_from_spec, _asyncio=False)
+def object_from_name_type(*args, **kwargs):
+    return run_sync(partial(_object_from_name_type, _asyncio=False))(*args, **kwargs)
+
+
+def objects_from_files(*args, **kwargs):
+    return run_sync(partial(_objects_from_files, _asyncio=False))(*args, **kwargs)
+
+
+def get_class(*args, **kwargs):
+    return partial(_get_class, _asyncio=False)(*args, **kwargs)
+
+
+def new_class(*args, **kwargs):
+    return partial(_new_class, asyncio=False)(*args, **kwargs)
+
+
+def object_from_spec(*args, **kwargs):
+    return partial(_object_from_spec, _asyncio=False)(*args, **kwargs)
