@@ -665,6 +665,11 @@ async def test_node_taint():
     assert len(nodes) > 0
     node = nodes[0]
 
+    # Remove existing taints just in case they still exist
+    for taint in node.taints:
+        await node.taint(key=taint["key"], value=taint["value"], effect="NoSchedule-")
+    assert not node.taints
+
     await node.taint(key="key1", value="value1", effect="NoSchedule")
     await node.taint(key="key2", value="value2", effect="NoSchedule")
     assert len(node.taints) == 2
