@@ -661,7 +661,7 @@ async def test_node():
 
 async def test_node_taint():
     api = await kr8s.asyncio.api()
-    nodes = await api.get("nodes")
+    nodes = [node async for node in api.get("nodes")]
     assert len(nodes) > 0
     node = nodes[0]
 
