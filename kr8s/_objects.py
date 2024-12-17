@@ -832,6 +832,7 @@ class Node(APIObject):
 
     async def taint(self, key: str, value: str, *, effect: str) -> None:
         """Taint a node."""
+        await self.async_refresh()
         if effect.endswith("-"):
             # Remove taint with key
             effect = effect[:-1]
