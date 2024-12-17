@@ -829,21 +829,18 @@ class Node(APIObject):
     async def taint(self, key: str, value: str, *, effect: str) -> None:
         """Taint a node."""
         if effect.endswith("-"):
+            # Remove taint with key
             effect = effect[:-1]
-            await self.async_patch(
-                [
-                    {
-                        "op": "remove",
-                        "path": "/spec/taints",
-                        "value": [{"key": key, "value": value, "effect": effect}],
-                    }
-                ],
-                type="json",
-            )
+            if all(taint["key"] != key for taint in self.taints):
+                raise NotFoundError(f"Unable to find taint with key: {key}")
+
+            taints = [taint for taint in self.taints if taint["key"] != key]
         else:
-            await self.async_patch(
-                {"spec": {"taints": [{"effect": effect, "key": key, "value": value}]}}
-            )
+            taints = list(self.taints) + [
+                {"key": key, "value": value, "effect": effect}
+            ]
+
+        await self.async_patch({"spec": {"taints": taints}})
 
     @property
     def taints(self) -> Box:
