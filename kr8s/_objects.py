@@ -383,7 +383,9 @@ class APIObject:
         """Patch this object in Kubernetes."""
         await self.async_patch(patch, subresource=subresource, type=type)
 
-    async def async_patch(self, patch: dict, *, subresource=None, type=None) -> None:
+    async def async_patch(
+        self, patch: dict | list, *, subresource=None, type=None
+    ) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if type == "json":
@@ -827,6 +829,31 @@ class Node(APIObject):
         This will mark the node as schedulable.
         """
         await self.async_patch({"spec": {"unschedulable": False}})
+
+    async def taint(self, key: str, value: str, *, effect: str) -> None:
+        """Taint a node."""
+        await self.async_refresh()
+        if effect.endswith("-"):
+            # Remove taint with key
+            effect = effect[:-1]
+            if all(taint["key"] != key for taint in self.taints):
+                raise NotFoundError(f"Unable to find taint with key: {key}")
+
+            taints = [taint for taint in self.taints if taint["key"] != key]
+        else:
+            taints = list(self.taints) + [
+                {"key": key, "value": value, "effect": effect}
+            ]
+
+        await self.async_patch({"spec": {"taints": taints}})
+
+    @property
+    def taints(self) -> Box:
+        """Labels of the Kubernetes resource."""
+        try:
+            return self.raw["spec"]["taints"]
+        except KeyError:
+            return Box({})
 
 
 class PersistentVolumeClaim(APIObject):

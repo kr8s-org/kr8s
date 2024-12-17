@@ -15,6 +15,7 @@ import pytest
 
 import kr8s
 from kr8s._async_utils import anext
+from kr8s._exceptions import NotFoundError
 from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,
@@ -656,6 +657,29 @@ async def test_node():
         await node.cordon()
         assert node.unschedulable is True
         await node.uncordon()
+
+
+async def test_node_taint():
+    api = await kr8s.asyncio.api()
+    nodes = [node async for node in api.get("nodes")]
+    assert len(nodes) > 0
+    node = nodes[0]
+
+    # Remove existing taints just in case they still exist
+    for taint in node.taints:
+        await node.taint(key=taint["key"], value=taint["value"], effect="NoSchedule-")
+    assert not node.taints
+
+    await node.taint(key="key1", value="value1", effect="NoSchedule")
+    await node.taint(key="key2", value="value2", effect="NoSchedule")
+    assert len(node.taints) == 2
+
+    await node.taint(key="key1", value="value1", effect="NoSchedule-")
+    await node.taint(key="key2", value="value2", effect="NoSchedule-")
+    assert not node.taints
+
+    with pytest.raises(NotFoundError):
+        await node.taint(key="key123", value="value1", effect="NoSchedule-")
 
 
 async def test_service_proxy():
