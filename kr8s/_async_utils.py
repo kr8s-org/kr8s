@@ -20,6 +20,7 @@
 # asyncio or trio.
 from __future__ import annotations
 
+import builtins
 import inspect
 import subprocess
 import sys
@@ -242,3 +243,14 @@ async def NamedTemporaryFile(  # noqa: N802
     yield fh
     if delete:
         await fh.unlink()
+
+
+# If Python is less than 3.10 we need to define anext
+if sys.version_info < (3, 10):
+
+    async def anext(ait: AsyncGenerator) -> Any:
+        """Get the next item from an async generator."""
+        return await ait.__anext__()
+
+else:
+    anext = builtins.anext

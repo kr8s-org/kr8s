@@ -23,12 +23,12 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        kubernetes-version: ["1.31.1"]
+        kubernetes-version: ["1.31.2"]
         include:
           - python-version: '3.10'
-            kubernetes-version: 1.30.4
+            kubernetes-version: 1.30.6
           - python-version: '3.10'
-            kubernetes-version: 1.29.8
+            kubernetes-version: 1.29.10
     env:
       KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
 
@@ -42,7 +42,7 @@ jobs:
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-        run: hatch run test:run
+        run: hatch run test:ci
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         env:
@@ -50,3 +50,26 @@ jobs:
       - name: Debug k8s resources
         if: always()
         run: kubectl get all -A
+
+  minimal-deps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        # Test the minimal and maximal Python versions only
+        python-version: ["3.8", "3.12"]
+        kubernetes-version: ["1.31.2"]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1
+        with:
+          node_image: kindest/node:v${{ matrix.kubernetes-version }}
+      - name: Install kr8s
+        run: pip install -e .
+      - name: Ensure kr8s works
+        run: python -c "import kr8s; print(kr8s.get('nodes'))"

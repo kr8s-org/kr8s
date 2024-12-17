@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 import kr8s
+from kr8s._async_utils import anext
 from kr8s._auth import KubeAuth
 from kr8s._config import KubeConfig
 from kr8s._testutils import set_env
@@ -146,7 +147,7 @@ async def kubeconfig_with_certs_on_disk(k8s_cluster):
 
 async def test_kubeconfig(k8s_cluster):
     api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
     assert await api.whoami() == "kubernetes-admin"
 
 
@@ -155,7 +156,7 @@ async def test_kubeconfig_multi_paths_same(k8s_cluster):
         f"{k8s_cluster.kubeconfig_path}:{k8s_cluster.kubeconfig_path}"
     )
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_multi_str)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
     assert await api.whoami() == "kubernetes-admin"
 
 
@@ -164,7 +165,7 @@ async def test_kubeconfig_multi_paths_diff(k8s_cluster, tmp_path):
     kubeconfig2 = Path(tmp_path / "kubeconfig").write_bytes(kubeconfig1.read_bytes())
     kubeconfig_multi_str = f"{kubeconfig1}:{kubeconfig2}"
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_multi_str)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
     assert await api.whoami() == "kubernetes-admin"
 
 
@@ -172,7 +173,7 @@ async def test_kubeconfig_dict(k8s_cluster):
     config = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
     assert isinstance(config, dict)
     api = await kr8s.asyncio.api(kubeconfig=config)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
     assert await api.whoami() == "kubernetes-admin"
 
 
@@ -188,7 +189,7 @@ async def test_kubeconfig_context(kubeconfig_with_second_context):
     kubeconfig_path, context_name = kubeconfig_with_second_context
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
     assert api.auth.active_context == context_name
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
 async def test_default_service_account(k8s_cluster):
@@ -201,7 +202,7 @@ async def test_default_service_account(k8s_cluster):
 async def test_reauthenticate(k8s_cluster):
     api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     await api.reauthenticate()
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
 def test_reauthenticate_sync(k8s_cluster):
@@ -222,13 +223,13 @@ async def test_bad_auth(serviceaccount):
 
 async def test_url(kubectl_proxy):
     api = await kr8s.asyncio.api(url=kubectl_proxy)
-    assert await api.get("pods", namespace="kube-system")
+    assert await anext(api.get("pods", namespace="kube-system"))
     assert api.auth.server == kubectl_proxy
 
     # Ensure reauthentication works
     api.auth.server = None
     await api.reauthenticate()
-    assert await api.get("pods", namespace="kube-system")
+    assert await anext(api.get("pods", namespace="kube-system"))
     assert api.auth.server == kubectl_proxy
 
 
@@ -285,7 +286,7 @@ async def test_service_account_with_kubeconfig_namespace(serviceaccount):
 
 async def test_exec(kubeconfig_with_exec):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_exec)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
     assert api.auth.server
     assert api.auth.server_ca_file
 
@@ -300,24 +301,24 @@ async def test_exec(kubeconfig_with_exec):
 async def test_token(kubeconfig_with_token):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
     assert await api.whoami() == "system:serviceaccount:default:pytest"
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
 @pytest.mark.parametrize("absolute", [True, False])
 async def test_certs_on_disk(kubeconfig_with_certs_on_disk, absolute):
     with kubeconfig_with_certs_on_disk(absolute=absolute) as kubeconfig:
         api = await kr8s.asyncio.api(kubeconfig=kubeconfig)
-        assert await api.get("pods", namespace=kr8s.ALL)
+        assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
 async def test_certs_not_encoded(kubeconfig_with_decoded_certs):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_decoded_certs)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
 async def test_certs_with_encoded_line_breaks(kubeconfig_with_line_breaks_in_certs):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_line_breaks_in_certs)
-    assert await api.get("pods", namespace=kr8s.ALL)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
 @pytest.mark.parametrize(

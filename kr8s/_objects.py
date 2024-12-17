@@ -13,7 +13,6 @@ from typing import (
     BinaryIO,
     List,
     Literal,
-    Sequence,
     cast,
 )
 
@@ -255,25 +254,31 @@ class APIObject:
         while start + timeout > time.time():
             if name:
                 try:
-                    resources = await api.async_get(
-                        cls,
-                        name,
-                        namespace=namespace,
-                        field_selector={"metadata.name": name},
-                        **kwargs,
-                    )
+                    resources = [
+                        resource
+                        async for resource in api.async_get(
+                            cls,
+                            name,
+                            namespace=namespace,
+                            field_selector={"metadata.name": name},
+                            **kwargs,
+                        )
+                    ]
                 except ServerError as e:
                     if e.response and e.response.status_code == 404:
                         continue
                     raise e
             elif label_selector or field_selector:
-                resources = await api.async_get(
-                    cls,
-                    namespace=namespace,
-                    label_selector=label_selector,
-                    field_selector=field_selector,
-                    **kwargs,
-                )
+                resources = [
+                    resource
+                    async for resource in api.async_get(
+                        cls,
+                        namespace=namespace,
+                        label_selector=label_selector,
+                        field_selector=field_selector,
+                        **kwargs,
+                    )
+                ]
             else:
                 raise ValueError("Must specify name or selector")
             if not isinstance(resources, list):
@@ -691,7 +696,7 @@ class APIObject:
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
     @classmethod
-    async def list(cls, **kwargs) -> Sequence[Self]:
+    async def list(cls, **kwargs) -> AsyncGenerator[Self]:
         """List objects in Kubernetes.
 
         Args:
@@ -701,10 +706,9 @@ class APIObject:
             A list of objects.
         """
         api = await kr8s.asyncio.api()
-        resources = await api.async_get(kind=cls, **kwargs)
-        if not isinstance(resources, list):
-            resources = [resources]
-        return [resource for resource in resources if isinstance(resource, cls)]
+        async for resource in api.async_get(kind=cls, **kwargs):
+            if isinstance(resource, cls):
+                yield resource
 
 
 ## v1 objects
@@ -1364,11 +1368,14 @@ class Service(APIObject):
     async def async_ready_pods(self) -> list[Pod]:
         """Return a list of ready Pods for this Service."""
         assert self.api
-        pods = await self.api.async_get(
-            "pods",
-            label_selector=dict_to_selector(self.spec["selector"]),
-            namespace=self.namespace,
-        )
+        pods = [
+            pod
+            async for pod in self.api.async_get(
+                "pods",
+                label_selector=dict_to_selector(self.spec["selector"]),
+                namespace=self.namespace,
+            )
+        ]
         if isinstance(pods, Pod):
             pods = [pods]
         elif isinstance(pods, List) and all(isinstance(pod, Pod) for pod in pods):
@@ -1479,11 +1486,14 @@ class Deployment(APIObject):
     async def pods(self) -> list[Pod]:
         """Return a list of Pods for this Deployment."""
         assert self.api
-        pods = await self.api.async_get(
-            "pods",
-            label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
-            namespace=self.namespace,
-        )
+        pods = [
+            pod
+            async for pod in self.api.async_get(
+                "pods",
+                label_selector=dict_to_selector(self.spec["selector"]["matchLabels"]),
+                namespace=self.namespace,
+            )
+        ]
         if isinstance(pods, Pod):
             return [pods]
         if isinstance(pods, List) and all(isinstance(pod, Pod) for pod in pods):

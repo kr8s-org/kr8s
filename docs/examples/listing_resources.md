@@ -21,7 +21,7 @@ for node in kr8s.get("nodes"):
 ```python
 import kr8s.asyncio
 
-for node in await kr8s.asyncio.get("nodes"):
+async for node in kr8s.asyncio.get("nodes"):
     print(node.name)
 ```
 ````
@@ -49,7 +49,7 @@ for pod in kr8s.get("pods", namespace=kr8s.ALL):
 ```python
 import kr8s
 
-for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL):
+async for pod in kr8s.asyncio.get("pods", namespace=kr8s.ALL):
     print(pod.status.podIP, pod.metadata.namespace, pod.metadata.name)
 ```
 ````
@@ -69,14 +69,14 @@ import kr8s
 from kr8s.objects import Ingress
 
 # All of these are equivalent
-ings = kr8s.get("ing")                           # Short name
-ings = kr8s.get("ingress")                       # Singular
-ings = kr8s.get("ingresses")                     # Plural
-ings = kr8s.get("Ingress")                       # Title
-ings = kr8s.get("ingress.networking.k8s.io")     # Full group name
-ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
-ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
-ings = kr8s.get(Ingress)                         # Class
+ings = list(kr8s.get("ing"))                           # Short name
+ings = list(kr8s.get("ingress"))                       # Singular
+ings = list(kr8s.get("ingresses"))                     # Plural
+ings = list(kr8s.get("Ingress"))                       # Title
+ings = list(kr8s.get("ingress.networking.k8s.io"))     # Full group name
+ings = list(kr8s.get("ingress.v1.networking.k8s.io"))  # Full with explicit version
+ings = list(kr8s.get("ingress.networking.k8s.io/v1"))  # Full with explicit version alt.
+ings = list(kr8s.get(Ingress))                         # Class
 ```
 ````
 
@@ -87,14 +87,14 @@ import kr8s.asyncio
 from kr8s.asyncio.objects import Ingress
 
 # All of these are equivalent
-ings = await kr8s.asyncio.get("ing")                           # Short name
-ings = await kr8s.asyncio.get("ingress")                       # Singular
-ings = await kr8s.asyncio.get("ingresses")                     # Plural
-ings = await kr8s.asyncio.get("Ingress")                       # Title
-ings = await kr8s.asyncio.get("ingress.networking.k8s.io")     # Full group name
-ings = await kr8s.asyncio.get("ingress.v1.networking.k8s.io")  # Full with explicit version
-ings = await kr8s.asyncio.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
-ings = await kr8s.asyncio.get(Ingress)                         # Class
+ings = [ing async for ing in kr8s.asyncio.get("ing")]                           # Short name
+ings = [ing async for ing in kr8s.asyncio.get("ingress")]                       # Singular
+ings = [ing async for ing in kr8s.asyncio.get("ingresses")]                     # Plural
+ings = [ing async for ing in kr8s.asyncio.get("Ingress")]                       # Title
+ings = [ing async for ing in kr8s.asyncio.get("ingress.networking.k8s.io")]     # Full group name
+ings = [ing async for ing in kr8s.asyncio.get("ingress.v1.networking.k8s.io")]  # Full with explicit version
+ings = [ing async for ing in kr8s.asyncio.get("ingress.networking.k8s.io/v1")]  # Full with explicit version alt.
+ings = [ing async for ing in kr8s.asyncio.get(Ingress)]                         # Class
 ```
 ````
 
@@ -121,7 +121,7 @@ for pod in kr8s.get("pods", namespace="kube-system"):
 ```python
 import kr8s
 
-for pod in await kr8s.asyncio.get("pods", namespace="kube-system"):
+async for pod in kr8s.asyncio.get("pods", namespace="kube-system"):
     if await pod.ready():
         print(pod.name)
 ```
@@ -154,7 +154,7 @@ import kr8s
 
 selector = {'component': 'kube-scheduler'}
 
-for pod in await kr8s.asyncio.get("pods", namespace=kr8s.ALL, label_selector=selector):
+async for pod in kr8s.asyncio.get("pods", namespace=kr8s.ALL, label_selector=selector):
     print(pod.namespace, pod.name)
 ```
 ````
@@ -182,7 +182,7 @@ for pod in kr8s.get("pods", namespace="kube-system", field_selector="status.phas
 ```python
 import kr8s
 
-for pod in await kr8s.asyncio.get("pods", namespace="kube-system", field_selector="status.phase=Running"):
+async for pod in kr8s.asyncio.get("pods", namespace="kube-system", field_selector="status.phase=Running"):
     print(pod.name)
 ```
 ````
@@ -200,7 +200,7 @@ List {py:class}`Pods <kr8s.objects.Pod>` with {py:func}`kr8s.get()` and sort the
 ```python
 import kr8s
 
-pods = kr8s.get("pods", namespace=kr8s.ALL)
+pods = list(kr8s.get("pods", namespace=kr8s.ALL))
 pods.sort(key=lambda pod: pod.status.containerStatuses[0].restartCount, reverse=True)
 
 for pod in pods:
@@ -213,7 +213,7 @@ for pod in pods:
 ```python
 import kr8s
 
-pods = await kr8s.asyncio.get("pods", namespace=kr8s.ALL)
+pods = [po async for po in kr8s.asyncio.get("pods", namespace=kr8s.ALL)]
 pods.sort(key=lambda pod: pod.status.containerStatuses[0].restartCount, reverse=True)
 
 for pod in pods:

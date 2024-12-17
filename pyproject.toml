@@ -18,6 +18,7 @@ dependencies = [
     "httpx>=0.24.1",
     "httpx-ws>=0.5.2",
     "python-box>=7.0.1",
+    "typing_extensions>=4.12.2",
 ]
 [project.optional-dependencies]
 test = [
@@ -56,7 +57,7 @@ Changelog = "https://github.com/kr8s-org/kr8s/releases"
 addopts = "-v --keep-cluster --durations=10 --cov=kr8s --cov-report term-missing --cov-report xml:coverage.xml --cov-report lcov"
 timeout = 300
 xfail_strict = true
-reruns = 3
+reruns = 0
 reruns_delay = 1
 asyncio_mode = "auto"
 
@@ -66,6 +67,7 @@ features = ["test"]
 [tool.hatch.envs.test.scripts]
 default = "pytest kr8s"
 run = "pytest kr8s"
+ci = "pytest kr8s --reruns=3"
 
 [tool.hatch.envs.docs]
 features = ["docs"]

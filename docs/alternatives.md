@@ -115,7 +115,7 @@ And here's the same example with `kr8s`:
 ```python
 import kr8s.asyncio
 
-for node in await kr8s.asyncio.get("nodes"):
+async for node in kr8s.asyncio.get("nodes"):
     print(node.name)
 ```
 
