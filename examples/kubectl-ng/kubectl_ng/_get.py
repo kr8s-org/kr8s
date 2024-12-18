@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.live import Live
 
 import kr8s
+from kr8s._async_utils import anext
 from kr8s.asyncio.objects import Table
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -49,15 +50,14 @@ async def draw_table(kind, response, resource_names):
 async def get_resources(resources, label_selector, field_selector):
     data = {}
     for kind in resources:
-        data[kind] = [
-            resource
-            async for resource in kr8s.asyncio.get(
+        data[kind] = await anext(
+            kr8s.asyncio.get(
                 kind,
                 label_selector=label_selector,
                 field_selector=field_selector,
                 as_object=Table,
             )
-        ]
+        )
     return data
 
 
