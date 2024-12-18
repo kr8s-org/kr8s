@@ -49,12 +49,15 @@ async def draw_table(kind, response, resource_names):
 async def get_resources(resources, label_selector, field_selector):
     data = {}
     for kind in resources:
-        data[kind] = await kr8s.asyncio.get(
-            kind,
-            label_selector=label_selector,
-            field_selector=field_selector,
-            as_object=Table,
-        )
+        data[kind] = [
+            resource
+            async for resource in kr8s.asyncio.get(
+                kind,
+                label_selector=label_selector,
+                field_selector=field_selector,
+                as_object=Table,
+            )
+        ]
     return data
 
 
