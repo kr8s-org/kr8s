@@ -369,19 +369,21 @@ async def test_pod_tolerate(example_pod):
     )
     pod2 = await Pod.get(example_pod.name, namespace=example_pod.namespace)
 
-    key_to_toleration = {}
-    for toleration in pod2.tolerations:
-        if toleration["key"] in ("key1", "key2"):
-            key_to_toleration[toleration["key"]] = toleration
+    pod_objects_to_check = [example_pod, pod2]
+    for pod in pod_objects_to_check:
+        key_to_toleration = {}
+        for toleration in pod.tolerations:
+            if toleration["key"] in ("key1", "key2"):
+                key_to_toleration[toleration["key"]] = toleration
 
-    assert len(key_to_toleration) == 2
-    assert key_to_toleration["key1"]["operator"] == "Exists"
-    assert key_to_toleration["key1"]["effect"] == "NoSchedule"
+        assert len(key_to_toleration) == 2
+        assert key_to_toleration["key1"]["operator"] == "Exists"
+        assert key_to_toleration["key1"]["effect"] == "NoSchedule"
 
-    assert key_to_toleration["key2"]["operator"] == "Equal"
-    assert key_to_toleration["key2"]["effect"] == "NoExecute"
-    assert key_to_toleration["key2"]["value"] == "value1"
-    assert key_to_toleration["key2"]["tolerationSeconds"] == 600
+        assert key_to_toleration["key2"]["operator"] == "Equal"
+        assert key_to_toleration["key2"]["effect"] == "NoExecute"
+        assert key_to_toleration["key2"]["value"] == "value1"
+        assert key_to_toleration["key2"]["tolerationSeconds"] == 600
 
 
 async def test_pod_from_name(example_pod_spec):
