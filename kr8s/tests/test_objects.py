@@ -350,6 +350,40 @@ def test_pod_get_sync(example_pod_spec):
         pod2.delete()
 
 
+@pytest.fixture
+async def example_pod(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    yield pod
+    await pod.delete()
+
+
+async def test_pod_tolerate(example_pod):
+    await example_pod.tolerate("key1", operator="Exists", effect="NoSchedule")
+    await example_pod.tolerate(
+        "key2",
+        operator="Equal",
+        effect="NoExecute",
+        value="value1",
+        toleration_seconds=600,
+    )
+    pod2 = await Pod.get(example_pod.name, namespace=example_pod.namespace)
+
+    key_to_toleration = {}
+    for toleration in pod2.tolerations:
+        if toleration["key"] in ("key1", "key2"):
+            key_to_toleration[toleration["key"]] = toleration
+
+    assert len(key_to_toleration) == 2
+    assert key_to_toleration["key1"]["operator"] == "Exists"
+    assert key_to_toleration["key1"]["effect"] == "NoSchedule"
+
+    assert key_to_toleration["key2"]["operator"] == "Equal"
+    assert key_to_toleration["key2"]["effect"] == "NoExecute"
+    assert key_to_toleration["key2"]["value"] == "value1"
+    assert key_to_toleration["key2"]["tolerationSeconds"] == 600
+
+
 async def test_pod_from_name(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
