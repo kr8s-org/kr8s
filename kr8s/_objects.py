@@ -1228,6 +1228,43 @@ class Pod(APIObject):
             )
         )
 
+    async def tolerate(
+        self,
+        key: str,
+        *,
+        operator: str,
+        effect: str,
+        value: str | None = None,
+        toleration_seconds: int | None = None,
+    ):
+        """Add a toleration to the Pod.
+
+        Args:
+            key (str): Key of the taint to tolerate.
+            operator (str): Toleration operator.
+            effect (str): Specifies the effect of the taint to tolerate.
+            value (str): Value of taint to tolerate.
+            toleration_seconds (str): Toleration seconds.
+        """
+        new_toleration: dict = {"key": key, "operator": operator, "effect": effect}
+        if value is not None:
+            new_toleration["value"] = value
+
+        if toleration_seconds is not None:
+            new_toleration["tolerationSeconds"] = toleration_seconds
+
+        self.tolerations.append(new_toleration)
+
+        await self.async_patch({"spec": {"tolerations": self.tolerations}})
+
+    @property
+    def tolerations(self) -> Box:
+        """Tolerations for Pod."""
+        try:
+            return self.raw["spec"]["tolerations"]
+        except KeyError:
+            return Box([])
+
 
 class PodTemplate(APIObject):
     """A Kubernetes PodTemplate."""
