@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
+# SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
@@ -244,7 +244,10 @@ class PortForward:
 
     async def _tcp_to_ws(self, ws, reader) -> None:
         while True:
-            data = await reader.read(1024 * 1024)
+            try:
+                data = await reader.read(1024 * 1024)
+            except ConnectionResetError:
+                data = None
             if not data:
                 raise ConnectionClosedError("TCP socket closed")
             else:
