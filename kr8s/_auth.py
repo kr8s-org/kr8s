@@ -1,8 +1,9 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024, Kr8s Developers (See LICENSE for list)
+# SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import base64
 import ipaddress
 import json
+import logging
 import os
 import pathlib
 import ssl
@@ -13,6 +14,8 @@ import anyio
 from ._async_utils import NamedTemporaryFile, check_output
 from ._config import KubeConfigSet
 from ._types import PathType
+
+logger = logging.getLogger(__name__)
 
 
 class KubeAuth:
@@ -69,6 +72,7 @@ class KubeAuth:
         """Reauthenticate with the server."""
         async with self.__auth_lock:
             if self._url:
+                logger.debug("URL specified manually")
                 self.server = self._url
             else:
                 if self._kubeconfig_path_or_dict is not False:
@@ -110,6 +114,7 @@ class KubeAuth:
 
     async def _load_kubeconfig(self) -> None:
         """Load kubernetes auth from kubeconfig."""
+        logger.debug("Loading kubeconfig")
         if isinstance(self._kubeconfig_path_or_dict, str) or isinstance(
             self._kubeconfig_path_or_dict, pathlib.Path
         ):
@@ -254,6 +259,7 @@ class KubeAuth:
 
     async def _load_service_account(self) -> None:
         """Load credentials from service account."""
+        logger.debug("Loading service account")
         self._serviceaccount = os.path.expanduser(self._serviceaccount)
         if not os.path.isdir(self._serviceaccount):
             return
