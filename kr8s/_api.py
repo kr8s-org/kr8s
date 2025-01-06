@@ -171,6 +171,9 @@ class Api:
                 # If we get a 401 or 403 our credentials may have expired so we
                 # reauthenticate and try again a few times before giving up.
                 if e.response.status_code in (401, 403) and auth_attempts < 3:
+                    logger.debug(
+                        f"Unauthorized {e.response.status_code} error, reauthenticating attempt {auth_attempts}"
+                    )
                     auth_attempts += 1
                     await self.auth.reauthenticate()
                     await self._create_session()
