@@ -6,7 +6,7 @@ readme = "README.md"
 keywords = ["kubernetes", "kubectl"]
 license = { text = "BSD-3-Clause" }
 classifiers = ["Programming Language :: Python :: 3"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dynamic = ["version"]
 dependencies = [
     "asyncache>=0.3.1",
@@ -16,7 +16,7 @@ dependencies = [
     "python-jsonpath>=0.7.1",
     "anyio>=3.7.0",
     "httpx>=0.24.1",
-    "httpx-ws>=0.5.2",
+    "httpx-ws>=0.7.0",
     "python-box>=7.0.1",
     "typing_extensions>=4.12.2",
 ]
