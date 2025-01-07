@@ -512,14 +512,14 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "httpx-ws"
-version = "0.6.2"
+version = "0.7.1"
 description = "WebSockets support for HTTPX"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "httpx_ws-0.6.2-py3-none-any.whl", hash = "sha256:24f87427acb757ada200aeab016cc429fa0bc71b0730429c37634867194e305c"},
-    {file = "httpx_ws-0.6.2.tar.gz", hash = "sha256:b07446b9067a30f1012fa9851fdfd14207012cd657c485565884f90553d0854c"},
+    {file = "httpx_ws-0.7.1-py3-none-any.whl", hash = "sha256:7970e470840d8e6c17bd45ed4e7af06f9144a4a9decab2ff226f3ff9accb65b4"},
+    {file = "httpx_ws-0.7.1.tar.gz", hash = "sha256:72f355d4b9b16d8fa59e5e68efdfcb1f3c7dca944901b373791245c8f67f9f95"},
 ]
 
 [package.dependencies]
@@ -617,14 +617,14 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "kr8s"
-version = "0.19.0"
+version = "0.19.1"
 description = "A Kubernetes API library"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "kr8s-0.19.0-py3-none-any.whl", hash = "sha256:edeebc9cd5f31c84e03dcbddec2bb5aef003ec929ae3fbcee21d2744ec5f9740"},
-    {file = "kr8s-0.19.0.tar.gz", hash = "sha256:6416831cb1fcddedc68da48c3fd78c59906e76a87953886326fd1aabd475bc02"},
+    {file = "kr8s-0.19.1-py3-none-any.whl", hash = "sha256:ab3b9d3820ca5dd9426e67c3030b2c29b2f0ccd05a2590bf23b30adbab042056"},
+    {file = "kr8s-0.19.1.tar.gz", hash = "sha256:a046bd3b31d7567fd09099212850c5e5967875a9f29b16830a58a29cefed712e"},
 ]
 
 [package.dependencies]
@@ -633,7 +633,7 @@ asyncache = ">=0.3.1"
 cryptography = ">=35"
 exceptiongroup = {version = ">=1.2.0", markers = "python_version < \"3.12\""}
 httpx = ">=0.24.1"
-httpx-ws = ">=0.5.2"
+httpx-ws = ">=0.7.0"
 python-box = ">=7.0.1"
 python-jsonpath = ">=0.7.1"
 pyyaml = ">=6.0"
@@ -1324,4 +1324,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "9963138c9c17e833ce6d031f34d9d4afd3746332980b38b8982752e511cd1a0b"
+content-hash = "765da3ed8184897aaac0764bf1a95b1616bafa68b090ad51bce765e5ed2f1047"
