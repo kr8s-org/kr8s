@@ -13,6 +13,18 @@ from kr8s._exceptions import APITimeoutError
 from kr8s.asyncio.objects import Pod, Table
 
 
+@pytest.fixture
+async def example_crd(example_crd_spec):
+    example = await kr8s.asyncio.objects.CustomResourceDefinition(example_crd_spec)
+    if not await example.exists():
+        await example.create()
+    assert example in [
+        crd async for crd in kr8s.asyncio.get("customresourcedefinitions")
+    ]
+    yield example
+    await example.delete()
+
+
 async def test_factory_bypass() -> None:
     with pytest.raises(ValueError, match="kr8s.api()"):
         _ = kr8s.Api()
@@ -158,6 +170,11 @@ async def test_get_pods(namespace) -> None:
     assert isinstance(pods, list)
     assert len(pods) > 0
     assert isinstance(pods[0], Pod)
+
+
+async def test_get_custom_resouces(example_crd) -> None:
+    async for shirt in kr8s.asyncio.get(example_crd.name):
+        assert shirt
 
 
 async def test_get_pods_as_table() -> None:

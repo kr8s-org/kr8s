@@ -528,6 +528,7 @@ class Api:
                 if (
                     "metadata" in resourcelist
                     and "continue" in resourcelist["metadata"]
+                    and resourcelist["metadata"]["continue"]
                 ):
                     continue_paging = True
                     params["continue"] = resourcelist["metadata"]["continue"]
