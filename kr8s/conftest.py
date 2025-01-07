@@ -108,6 +108,50 @@ async def example_deployment_spec(ns):
     }
 
 
+@pytest.fixture
+async def example_crd_spec():
+    spec = {
+        "apiVersion": "apiextensions.k8s.io/v1",
+        "kind": "CustomResourceDefinition",
+        "metadata": {"name": "shirts.stable.example.com"},
+        "spec": {
+            "group": "stable.example.com",
+            "scope": "Namespaced",
+            "names": {"plural": "shirts", "singular": "shirt", "kind": "Shirt"},
+            "versions": [
+                {
+                    "name": "v1",
+                    "served": True,
+                    "storage": True,
+                    "schema": {
+                        "openAPIV3Schema": {
+                            "type": "object",
+                            "properties": {
+                                "spec": {
+                                    "type": "object",
+                                    "properties": {
+                                        "color": {"type": "string"},
+                                        "size": {"type": "string"},
+                                    },
+                                }
+                            },
+                        }
+                    },
+                    "selectableFields": [
+                        {"jsonPath": ".spec.color"},
+                        {"jsonPath": ".spec.size"},
+                    ],
+                    "additionalPrinterColumns": [
+                        {"jsonPath": ".spec.color", "name": "Color", "type": "string"},
+                        {"jsonPath": ".spec.size", "name": "Size", "type": "string"},
+                    ],
+                }
+            ],
+        },
+    }
+    yield spec
+
+
 def check_socket(host, port):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         return sock.connect_ex((host, port)) == 0
@@ -163,8 +207,9 @@ def serviceaccount(k8s_cluster, k8s_token):
     host, port = _hostport.split(":")
 
     # Create a temporary directory and populate it with the serviceaccount files
-    with tempfile.TemporaryDirectory() as tempdir, set_env(
-        KUBERNETES_SERVICE_HOST=host, KUBERNETES_SERVICE_PORT=port
+    with (
+        tempfile.TemporaryDirectory() as tempdir,
+        set_env(KUBERNETES_SERVICE_HOST=host, KUBERNETES_SERVICE_PORT=port),
     ):
         tempdir = Path(tempdir)
         # Create ca.crt in tempdir from the certificate-authority-data in kubeconfig
