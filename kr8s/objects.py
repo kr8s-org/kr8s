@@ -8,6 +8,7 @@ These classes are used to interact with resources in the Kubernetes API server.
 
 # Disable missing docstrings, these are inherited from the async version of the objects
 # ruff: noqa: D102
+from __future__ import annotations
 
 from functools import partial
 from typing import Any, Literal
