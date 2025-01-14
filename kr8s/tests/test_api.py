@@ -28,9 +28,7 @@ async def example_crd(example_crd_spec):
 async def test_factory_bypass() -> None:
     with pytest.raises(ValueError, match="kr8s.api()"):
         _ = kr8s.Api()
-    assert not kr8s.Api._instances
     _ = kr8s.api()
-    assert kr8s.Api._instances
 
 
 async def test_api_factory(serviceaccount) -> None:

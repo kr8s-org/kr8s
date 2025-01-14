@@ -243,6 +243,28 @@ class APIObject:
         **kwargs,
     ) -> Self:
         """Get a Kubernetes resource by name or via selectors."""
+        return await cls.async_get(
+            name=name,
+            namespace=namespace,
+            api=api,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    @classmethod
+    async def async_get(
+        cls,
+        name: str | None = None,
+        namespace: str | None = None,
+        api: Api | None = None,
+        label_selector: str | dict[str, str] | None = None,
+        field_selector: str | dict[str, str] | None = None,
+        timeout: int = 2,
+        **kwargs,
+    ) -> Self:
+        """Get a Kubernetes resource by name or via selectors."""
         if api is None:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
@@ -323,7 +345,7 @@ class APIObject:
             )
         return False
 
-    async def create(self) -> None:
+    async def async_create(self) -> None:
         """Create this object in Kubernetes."""
         assert self.api
         async with self.api.call_api(
@@ -335,7 +357,15 @@ class APIObject:
         ) as resp:
             self.raw = resp.json()
 
+    async def create(self) -> None:
+        """Create this object in Kubernetes."""
+        return await self.async_create()
+
     async def delete(self, propagation_policy: str | None = None) -> None:
+        """Delete this object from Kubernetes."""
+        return await self.async_delete(propagation_policy=propagation_policy)
+
+    async def async_delete(self, propagation_policy: str | None = None) -> None:
         """Delete this object from Kubernetes."""
         data = {}
         if propagation_policy:
@@ -413,6 +443,10 @@ class APIObject:
             raise e
 
     async def scale(self, replicas: int | None = None) -> None:
+        """Scale this object in Kubernetes."""
+        return await self.async_scale(replicas=replicas)
+
+    async def async_scale(self, replicas: int | None = None) -> None:
         """Scale this object in Kubernetes."""
         if not self.scalable:
             raise NotImplementedError(f"{self.kind} is not scalable")
@@ -531,6 +565,14 @@ class APIObject:
             Given that ``for`` is a reserved word anyway we can't exactly match the kubectl API so
             we use ``condition`` in combination with a ``mode`` instead.
         """
+        return await self.async_wait(conditions, mode=mode, timeout=timeout)
+
+    async def async_wait(
+        self,
+        conditions: list[str] | str,
+        mode: Literal["any", "all"] = "any",
+        timeout: int | None = None,
+    ):
         if isinstance(conditions, str):
             conditions = [conditions]
 
@@ -547,6 +589,10 @@ class APIObject:
                     return
 
     async def annotate(self, annotations: dict | None = None, **kwargs) -> None:
+        """Annotate this object in Kubernetes."""
+        return await self.async_annotate(annotations=annotations, **kwargs)
+
+    async def async_annotate(self, annotations: dict | None = None, **kwargs) -> None:
         """Annotate this object in Kubernetes."""
         if annotations is None:
             annotations = kwargs
@@ -572,6 +618,9 @@ class APIObject:
             >>> deployment.label({"app": "my-app"})
             >>> deployment.label(app="my-app")
         """
+        return await self.async_label(labels=labels, **kwargs)
+
+    async def async_label(self, labels: dict | None = None, **kwargs) -> None:
         if labels is None:
             labels = kwargs
         if not labels:
@@ -642,6 +691,9 @@ class APIObject:
             >>> deployment.adopt(pod)
 
         """
+        return await self.async_adopt(child)
+
+    async def async_adopt(self, child: APIObject) -> None:
         await child.async_set_owner(self)
 
     def to_dict(self) -> dict:
@@ -694,6 +746,13 @@ class APIObject:
     def gen(cls, *args, **kwargs):
         raise NotImplementedError("gen is not implemented for this object")
 
+    @classmethod
+    async def async_list(cls, **kwargs) -> AsyncGenerator[Self]:
+        api = await kr8s.asyncio.api()
+        async for resource in api.async_get(kind=cls, **kwargs):
+            if isinstance(resource, cls):
+                yield resource
+
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
     @classmethod
     async def list(cls, **kwargs) -> AsyncGenerator[Self]:
@@ -705,10 +764,8 @@ class APIObject:
         Returns:
             A list of objects.
         """
-        api = await kr8s.asyncio.api()
-        async for resource in api.async_get(kind=cls, **kwargs):
-            if isinstance(resource, cls):
-                yield resource
+        async for resource in cls.async_list(**kwargs):
+            yield resource
 
 
 ## v1 objects
@@ -821,6 +878,9 @@ class Node(APIObject):
 
         This will mark the node as unschedulable.
         """
+        return await self.async_cordon()
+
+    async def async_cordon(self) -> None:
         await self.async_patch({"spec": {"unschedulable": True}})
 
     async def uncordon(self) -> None:
@@ -828,10 +888,16 @@ class Node(APIObject):
 
         This will mark the node as schedulable.
         """
+        return await self.async_uncordon()
+
+    async def async_uncordon(self) -> None:
         await self.async_patch({"spec": {"unschedulable": False}})
 
     async def taint(self, key: str, value: str, *, effect: str) -> None:
         """Taint a node."""
+        return await self.async_taint(key, value, effect=effect)
+
+    async def async_taint(self, key: str, value: str, *, effect: str) -> None:
         await self.async_refresh()
         if effect.endswith("-"):
             # Remove taint with key
@@ -908,6 +974,33 @@ class Pod(APIObject):
         return await self.async_ready()
 
     async def logs(
+        self,
+        container=None,
+        pretty=None,
+        previous=False,
+        since_seconds=None,
+        since_time=None,
+        timestamps=False,
+        tail_lines=None,
+        limit_bytes=None,
+        follow=False,
+        timeout=3600,
+    ) -> AsyncGenerator[str]:
+        async for line in self.async_logs(
+            container=container,
+            pretty=pretty,
+            previous=previous,
+            since_seconds=since_seconds,
+            since_time=since_time,
+            timestamps=timestamps,
+            tail_lines=tail_lines,
+            limit_bytes=limit_bytes,
+            follow=follow,
+            timeout=timeout,
+        ):
+            yield line
+
+    async def async_logs(
         self,
         container=None,
         pretty=None,
@@ -1246,6 +1339,23 @@ class Pod(APIObject):
             value (str): Value of taint to tolerate.
             toleration_seconds (str): Toleration seconds.
         """
+        return await self.async_tolerate(
+            key,
+            operator=operator,
+            effect=effect,
+            value=value,
+            toleration_seconds=toleration_seconds,
+        )
+
+    async def async_tolerate(
+        self,
+        key: str,
+        *,
+        operator: str,
+        effect: str,
+        value: str | None = None,
+        toleration_seconds: int | None = None,
+    ):
         new_toleration: dict = {"key": key, "operator": operator, "effect": effect}
         if value is not None:
             new_toleration["value"] = value
@@ -1290,6 +1400,9 @@ class ReplicationController(APIObject):
 
     async def ready(self):
         """Check if the deployment is ready."""
+        return await self.async_ready()
+
+    async def async_ready(self):
         await self.async_refresh()
         return (
             self.raw["status"].get("observedGeneration", 0)
@@ -1426,6 +1539,9 @@ class Service(APIObject):
 
     async def ready(self) -> bool:
         """Check if the service is ready."""
+        return await self.async_ready()
+
+    async def async_ready(self) -> bool:
         await self.async_refresh()
 
         # If the service is of type LoadBalancer, check if it has endpoints
@@ -1523,6 +1639,9 @@ class Deployment(APIObject):
 
     async def pods(self) -> list[Pod]:
         """Return a list of Pods for this Deployment."""
+        return await self.async_pods()
+
+    async def async_pods(self) -> list[Pod]:
         assert self.api
         pods = [
             pod
@@ -1542,6 +1661,9 @@ class Deployment(APIObject):
 
     async def ready(self):
         """Check if the deployment is ready."""
+        return await self.async_ready()
+
+    async def async_ready(self):
         await self.async_refresh()
         return (
             self.raw["status"].get("observedGeneration", 0)

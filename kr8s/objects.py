@@ -5,9 +5,19 @@
 This module provides classes that represent Kubernetes resources.
 These classes are used to interact with resources in the Kubernetes API server.
 """
-from functools import partial
 
-from ._async_utils import run_sync, sync
+# Disable missing docstrings, these are inherited from the async version of the objects
+# ruff: noqa: D102
+
+from functools import partial
+from typing import Any, Literal
+
+import httpx
+from typing_extensions import Self
+
+from kr8s._api import Api
+
+from ._async_utils import run_sync
 from ._objects import (
     APIObject as _APIObject,
 )
@@ -131,220 +141,313 @@ from ._objects import (
 from ._objects import objects_from_files as _objects_from_files
 
 
-@sync
-class APIObject(_APIObject):
-    __doc__ = _APIObject.__doc__
+class APIObjectSyncMixin(_APIObject):
     _asyncio = False
 
+    @classmethod
+    def get(  # type: ignore
+        cls,
+        name: str | None = None,
+        namespace: str | None = None,
+        api: Api | None = None,
+        label_selector: str | dict[str, str] | None = None,
+        field_selector: str | dict[str, str] | None = None,
+        timeout: int = 2,
+        **kwargs,
+    ) -> Self:  # type: ignore
+        return run_sync(cls.async_get)(
+            name=name,
+            namespace=namespace,
+            api=api,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            timeout=timeout,
+            **kwargs,
+        )  # type: ignore
 
-@sync
-class Binding(_Binding):
+    def exists(self, ensure=False) -> bool:  # type: ignore
+        return run_sync(self.async_exists)(ensure=ensure)  # type: ignore
+
+    def create(self) -> None:  # type: ignore
+        return run_sync(self.async_create)()  # type: ignore
+
+    def delete(self, propagation_policy: str | None = None) -> None:  # type: ignore
+        return run_sync(self.async_delete)(propagation_policy=propagation_policy)  # type: ignore
+
+    def refresh(self):
+        return run_sync(self.async_refresh)()  # type: ignore
+
+    def patch(self, patch, *, subresource=None, type=None):
+        return run_sync(self.async_patch)(patch, subresource=subresource, type=type)  # type: ignore
+
+    def scale(self, replicas=None):
+        return run_sync(self.async_scale)(replicas=replicas)  # type: ignore
+
+    def watch(self):
+        yield from run_sync(self.async_watch)()
+
+    def wait(
+        self,
+        conditions: list[str] | str,
+        mode: Literal["any", "all"] = "any",
+        timeout: int | float | None = None,
+    ):
+        return run_sync(self.async_wait)(conditions, mode=mode, timeout=timeout)  # type: ignore
+
+    def annotate(self, annotations=None, **kwargs):
+        return run_sync(self.async_annotate)(annotations, **kwargs)  # type: ignore
+
+    def label(self, labels=None, **kwargs):
+        return run_sync(self.async_label)(labels, **kwargs)  # type: ignore
+
+    def set_owner(self, owner):
+        return run_sync(self.async_set_owner)(owner)  # type: ignore
+
+    def adopt(self, child):
+        return run_sync(self.async_adopt)(child)  # type: ignore
+
+    @classmethod
+    def list(cls):
+        yield from run_sync(cls.async_list)()
+
+
+class Binding(APIObjectSyncMixin, _Binding):
     __doc__ = _Binding.__doc__
-    _asyncio = False
 
 
-@sync
-class ComponentStatus(_ComponentStatus):
+class ComponentStatus(APIObjectSyncMixin, _ComponentStatus):
     __doc__ = _ComponentStatus.__doc__
-    _asyncio = False
 
 
-@sync
-class ConfigMap(_ConfigMap):
+class ConfigMap(APIObjectSyncMixin, _ConfigMap):
     __doc__ = _ConfigMap.__doc__
-    _asyncio = False
 
 
-@sync
-class Endpoints(_Endpoints):
+class Endpoints(APIObjectSyncMixin, _Endpoints):
     __doc__ = _Endpoints.__doc__
-    _asyncio = False
 
 
-@sync
-class Event(_Event):
+class Event(APIObjectSyncMixin, _Event):
     __doc__ = _Event.__doc__
-    _asyncio = False
 
 
-@sync
-class LimitRange(_LimitRange):
+class LimitRange(APIObjectSyncMixin, _LimitRange):
     __doc__ = _LimitRange.__doc__
-    _asyncio = False
 
 
-@sync
-class Namespace(_Namespace):
+class Namespace(APIObjectSyncMixin, _Namespace):
     __doc__ = _Namespace.__doc__
-    _asyncio = False
 
 
-@sync
-class Node(_Node):
-    __doc__ = _Node.__doc__
-    _asyncio = False
+class Node(APIObjectSyncMixin, _Node):
+
+    def cordon(self):
+        return run_sync(self.async_cordon)()  # type: ignore
+
+    def uncordon(self):
+        return run_sync(self.async_uncordon)()  # type: ignore
+
+    def taint(self, key, value, *, effect):
+        return run_sync(self.async_taint)(key, value, effect=effect)  # type: ignore
 
 
-@sync
-class PersistentVolume(_PersistentVolume):
+class PersistentVolume(APIObjectSyncMixin, _PersistentVolume):
     __doc__ = _PersistentVolume.__doc__
-    _asyncio = False
 
 
-@sync
-class PersistentVolumeClaim(_PersistentVolumeClaim):
+class PersistentVolumeClaim(APIObjectSyncMixin, _PersistentVolumeClaim):
     __doc__ = _PersistentVolumeClaim.__doc__
-    _asyncio = False
 
 
-@sync
-class Pod(_Pod):
-    __doc__ = _Pod.__doc__
-    _asyncio = False
+class Pod(APIObjectSyncMixin, _Pod):
+    def ready(self):
+        return run_sync(self.async_ready)()  # type: ignore
+
+    def logs(
+        self,
+        container=None,
+        pretty=None,
+        previous=False,
+        since_seconds=None,
+        since_time=None,
+        timestamps=False,
+        tail_lines=None,
+        limit_bytes=None,
+        follow=False,
+        timeout=3600,
+    ):
+        return run_sync(self.async_logs)(
+            container,
+            pretty,
+            previous,
+            since_seconds,
+            since_time,
+            timestamps,
+            tail_lines,
+            limit_bytes,
+            follow,
+            timeout,
+        )  # type: ignore
+
+    def exec(
+        self,
+        command,
+        *,
+        container=None,
+        stdin=None,
+        stdout=None,
+        stderr=None,
+        check=True,
+        capture_output=True,
+    ):
+        return run_sync(self.async_exec)(
+            command,
+            container=container,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            check=check,
+            capture_output=capture_output,
+        )  # type: ignore
+
+    def tolerate(self, key, *, operator, effect, value=None, toleration_seconds=None):
+        return run_sync(self.async_tolerate)(
+            key,
+            operator=operator,
+            effect=effect,
+            value=value,
+            toleration_seconds=toleration_seconds,
+        )
 
 
-@sync
-class PodTemplate(_PodTemplate):
+class PodTemplate(APIObjectSyncMixin, _PodTemplate):
     __doc__ = _PodTemplate.__doc__
-    _asyncio = False
 
 
-@sync
-class ReplicationController(_ReplicationController):
-    __doc__ = _ReplicationController.__doc__
-    _asyncio = False
+class ReplicationController(APIObjectSyncMixin, _ReplicationController):
+
+    def ready(self):
+        return run_sync(self.async_ready)()  # type: ignore
 
 
-@sync
-class ResourceQuota(_ResourceQuota):
+class ResourceQuota(APIObjectSyncMixin, _ResourceQuota):
     __doc__ = _ResourceQuota.__doc__
-    _asyncio = False
 
 
-@sync
-class Secret(_Secret):
+class Secret(APIObjectSyncMixin, _Secret):
     __doc__ = _Secret.__doc__
-    _asyncio = False
 
 
-@sync
-class Service(_Service):
-    __doc__ = _Service.__doc__
-    _asyncio = False
-
-
-@sync
-class ServiceAccount(_ServiceAccount):
+class ServiceAccount(APIObjectSyncMixin, _ServiceAccount):
     __doc__ = _ServiceAccount.__doc__
-    _asyncio = False
 
 
-@sync
-class ControllerRevision(_ControllerRevision):
+class Service(APIObjectSyncMixin, _Service):
+    def proxy_http_request(
+        self, method: str, path: str, port: int | None = None, **kwargs: Any
+    ) -> httpx.Response:
+        return run_sync(self.async_proxy_http_request)(method, path, port=port, **kwargs)  # type: ignore
+
+    def proxy_http_get(
+        self, path: str, port: int | None = None, **kwargs
+    ) -> httpx.Response:
+        return run_sync(self.async_proxy_http_request)("GET", path, port, **kwargs)  # type: ignore
+
+    def proxy_http_post(self, path: str, port: int | None = None, **kwargs) -> None:  # type: ignore
+        return run_sync(self.async_proxy_http_request)("POST", path, port, **kwargs)  # type: ignore
+
+    def proxy_http_put(
+        self, path: str, port: int | None = None, **kwargs
+    ) -> httpx.Response:
+        return run_sync(self.async_proxy_http_request)("PUT", path, port, **kwargs)  # type: ignore
+
+    def proxy_http_delete(
+        self, path: str, port: int | None = None, **kwargs
+    ) -> httpx.Response:
+        return run_sync(self.async_proxy_http_request)("DELETE", path, port, **kwargs)  # type: ignore
+
+    def ready_pods(self) -> list[Pod]:  # type: ignore
+        return run_sync(self.async_ready_pods)()  # type: ignore
+
+    def ready(self):
+        return run_sync(self.async_ready)()  # type: ignore
+
+
+class ControllerRevision(APIObjectSyncMixin, _ControllerRevision):
     __doc__ = _ControllerRevision.__doc__
-    _asyncio = False
 
 
-@sync
-class DaemonSet(_DaemonSet):
+class DaemonSet(APIObjectSyncMixin, _DaemonSet):
     __doc__ = _DaemonSet.__doc__
-    _asyncio = False
 
 
-@sync
-class Deployment(_Deployment):
-    __doc__ = _Deployment.__doc__
-    _asyncio = False
+class Deployment(APIObjectSyncMixin, _Deployment):
+
+    def pods(self) -> list[Pod]:  # type: ignore
+        return run_sync(self.async_pods)()  # type: ignore
+
+    def ready(self):
+        return run_sync(self.async_ready)()  # type: ignore
 
 
-@sync
-class ReplicaSet(_ReplicaSet):
+class ReplicaSet(APIObjectSyncMixin, _ReplicaSet):
     __doc__ = _ReplicaSet.__doc__
-    _asyncio = False
 
 
-@sync
-class StatefulSet(_StatefulSet):
+class StatefulSet(APIObjectSyncMixin, _StatefulSet):
     __doc__ = _StatefulSet.__doc__
-    _asyncio = False
 
 
-@sync
-class HorizontalPodAutoscaler(_HorizontalPodAutoscaler):
+class HorizontalPodAutoscaler(APIObjectSyncMixin, _HorizontalPodAutoscaler):
     __doc__ = _HorizontalPodAutoscaler.__doc__
-    _asyncio = False
 
 
-@sync
-class CronJob(_CronJob):
+class CronJob(APIObjectSyncMixin, _CronJob):
     __doc__ = _CronJob.__doc__
-    _asyncio = False
 
 
-@sync
-class Job(_Job):
+class Job(APIObjectSyncMixin, _Job):
     __doc__ = _Job.__doc__
-    _asyncio = False
 
 
-@sync
-class Ingress(_Ingress):
+class Ingress(APIObjectSyncMixin, _Ingress):
     __doc__ = _Ingress.__doc__
-    _asyncio = False
 
 
-@sync
-class IngressClass(_IngressClass):
+class IngressClass(APIObjectSyncMixin, _IngressClass):
     __doc__ = _IngressClass.__doc__
-    _asyncio = False
 
 
-@sync
-class NetworkPolicy(_NetworkPolicy):
+class NetworkPolicy(APIObjectSyncMixin, _NetworkPolicy):
     __doc__ = _NetworkPolicy.__doc__
-    _asyncio = False
 
 
-@sync
-class PodDisruptionBudget(_PodDisruptionBudget):
+class PodDisruptionBudget(APIObjectSyncMixin, _PodDisruptionBudget):
     __doc__ = _PodDisruptionBudget.__doc__
-    _asyncio = False
 
 
-@sync
-class ClusterRoleBinding(_ClusterRoleBinding):
+class ClusterRoleBinding(APIObjectSyncMixin, _ClusterRoleBinding):
     __doc__ = _ClusterRoleBinding.__doc__
-    _asyncio = False
 
 
-@sync
-class ClusterRole(_ClusterRole):
+class ClusterRole(APIObjectSyncMixin, _ClusterRole):
     __doc__ = _ClusterRole.__doc__
-    _asyncio = False
 
 
-@sync
-class RoleBinding(_RoleBinding):
+class RoleBinding(APIObjectSyncMixin, _RoleBinding):
     __doc__ = _RoleBinding.__doc__
-    _asyncio = False
 
 
-@sync
-class Role(_Role):
+class Role(APIObjectSyncMixin, _Role):
     __doc__ = _Role.__doc__
-    _asyncio = False
 
 
-@sync
-class CustomResourceDefinition(_CustomResourceDefinition):
+class CustomResourceDefinition(APIObjectSyncMixin, _CustomResourceDefinition):
     __doc__ = _CustomResourceDefinition.__doc__
-    _asyncio = False
 
 
-@sync
-class Table(_Table):
+class Table(APIObjectSyncMixin, _Table):
     __doc__ = _Table.__doc__
-    _asyncio = False
 
 
 object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
