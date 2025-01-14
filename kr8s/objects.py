@@ -140,6 +140,7 @@ from ._objects import (
     object_from_spec as _object_from_spec,
 )
 from ._objects import objects_from_files as _objects_from_files
+from .portforward import PortForward
 
 
 class APIObjectSyncMixin(_APIObject):
@@ -320,6 +321,13 @@ class Pod(APIObjectSyncMixin, _Pod):
             toleration_seconds=toleration_seconds,
         )
 
+    def portforward(
+        self, remote_port, local_port="match", address="127.0.0.1"
+    ) -> PortForward:
+        pf = super().portforward(remote_port, local_port, address)
+        assert isinstance(pf, PortForward)
+        return pf
+
 
 class PodTemplate(APIObjectSyncMixin, _PodTemplate):
     __doc__ = _PodTemplate.__doc__
@@ -372,6 +380,13 @@ class Service(APIObjectSyncMixin, _Service):
 
     def ready(self):
         return run_sync(self.async_ready)()  # type: ignore
+
+    def portforward(
+        self, remote_port, local_port="match", address="127.0.0.1"
+    ) -> PortForward:
+        pf = super().portforward(remote_port, local_port, address)
+        assert isinstance(pf, PortForward)
+        return pf
 
 
 class ControllerRevision(APIObjectSyncMixin, _ControllerRevision):

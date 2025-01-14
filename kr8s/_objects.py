@@ -1098,7 +1098,7 @@ class Pod(APIObject):
         remote_port: int,
         local_port: LocalPortType = "match",
         address: list[str] | str = "127.0.0.1",
-    ) -> SyncPortForward | AsyncPortForward:
+    ) -> AsyncPortForward:
         """Port forward a pod.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Pod.
@@ -1560,7 +1560,7 @@ class Service(APIObject):
         remote_port: int,
         local_port: LocalPortType = "match",
         address: str | list[str] = "127.0.0.1",
-    ) -> SyncPortForward | AsyncPortForward:
+    ) -> AsyncPortForward:
         """Port forward a service.
 
         Returns an instance of :class:`kr8s.portforward.PortForward` for this Service.

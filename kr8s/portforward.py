@@ -4,22 +4,31 @@
 
 This module provides a class for managing a port forward connection to a Kubernetes Pod or Service.
 """
+# Disable missing docstrings, these are inherited from the async version of the objects
+# ruff: noqa: D102, D105
 from __future__ import annotations
 
 import threading
 import time
 
-from ._async_utils import sync
+from ._async_utils import run_sync
 from ._portforward import LocalPortType
 from ._portforward import PortForward as _PortForward
 
 __all__ = ["PortForward", "LocalPortType"]
 
 
-@sync
 class PortForward(_PortForward):
-    __doc__ = _PortForward.__doc__
     _bg_thread = None
+
+    def __enter__(self, *args, **kwargs):
+        return run_sync(self.__aenter__)(*args, **kwargs)
+
+    def __exit__(self, *args, **kwargs):
+        return run_sync(self.__aexit__)(*args, **kwargs)
+
+    def run_forever(self):
+        return run_sync(self.run_forever)()  # type: ignore
 
     def start(self):
         """Start a background thread with the port forward running."""
