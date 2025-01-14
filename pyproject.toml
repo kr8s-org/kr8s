@@ -148,7 +148,7 @@ convention = "google"
 exclude = ["examples", "venv", "ci", "docs"]
 
 [tool.pyright]
-exclude = ["examples", "**/tests", "venv", "ci", "docs"]
+exclude = ["examples", "venv", "ci", "docs"]
 
 # We often override corotuines with sync methods so this is not useful
 reportIncompatibleMethodOverride = "none"
