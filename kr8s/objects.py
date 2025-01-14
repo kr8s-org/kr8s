@@ -154,7 +154,7 @@ class APIObjectSyncMixin(_APIObject):
         field_selector: str | dict[str, str] | None = None,
         timeout: int = 2,
         **kwargs,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         return run_sync(cls.async_get)(
             name=name,
             namespace=namespace,
