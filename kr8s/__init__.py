@@ -6,14 +6,15 @@ This module contains `kr8s`, a simple, extensible Python client library for Kube
 At the top level, `kr8s` provides a synchronous API that wraps the asynchronous API provided by `kr8s.asyncio`.
 Both APIs are functionally identical with the same objects, method signatures and return values.
 """
+# Disable missing docstrings, these are inherited from the async version of the objects
+# ruff: noqa: D102
 from functools import partial, update_wrapper
-from typing import Dict, Optional, Type, Union
+from typing import Dict, Generator, Optional, Type, Union
 
 from . import asyncio, objects, portforward
 from ._api import ALL
 from ._api import Api as _AsyncApi
 from ._async_utils import run_sync as _run_sync
-from ._async_utils import sync as _sync
 from ._exceptions import (
     APITimeoutError,
     ConnectionClosedError,
@@ -21,6 +22,7 @@ from ._exceptions import (
     NotFoundError,
     ServerError,
 )
+from ._objects import APIObject
 from .asyncio import (
     api as _api,
 )
@@ -48,9 +50,64 @@ except ImportError:
     __version_tuple__ = (0, 0, 0)
 
 
-@_sync
 class Api(_AsyncApi):
-    __doc__ = _AsyncApi.__doc__
+    _asyncio = False
+
+    def version(self) -> dict:  # type: ignore
+        return _run_sync(self.async_version)()  # type: ignore
+
+    def reauthenticate(self):  # type: ignore
+        return _run_sync(self.async_reauthenticate)()  # type: ignore
+
+    def whoami(self):  # type: ignore
+        return _run_sync(self.async_whoami)()  # type: ignore
+
+    def lookup_kind(self, kind) -> tuple[str, str, bool]:  # type: ignore
+        return _run_sync(self.async_lookup_kind)(kind)  # type: ignore
+
+    def get(  # type: ignore
+        self,
+        kind: str | type,
+        *names: str,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        as_object: type[APIObject] | None = None,
+        allow_unknown_type: bool = True,
+        **kwargs,
+    ) -> Generator[APIObject, None, None]:
+        yield from _run_sync(self.async_get)(
+            kind,
+            *names,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            as_object=as_object,
+            allow_unknown_type=allow_unknown_type,
+            **kwargs,
+        )
+
+    def watch(  # type: ignore
+        self,
+        kind: str,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        since: str | None = None,
+    ) -> Generator[tuple[str, APIObject], None, None]:
+        yield from _run_sync(self.async_watch)(
+            kind,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            since=since,
+        )
+
+    def api_resources(self) -> list[dict]:  # type: ignore
+        return _run_sync(self.async_api_resources)()  # type: ignore
+
+    def api_versions(self) -> Generator[str, None, None]:  # type: ignore
+        yield from _run_sync(self.async_api_versions)()
 
 
 def get(
