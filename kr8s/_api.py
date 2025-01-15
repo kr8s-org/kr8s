@@ -260,6 +260,9 @@ class Api:
 
     async def reauthenticate(self) -> None:
         """Reauthenticate the API."""
+        return await self.async_reauthenticate()
+
+    async def async_reauthenticate(self) -> None:
         await self.auth.reauthenticate()
 
     async def whoami(self):
@@ -293,6 +296,22 @@ class Api:
                 [name] = cert.subject.get_attributes_for_oid(x509.OID_COMMON_NAME)
                 return name.value
 
+    async def lookup_kind(self, kind) -> tuple[str, str, bool]:
+        """Lookup a Kubernetes resource kind.
+
+        Check whether a resource kind exists on the remote server.
+
+        Args:
+            kind: The kind of resource to lookup.
+
+        Returns:
+            The kind of resource, the plural form and whether the resource is namespaced
+
+        Raises:
+            ValueError: If the kind is not found.
+        """
+        return await self.async_lookup_kind(kind)
+
     async def async_lookup_kind(self, kind) -> tuple[str, str, bool]:
         """Lookup a Kubernetes resource kind."""
         from ._objects import parse_kind
@@ -320,22 +339,6 @@ class Api:
                     resource["namespaced"],
                 )
         raise ValueError(f"Kind {kind} not found.")
-
-    async def lookup_kind(self, kind) -> tuple[str, str, bool]:
-        """Lookup a Kubernetes resource kind.
-
-        Check whether a resource kind exists on the remote server.
-
-        Args:
-            kind: The kind of resource to lookup.
-
-        Returns:
-            The kind of resource, the plural form and whether the resource is namespaced
-
-        Raises:
-            ValueError: If the kind is not found.
-        """
-        return await self.async_lookup_kind(kind)
 
     @contextlib.asynccontextmanager
     async def async_get_kind(
@@ -542,7 +545,7 @@ class Api:
         label_selector: str | dict | None = None,
         field_selector: str | dict | None = None,
         since: str | None = None,
-    ):
+    ) -> AsyncGenerator[tuple[str, APIObject]]:
         """Watch a Kubernetes resource."""
         async for t, object in self.async_watch(
             kind,

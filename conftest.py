@@ -3,6 +3,7 @@
 import gc
 import os
 import time
+from collections.abc import Generator
 
 import pytest
 from pytest_kind.cluster import KindCluster
@@ -17,7 +18,7 @@ def ensure_gc():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def k8s_cluster(request) -> KindCluster:
+def k8s_cluster(request) -> Generator[KindCluster, None, None]:
     image = None
     if version := os.environ.get("KUBERNETES_VERSION"):
         image = f"kindest/node:v{version}"

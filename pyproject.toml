@@ -145,10 +145,10 @@ convention = "google"
 "ci/*" = ["D", "N", "B"]
 
 [tool.mypy]
-exclude = ["examples", "venv", "ci", "docs", "conftest.py"]
+exclude = ["examples", "venv", "ci", "docs"]
 
 [tool.pyright]
-exclude = ["examples", "**/tests", "venv", "ci", "docs", "conftest.py"]
+exclude = ["examples", "venv", "ci", "docs"]
 
 # We often override corotuines with sync methods so this is not useful
 reportIncompatibleMethodOverride = "none"

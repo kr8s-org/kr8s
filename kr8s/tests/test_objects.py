@@ -19,10 +19,13 @@ from kr8s._exceptions import NotFoundError
 from kr8s._exec import CompletedExec, ExecError
 from kr8s.asyncio.objects import (
     APIObject,
+    ConfigMap,
     Deployment,
     Ingress,
+    Node,
     PersistentVolume,
     Pod,
+    Secret,
     Service,
     get_class,
     new_class,
@@ -689,6 +692,7 @@ async def test_node():
     nodes = [node async for node in api.get("nodes")]
     assert len(nodes) > 0
     for node in nodes:
+        assert isinstance(node, Node)
         assert node.unschedulable is False
         await node.cordon()
         assert node.unschedulable is True
@@ -700,6 +704,7 @@ async def test_node_taint():
     nodes = [node async for node in api.get("nodes")]
     assert len(nodes) > 0
     node = nodes[0]
+    assert isinstance(node, Node)
 
     # Remove existing taints just in case they still exist
     for taint in node.taints:
@@ -721,6 +726,7 @@ async def test_node_taint():
 async def test_service_proxy():
     api = await kr8s.asyncio.api()
     service = await anext(api.get("services", "kubernetes"))
+    assert isinstance(service, Service)
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
     assert isinstance(data, httpx.Response)
@@ -822,7 +828,7 @@ async def test_service_port_forward_start_stop(nginx_service):
 async def test_unsupported_port_forward():
     pv = await PersistentVolume({"metadata": {"name": "foo"}})
     with pytest.raises(AttributeError):
-        await pv.portforward(80, local_port=None)
+        await pv.portforward(80, local_port=None)  # type: ignore
     with pytest.raises(ValueError):
         await PortForward(pv, 80, local_port=None).start()
 
@@ -888,13 +894,16 @@ async def test_objects_from_file():
 
 
 def test_objects_from_file_sync():
-    objects = sync_objects_from_files(
-        CURRENT_DIR / "resources" / "simple" / "nginx_pod_service.yaml"
+    objects = list(
+        sync_objects_from_files(
+            CURRENT_DIR / "resources" / "simple" / "nginx_pod_service.yaml"
+        )
     )
     assert len(objects) == 2
     assert isinstance(objects[0], Pod)
     assert isinstance(objects[1], Service)
     assert not objects[0]._asyncio
+    assert objects[0].api
     assert not objects[0].api._asyncio
     assert len(objects[1].spec.ports) == 1
 
@@ -953,6 +962,7 @@ async def test_cast_to_from_lightkube(example_pod_spec):
 
     lightkube_pod = kr8s_pod.to_lightkube()
     assert isinstance(lightkube_pod, LightkubePod)
+    assert lightkube_pod.metadata
     assert lightkube_pod.metadata.name == example_pod_spec["metadata"]["name"]
     assert lightkube_pod.metadata.namespace == example_pod_spec["metadata"]["namespace"]
 
@@ -1073,6 +1083,7 @@ async def test_pod_exec_not_ready(ns):
 
 async def test_configmap_data(ns):
     [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
+    assert isinstance(cm, ConfigMap)
     cm.namespace = ns
     await cm.create()
     assert "game.properties" in cm.data
@@ -1083,6 +1094,7 @@ async def test_configmap_data(ns):
 
 async def test_secret_data(ns):
     [secret] = await objects_from_files(CURRENT_DIR / "resources" / "secret.yaml")
+    assert isinstance(secret, Secret)
     secret.namespace = ns
     await secret.create()
     assert "tls.crt" in secret.data

@@ -129,6 +129,9 @@ class PortForward:
 
     async def start(self) -> int:
         """Start a background task with the port forward running."""
+        return await self.async_start()
+
+    async def async_start(self) -> int:
         if self._loop is None:
             self._loop = asyncio.get_event_loop()
         if self._bg_task is not None:
@@ -147,6 +150,9 @@ class PortForward:
 
     async def stop(self) -> None:
         """Stop the background task."""
+        return await self.async_stop()
+
+    async def async_stop(self) -> None:
         if self._bg_future:
             self._bg_future.set_result(None)
         self._bg_task = None
@@ -160,6 +166,9 @@ class PortForward:
             >>> pf = PortForward(pod, remote_port=8888, local_port=8889)
             >>> await pf.run_forever()
         """
+        return await self.async_run_forever()
+
+    async def async_run_forever(self) -> None:
         async with self:
             with contextlib.suppress(asyncio.CancelledError):
                 for server in self.servers:

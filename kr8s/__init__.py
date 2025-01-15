@@ -6,14 +6,17 @@ This module contains `kr8s`, a simple, extensible Python client library for Kube
 At the top level, `kr8s` provides a synchronous API that wraps the asynchronous API provided by `kr8s.asyncio`.
 Both APIs are functionally identical with the same objects, method signatures and return values.
 """
+# Disable missing docstrings, these are inherited from the async version of the objects
+# ruff: noqa: D102
+from __future__ import annotations
+
 from functools import partial, update_wrapper
-from typing import Dict, Optional, Type, Union
+from typing import Generator
 
 from . import asyncio, objects, portforward
 from ._api import ALL
 from ._api import Api as _AsyncApi
 from ._async_utils import run_sync as _run_sync
-from ._async_utils import sync as _sync
 from ._exceptions import (
     APITimeoutError,
     ConnectionClosedError,
@@ -21,6 +24,7 @@ from ._exceptions import (
     NotFoundError,
     ServerError,
 )
+from ._objects import APIObject
 from .asyncio import (
     api as _api,
 )
@@ -48,18 +52,73 @@ except ImportError:
     __version_tuple__ = (0, 0, 0)
 
 
-@_sync
 class Api(_AsyncApi):
-    __doc__ = _AsyncApi.__doc__
+    _asyncio = False
+
+    def version(self) -> dict:  # type: ignore
+        return _run_sync(self.async_version)()  # type: ignore
+
+    def reauthenticate(self):  # type: ignore
+        return _run_sync(self.async_reauthenticate)()  # type: ignore
+
+    def whoami(self):  # type: ignore
+        return _run_sync(self.async_whoami)()  # type: ignore
+
+    def lookup_kind(self, kind) -> tuple[str, str, bool]:  # type: ignore
+        return _run_sync(self.async_lookup_kind)(kind)  # type: ignore
+
+    def get(  # type: ignore
+        self,
+        kind: str | type,
+        *names: str,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        as_object: type[APIObject] | None = None,
+        allow_unknown_type: bool = True,
+        **kwargs,
+    ) -> Generator[APIObject]:
+        yield from _run_sync(self.async_get)(
+            kind,
+            *names,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            as_object=as_object,
+            allow_unknown_type=allow_unknown_type,
+            **kwargs,
+        )
+
+    def watch(  # type: ignore
+        self,
+        kind: str,
+        namespace: str | None = None,
+        label_selector: str | dict | None = None,
+        field_selector: str | dict | None = None,
+        since: str | None = None,
+    ) -> Generator[tuple[str, APIObject]]:
+        yield from _run_sync(self.async_watch)(
+            kind,
+            namespace=namespace,
+            label_selector=label_selector,
+            field_selector=field_selector,
+            since=since,
+        )
+
+    def api_resources(self) -> list[dict]:  # type: ignore
+        return _run_sync(self.async_api_resources)()  # type: ignore
+
+    def api_versions(self) -> Generator[str]:  # type: ignore
+        yield from _run_sync(self.async_api_versions)()
 
 
 def get(
     kind: str,
     *names: str,
-    namespace: Optional[str] = None,
-    label_selector: Optional[Union[str, Dict]] = None,
-    field_selector: Optional[Union[str, Dict]] = None,
-    as_object: Optional[Type] = None,
+    namespace: str | None = None,
+    label_selector: str | dict | None = None,
+    field_selector: str | dict | None = None,
+    as_object: type | None = None,
     allow_unknown_type: bool = True,
     api=None,
     **kwargs,
@@ -109,12 +168,12 @@ def get(
 
 
 def api(
-    url: Optional[str] = None,
-    kubeconfig: Optional[str] = None,
-    serviceaccount: Optional[str] = None,
-    namespace: Optional[str] = None,
-    context: Optional[str] = None,
-) -> Union[Api, _AsyncApi]:
+    url: str | None = None,
+    kubeconfig: str | None = None,
+    serviceaccount: str | None = None,
+    namespace: str | None = None,
+    context: str | None = None,
+) -> Api:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments in this thread, it will be returned.
@@ -142,7 +201,7 @@ def api(
         context=context,
         _asyncio=False,
     )
-    assert isinstance(ret, (Api, _AsyncApi))
+    assert isinstance(ret, Api)
     return ret
 
 
