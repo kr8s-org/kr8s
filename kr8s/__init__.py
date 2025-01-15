@@ -8,8 +8,10 @@ Both APIs are functionally identical with the same objects, method signatures an
 """
 # Disable missing docstrings, these are inherited from the async version of the objects
 # ruff: noqa: D102
+from __future__ import annotations
+
 from functools import partial, update_wrapper
-from typing import Dict, Generator, Optional, Type, Union
+from typing import Generator
 
 from . import asyncio, objects, portforward
 from ._api import ALL
@@ -75,7 +77,7 @@ class Api(_AsyncApi):
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> Generator[APIObject, None, None]:
+    ) -> Generator[APIObject]:
         yield from _run_sync(self.async_get)(
             kind,
             *names,
@@ -94,7 +96,7 @@ class Api(_AsyncApi):
         label_selector: str | dict | None = None,
         field_selector: str | dict | None = None,
         since: str | None = None,
-    ) -> Generator[tuple[str, APIObject], None, None]:
+    ) -> Generator[tuple[str, APIObject]]:
         yield from _run_sync(self.async_watch)(
             kind,
             namespace=namespace,
@@ -106,17 +108,17 @@ class Api(_AsyncApi):
     def api_resources(self) -> list[dict]:  # type: ignore
         return _run_sync(self.async_api_resources)()  # type: ignore
 
-    def api_versions(self) -> Generator[str, None, None]:  # type: ignore
+    def api_versions(self) -> Generator[str]:  # type: ignore
         yield from _run_sync(self.async_api_versions)()
 
 
 def get(
     kind: str,
     *names: str,
-    namespace: Optional[str] = None,
-    label_selector: Optional[Union[str, Dict]] = None,
-    field_selector: Optional[Union[str, Dict]] = None,
-    as_object: Optional[Type] = None,
+    namespace: str | None = None,
+    label_selector: str | dict | None = None,
+    field_selector: str | dict | None = None,
+    as_object: type | None = None,
     allow_unknown_type: bool = True,
     api=None,
     **kwargs,
@@ -166,12 +168,12 @@ def get(
 
 
 def api(
-    url: Optional[str] = None,
-    kubeconfig: Optional[str] = None,
-    serviceaccount: Optional[str] = None,
-    namespace: Optional[str] = None,
-    context: Optional[str] = None,
-) -> Union[Api, _AsyncApi]:
+    url: str | None = None,
+    kubeconfig: str | None = None,
+    serviceaccount: str | None = None,
+    namespace: str | None = None,
+    context: str | None = None,
+) -> Api | _AsyncApi:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments in this thread, it will be returned.
