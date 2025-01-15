@@ -173,7 +173,7 @@ def api(
     serviceaccount: str | None = None,
     namespace: str | None = None,
     context: str | None = None,
-) -> Api | _AsyncApi:
+) -> Api:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
     If a kr8s object already exists with the same arguments in this thread, it will be returned.
@@ -201,7 +201,7 @@ def api(
         context=context,
         _asyncio=False,
     )
-    assert isinstance(ret, (Api, _AsyncApi))
+    assert isinstance(ret, Api)
     return ret
 
 
