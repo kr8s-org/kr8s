@@ -11,17 +11,12 @@ These classes are used to interact with resources in the Kubernetes API server.
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Literal
+from typing import Any
 
 import httpx
-from typing_extensions import Self
-
-from kr8s._api import Api
 
 from ._async_utils import run_sync
-from ._objects import (
-    APIObject as _APIObject,
-)
+from ._objects import APIObjectSyncMixin
 from ._objects import (
     Binding as _Binding,
 )
@@ -141,76 +136,6 @@ from ._objects import (
 )
 from ._objects import objects_from_files as _objects_from_files
 from .portforward import PortForward
-
-
-class APIObjectSyncMixin(_APIObject):
-    _asyncio = False
-
-    @classmethod
-    def get(  # type: ignore
-        cls,
-        name: str | None = None,
-        namespace: str | None = None,
-        api: Api | None = None,
-        label_selector: str | dict[str, str] | None = None,
-        field_selector: str | dict[str, str] | None = None,
-        timeout: int = 2,
-        **kwargs,
-    ) -> Self:
-        return run_sync(cls.async_get)(
-            name=name,
-            namespace=namespace,
-            api=api,
-            label_selector=label_selector,
-            field_selector=field_selector,
-            timeout=timeout,
-            **kwargs,
-        )  # type: ignore
-
-    def exists(self, ensure=False) -> bool:  # type: ignore
-        return run_sync(self.async_exists)(ensure=ensure)  # type: ignore
-
-    def create(self) -> None:  # type: ignore
-        return run_sync(self.async_create)()  # type: ignore
-
-    def delete(self, propagation_policy: str | None = None) -> None:  # type: ignore
-        return run_sync(self.async_delete)(propagation_policy=propagation_policy)  # type: ignore
-
-    def refresh(self):
-        return run_sync(self.async_refresh)()  # type: ignore
-
-    def patch(self, patch, *, subresource=None, type=None):
-        return run_sync(self.async_patch)(patch, subresource=subresource, type=type)  # type: ignore
-
-    def scale(self, replicas=None):
-        return run_sync(self.async_scale)(replicas=replicas)  # type: ignore
-
-    def watch(self):
-        yield from run_sync(self.async_watch)()
-
-    def wait(
-        self,
-        conditions: list[str] | str,
-        mode: Literal["any", "all"] = "any",
-        timeout: int | float | None = None,
-    ):
-        return run_sync(self.async_wait)(conditions, mode=mode, timeout=timeout)  # type: ignore
-
-    def annotate(self, annotations=None, **kwargs):
-        return run_sync(self.async_annotate)(annotations, **kwargs)  # type: ignore
-
-    def label(self, labels=None, **kwargs):
-        return run_sync(self.async_label)(labels, **kwargs)  # type: ignore
-
-    def set_owner(self, owner):
-        return run_sync(self.async_set_owner)(owner)  # type: ignore
-
-    def adopt(self, child):
-        return run_sync(self.async_adopt)(child)  # type: ignore
-
-    @classmethod
-    def list(cls):
-        yield from run_sync(cls.async_list)()
 
 
 class Binding(APIObjectSyncMixin, _Binding):
