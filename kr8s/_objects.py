@@ -834,8 +834,8 @@ class APIObjectSyncMixin(APIObject):
         return run_sync(self.async_adopt)(child)  # type: ignore
 
     @classmethod
-    def list(cls):
-        yield from run_sync(cls.async_list)()
+    def list(cls, **kwargs):
+        yield from run_sync(cls.async_list)(**kwargs)
 
 
 ## v1 objects
