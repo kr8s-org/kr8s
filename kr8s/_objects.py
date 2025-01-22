@@ -746,8 +746,12 @@ class APIObject:
         raise NotImplementedError("gen is not implemented for this object")
 
     @classmethod
-    async def async_list(cls, **kwargs) -> AsyncGenerator[Self]:
-        api = await kr8s.asyncio.api()
+    async def async_list(cls, api: Api | None = None, **kwargs) -> AsyncGenerator[Self]:
+        if api is None:
+            if cls._asyncio:
+                api = await kr8s.asyncio.api()
+            else:
+                api = await kr8s.asyncio.api(_asyncio=False)
         async for resource in api.async_get(kind=cls, **kwargs):
             if isinstance(resource, cls):
                 yield resource
@@ -758,6 +762,7 @@ class APIObject:
         """List objects in Kubernetes.
 
         Args:
+            api: An optional API object to use.
             **kwargs: Keyword arguments to pass to :func:`kr8s.get`.
 
         Returns:

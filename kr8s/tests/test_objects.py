@@ -1139,7 +1139,7 @@ async def test_pod_list():
     assert {p.name for p in pods1} == {p.name for p in pods2}
 
 
-async def test_pod_list_sync():
+def test_pod_list_sync():
     pods1 = [pod for pod in kr8s.get("pods", namespace=kr8s.ALL)]
     pods2 = [pod for pod in SyncPod.list(namespace=kr8s.ALL)]
     assert pods1 and pods2
@@ -1147,6 +1147,24 @@ async def test_pod_list_sync():
     assert all(isinstance(p, SyncPod) for p in pods1)
     assert all(isinstance(p, SyncPod) for p in pods2)
     assert {p.name for p in pods1} == {p.name for p in pods2}
+
+
+async def test_pod_list_api():
+    api = await kr8s.asyncio.api()
+    pods = [pod async for pod in Pod.list(namespace=kr8s.ALL, api=api)]
+    assert pods
+    assert pods[0].api
+    assert pods[0].api == api
+    assert pods[0].api._asyncio
+
+
+async def test_pod_list_api_sync():
+    api = kr8s.api()
+    pods = [pod for pod in SyncPod.list(namespace=kr8s.ALL, api=api)]
+    assert pods
+    assert pods[0].api
+    assert pods[0].api == api
+    assert not pods[0].api._asyncio
 
 
 @pytest.mark.parametrize(
