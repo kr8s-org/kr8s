@@ -138,6 +138,10 @@ from ._objects import objects_from_files as _objects_from_files
 from .portforward import PortForward
 
 
+class APIObject(APIObjectSyncMixin):
+    __doc__ = APIObjectSyncMixin.__doc__
+
+
 class Binding(APIObjectSyncMixin, _Binding):
     __doc__ = _Binding.__doc__
 
