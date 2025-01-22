@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import contextlib
 import os
-from typing import Generator
+from collections.abc import Generator
 
 
 @contextlib.contextmanager

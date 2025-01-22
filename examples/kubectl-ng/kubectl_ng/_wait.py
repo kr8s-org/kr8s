@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
-from typing import List, Optional
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -22,7 +22,7 @@ console = Console()
 
 
 async def wait(
-    resources: List[str] = typer.Argument(..., help="TYPE[.VERSION][.GROUP]"),
+    resources: list[str] = typer.Argument(..., help="TYPE[.VERSION][.GROUP]"),
     all_namespaces: bool = typer.Option(
         False,
         "-A",
@@ -40,7 +40,7 @@ async def wait(
         "--all",
         help="Select all resources in the namespace of the specified resource types",
     ),
-    conditions: List[str] = typer.Option(
+    conditions: list[str] = typer.Option(
         [],
         "-f",
         "--for",
@@ -138,7 +138,7 @@ async def wait(
             field_selector=field_selector,
         )
 
-    async def wait_for(o: APIObject, conditions: List[str]):
+    async def wait_for(o: APIObject, conditions: list[str]):
         try:
             await o.wait(conditions=conditions, timeout=timeout)
         except asyncio.TimeoutError:

@@ -11,9 +11,9 @@ import ssl
 import threading
 import warnings
 import weakref
+from collections.abc import AsyncGenerator
 from typing import (
     TYPE_CHECKING,
-    AsyncGenerator,
 )
 
 import httpx

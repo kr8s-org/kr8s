@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-from typing import List
 
 import anyio
 import rich.table
@@ -62,7 +61,7 @@ async def get_resources(resources, label_selector, field_selector):
 
 
 async def get(
-    resources: List[str] = typer.Argument(..., help="TYPE[.VERSION][.GROUP]"),
+    resources: list[str] = typer.Argument(..., help="TYPE[.VERSION][.GROUP]"),
     all_namespaces: bool = typer.Option(
         False,
         "-A",
@@ -101,7 +100,7 @@ async def get(
         help="When printing, show all labels as the last column "
         "(default hide labels column).",
     ),
-    label_columns: List[str] = typer.Option(
+    label_columns: list[str] = typer.Option(
         [],
         "-L",
         "--label-columns",

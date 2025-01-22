@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import pathlib
 import typing
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Optional, Protocol, Union
 
 import anyio
 import jsonpath
@@ -41,7 +41,7 @@ class KubeConfigMixin:
 
 
 class KubeConfigSet(KubeConfigMixin):
-    def __init__(self, *paths_or_dicts: Union[PathType, Dict]):
+    def __init__(self, *paths_or_dicts: Union[PathType, dict]):
         self._configs = []
         for path_or_dict in paths_or_dicts:
             try:
@@ -82,7 +82,7 @@ class KubeConfigSet(KubeConfigMixin):
         return self._configs[0].path
 
     @property
-    def raw(self) -> Dict:
+    def raw(self) -> dict:
         """Merge all kubeconfig data into a single kubeconfig."""
         data = {
             "apiVersion": "v1",
@@ -133,21 +133,21 @@ class KubeConfigSet(KubeConfigMixin):
                 return
         raise ValueError(f"Context {old} not found")
 
-    def get_context(self, context_name: str) -> Dict:
+    def get_context(self, context_name: str) -> dict:
         """Get a context by name."""
         for context in self.contexts:
             if context["name"] == context_name:
                 return context["context"]
         raise ValueError(f"Context {context_name} not found")
 
-    def get_cluster(self, cluster_name: str) -> Dict:
+    def get_cluster(self, cluster_name: str) -> dict:
         """Get a cluster by name."""
         for cluster in self.clusters:
             if cluster["name"] == cluster_name:
                 return cluster["cluster"]
         raise ValueError(f"Cluster {cluster_name} not found")
 
-    def get_user(self, user_name: str) -> Dict:
+    def get_user(self, user_name: str) -> dict:
         """Get a user by name."""
         for user in self.users:
             if user["name"] == user_name:
@@ -174,11 +174,11 @@ class KubeConfigSet(KubeConfigMixin):
                 pass
 
     @property
-    def preferences(self) -> List[Dict]:
+    def preferences(self) -> list[dict]:
         return self._configs[0].preferences
 
     @property
-    def clusters(self) -> List[Dict]:
+    def clusters(self) -> list[dict]:
         clusters = []
         for config in self._configs:
             if config.clusters:
@@ -189,7 +189,7 @@ class KubeConfigSet(KubeConfigMixin):
         return repacked
 
     @property
-    def users(self) -> List[Dict]:
+    def users(self) -> list[dict]:
         users = []
         for config in self._configs:
             if config.users:
@@ -200,7 +200,7 @@ class KubeConfigSet(KubeConfigMixin):
         return repacked
 
     @property
-    def contexts(self) -> List[Dict]:
+    def contexts(self) -> list[dict]:
         contexts = []
         for config in self._configs:
             if config.contexts:
@@ -211,7 +211,7 @@ class KubeConfigSet(KubeConfigMixin):
         return repacked
 
     @property
-    def extensions(self) -> List[Dict]:
+    def extensions(self) -> list[dict]:
         extensions = []
         for config in self._configs:
             if config.extensions:
@@ -220,7 +220,7 @@ class KubeConfigSet(KubeConfigMixin):
 
 
 class KubeConfig(KubeConfigMixin):
-    def __init__(self, path_or_config: Union[PathType, Dict]):
+    def __init__(self, path_or_config: Union[PathType, dict]):
         self.path: PathType
         self._raw: dict = {}
 
@@ -290,21 +290,21 @@ class KubeConfig(KubeConfigMixin):
                 return
         raise ValueError(f"Context {old} not found")
 
-    def get_context(self, context_name: str) -> Dict:
+    def get_context(self, context_name: str) -> dict:
         """Get a context by name."""
         for context in self.contexts:
             if context["name"] == context_name:
                 return context["context"]
         raise ValueError(f"Context {context_name} not found")
 
-    def get_cluster(self, cluster_name: str) -> Dict:
+    def get_cluster(self, cluster_name: str) -> dict:
         """Get a cluster by name."""
         for cluster in self.clusters:
             if cluster["name"] == cluster_name:
                 return cluster["cluster"]
         raise ValueError(f"Cluster {cluster_name} not found")
 
-    def get_user(self, user_name: str) -> Dict:
+    def get_user(self, user_name: str) -> dict:
         """Get a user by name."""
         for user in self.users:
             if user["name"] == user_name:
@@ -329,25 +329,25 @@ class KubeConfig(KubeConfigMixin):
         await self.save()
 
     @property
-    def raw(self) -> Dict:
+    def raw(self) -> dict:
         return self._raw
 
     @property
-    def preferences(self) -> List[Dict]:
+    def preferences(self) -> list[dict]:
         return self._raw["preferences"]
 
     @property
-    def clusters(self) -> List[Dict]:
+    def clusters(self) -> list[dict]:
         return self._raw["clusters"]
 
     @property
-    def users(self) -> List[Dict]:
+    def users(self) -> list[dict]:
         return self._raw["users"]
 
     @property
-    def contexts(self) -> List[Dict]:
+    def contexts(self) -> list[dict]:
         return self._raw["contexts"]
 
     @property
-    def extensions(self) -> List[Dict]:
+    def extensions(self) -> list[dict]:
         return self._raw["extensions"] if "extensions" in self._raw else []

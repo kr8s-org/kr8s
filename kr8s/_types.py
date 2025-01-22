@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+from collections.abc import Iterable
 from os import PathLike
 from typing import (
     TYPE_CHECKING,
-    Iterable,
-    List,
     Protocol,
     TypeVar,
     Union,
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
 class APIObjectWithPods(Protocol):
     """An APIObject subclass that contains other Pod objects."""
 
-    async def async_ready_pods(self) -> List["Pod"]: ...
+    async def async_ready_pods(self) -> list["Pod"]: ...
 
 
 @runtime_checkable

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, AsyncGenerator, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 
 from kr8s._exceptions import ExecError
 

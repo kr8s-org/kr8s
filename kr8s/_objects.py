@@ -7,11 +7,10 @@ import json
 import pathlib
 import re
 import time
+from collections.abc import AsyncGenerator
 from typing import (
     Any,
-    AsyncGenerator,
     BinaryIO,
-    List,
     Literal,
     cast,
 )
@@ -1599,10 +1598,10 @@ class Service(APIObject):
         ]
         if isinstance(pods, Pod):
             pods = [pods]
-        elif isinstance(pods, List) and all(isinstance(pod, Pod) for pod in pods):
+        elif isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
             # The all(isinstance(...) for ...) check doesn't seem to narrow the type
             # correctly in pyright so we need to explicitly use cast
-            pods = cast(List[Pod], pods)
+            pods = cast(list[Pod], pods)
         else:
             raise TypeError(f"Unexpected type {type(pods)} returned from API")
         return [pod for pod in pods if await pod.async_ready()]
@@ -1723,10 +1722,10 @@ class Deployment(APIObject):
         ]
         if isinstance(pods, Pod):
             return [pods]
-        if isinstance(pods, List) and all(isinstance(pod, Pod) for pod in pods):
+        if isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
             # The all(isinstance(...) for ...) check doesn't seem to narrow the type
             # correctly in pyright so we need to explicitly use cast
-            return cast(List[Pod], pods)
+            return cast(list[Pod], pods)
         raise TypeError(f"Unexpected type {type(pods)} returned from API")
 
     async def ready(self):

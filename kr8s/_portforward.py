@@ -7,8 +7,9 @@ import contextlib
 import random
 import socket
 import sys
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, AsyncGenerator, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import anyio
 import httpx_ws
