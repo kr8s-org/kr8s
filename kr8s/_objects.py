@@ -457,7 +457,7 @@ class APIObject:
             await self.async_refresh()
             await anyio.sleep(0.1)
 
-    async def async_watch(self):
+    async def async_watch(self) -> AsyncGenerator[tuple[str, Self]]:
         """Watch this object in Kubernetes."""
         since = self.metadata.get("resourceVersion")
         assert self.api
@@ -470,7 +470,7 @@ class APIObject:
             self.raw = obj.raw
             yield event, self
 
-    async def watch(self):
+    async def watch(self) -> AsyncGenerator[tuple[str, Self]]:
         """Watch this object in Kubernetes."""
         async for event, obj in self.async_watch():
             yield event, obj
@@ -771,7 +771,7 @@ class APIObjectSyncMixin(APIObject):
     _asyncio = False
 
     @classmethod
-    def get(  # type: ignore
+    def get(  # type: ignore[override]
         cls,
         name: str | None = None,
         namespace: str | None = None,
@@ -791,45 +791,45 @@ class APIObjectSyncMixin(APIObject):
             **kwargs,
         )  # type: ignore
 
-    def exists(self, ensure=False) -> bool:  # type: ignore
+    def exists(self, ensure=False) -> bool:  # type: ignore[override]
         return run_sync(self.async_exists)(ensure=ensure)  # type: ignore
 
-    def create(self) -> None:  # type: ignore
+    def create(self) -> None:  # type: ignore[override]
         return run_sync(self.async_create)()  # type: ignore
 
-    def delete(self, propagation_policy: str | None = None) -> None:  # type: ignore
+    def delete(self, propagation_policy: str | None = None) -> None:  # type: ignore[override]
         return run_sync(self.async_delete)(propagation_policy=propagation_policy)  # type: ignore
 
-    def refresh(self):
+    def refresh(self) -> None:  # type: ignore[override]
         return run_sync(self.async_refresh)()  # type: ignore
 
-    def patch(self, patch, *, subresource=None, type=None):
+    def patch(self, patch, *, subresource=None, type=None) -> None:  # type: ignore[override]
         return run_sync(self.async_patch)(patch, subresource=subresource, type=type)  # type: ignore
 
-    def scale(self, replicas=None):
+    def scale(self, replicas=None) -> None:  # type: ignore[override]
         return run_sync(self.async_scale)(replicas=replicas)  # type: ignore
 
-    def watch(self):
+    def watch(self) -> Generator[tuple[str, Self]]:  # type: ignore[override]
         yield from run_sync(self.async_watch)()
 
-    def wait(
+    def wait(  # type: ignore[override]
         self,
         conditions: list[str] | str,
         mode: Literal["any", "all"] = "any",
         timeout: int | float | None = None,
-    ):
+    ) -> None:
         return run_sync(self.async_wait)(conditions, mode=mode, timeout=timeout)  # type: ignore
 
-    def annotate(self, annotations=None, **kwargs):
+    def annotate(self, annotations=None, **kwargs) -> None:  # type: ignore[override]
         return run_sync(self.async_annotate)(annotations, **kwargs)  # type: ignore
 
-    def label(self, labels=None, **kwargs):
+    def label(self, labels=None, **kwargs) -> None:  # type: ignore[override]
         return run_sync(self.async_label)(labels, **kwargs)  # type: ignore
 
-    def set_owner(self, owner):
+    def set_owner(self, owner) -> None:  # type: ignore[override]
         return run_sync(self.async_set_owner)(owner)  # type: ignore
 
-    def adopt(self, child):
+    def adopt(self, child) -> None:  # type: ignore[override]
         return run_sync(self.async_adopt)(child)  # type: ignore
 
     @classmethod
