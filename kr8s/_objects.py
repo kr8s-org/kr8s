@@ -7,7 +7,7 @@ import json
 import pathlib
 import re
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from typing import (
     Any,
     BinaryIO,
@@ -833,7 +833,7 @@ class APIObjectSyncMixin(APIObject):
         return run_sync(self.async_adopt)(child)  # type: ignore
 
     @classmethod
-    def list(cls, **kwargs):
+    def list(cls, **kwargs) -> Generator[Self]:  # type: ignore
         yield from run_sync(cls.async_list)(**kwargs)
 
 
