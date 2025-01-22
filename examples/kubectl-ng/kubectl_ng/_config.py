@@ -1,12 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-from typing import Optional
+from typing import Annotated, Optional
 
 import rich.table
 import typer
 from rich import box
 from rich.console import Console
-from typing_extensions import Annotated
 
 import kr8s
 

@@ -25,15 +25,13 @@ import inspect
 import subprocess
 import sys
 import tempfile
+from collections.abc import AsyncGenerator, Awaitable, Generator
 from contextlib import asynccontextmanager
 from functools import partial, wraps
 from threading import Thread
 from typing import (
     Any,
-    AsyncGenerator,
-    Awaitable,
     Callable,
-    Generator,
     TypeVar,
 )
 

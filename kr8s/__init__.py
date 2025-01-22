@@ -10,8 +10,8 @@ Both APIs are functionally identical with the same objects, method signatures an
 # ruff: noqa: D102
 from __future__ import annotations
 
+from collections.abc import Generator
 from functools import partial, update_wrapper
-from typing import Generator
 
 from . import asyncio, objects, portforward
 from ._api import ALL
