@@ -281,12 +281,12 @@ class ServiceAccount(APIObjectSyncMixin, _ServiceAccount):
 
 
 class Service(APIObjectSyncMixin, _Service):
-    def proxy_http_request(
+    def proxy_http_request(  # type: ignore
         self, method: str, path: str, port: int | None = None, **kwargs: Any
     ) -> httpx.Response:
         return run_sync(self.async_proxy_http_request)(method, path, port=port, **kwargs)  # type: ignore
 
-    def proxy_http_get(
+    def proxy_http_get(  # type: ignore
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
         return run_sync(self.async_proxy_http_request)("GET", path, port, **kwargs)  # type: ignore
@@ -294,12 +294,12 @@ class Service(APIObjectSyncMixin, _Service):
     def proxy_http_post(self, path: str, port: int | None = None, **kwargs) -> None:  # type: ignore
         return run_sync(self.async_proxy_http_request)("POST", path, port, **kwargs)  # type: ignore
 
-    def proxy_http_put(
+    def proxy_http_put(  # type: ignore
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
         return run_sync(self.async_proxy_http_request)("PUT", path, port, **kwargs)  # type: ignore
 
-    def proxy_http_delete(
+    def proxy_http_delete(  # type: ignore
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
         return run_sync(self.async_proxy_http_request)("DELETE", path, port, **kwargs)  # type: ignore
