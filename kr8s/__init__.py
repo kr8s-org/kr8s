@@ -77,7 +77,7 @@ class Api(_AsyncApi):
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> Generator[APIObject]:
+    ) -> Generator[objects.APIObject]:
         yield from _run_sync(self.async_get)(
             kind,
             *names,
@@ -96,7 +96,7 @@ class Api(_AsyncApi):
         label_selector: str | dict | None = None,
         field_selector: str | dict | None = None,
         since: str | None = None,
-    ) -> Generator[tuple[str, APIObject]]:
+    ) -> Generator[tuple[str, objects.APIObject]]:
         yield from _run_sync(self.async_watch)(
             kind,
             namespace=namespace,

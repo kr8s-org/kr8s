@@ -265,14 +265,17 @@ async def test_async_get_returns_async_objects() -> None:
 
 
 def test_sync_get_returns_sync_objects() -> None:
-    pods = kr8s.get("pods", namespace=kr8s.ALL)
-    assert list(pods)[0]._asyncio is False
+    pods = list(kr8s.get("pods", namespace=kr8s.ALL))
+    assert pods[0]._asyncio is False
+    pods[0].refresh()
 
 
 def test_sync_api_returns_sync_objects():
     api = kr8s.api()
     pods = api.get("pods", namespace=kr8s.ALL)
-    assert next(pods)._asyncio is False
+    pod = next(pods)
+    assert pod._asyncio is False
+    pod.refresh()
 
 
 async def test_api_names(example_pod_spec: dict, ns: str) -> None:
