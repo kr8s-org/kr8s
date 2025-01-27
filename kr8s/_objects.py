@@ -360,15 +360,41 @@ class APIObject:
         """Create this object in Kubernetes."""
         return await self.async_create()
 
-    async def delete(self, propagation_policy: str | None = None) -> None:
-        """Delete this object from Kubernetes."""
-        return await self.async_delete(propagation_policy=propagation_policy)
+    async def delete(
+        self,
+        propagation_policy: str | None = None,
+        grace_period: int | None = None,
+        force: bool = False,
+    ) -> None:
+        """Delete this object from Kubernetes.
 
-    async def async_delete(self, propagation_policy: str | None = None) -> None:
+        Args:
+            propagation_policy: The deletion propagation policy.
+            grace_period: The grace period for deletion.
+            force: Force deletion. (Setting to ``True`` is equivelaent to setting grace_period to 0)
+        """
+        return await self.async_delete(
+            propagation_policy=propagation_policy,
+            grace_period=grace_period,
+            force=force,
+        )
+
+    async def async_delete(
+        self,
+        propagation_policy: str | None = None,
+        grace_period: int | None = None,
+        force: bool = False,
+    ) -> None:
         """Delete this object from Kubernetes."""
-        data = {}
+        data: dict[str, Any] = {}
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
+        if grace_period and force:
+            raise ValueError("Cannot set both grace_period and force")
+        if grace_period:
+            data["gracePeriodSeconds"] = grace_period
+        elif force:
+            data["gracePeriodSeconds"] = 0
         try:
             assert self.api
             async with self.api.call_api(
@@ -802,8 +828,17 @@ class APIObjectSyncMixin(APIObject):
     def create(self) -> None:  # type: ignore[override]
         return run_sync(self.async_create)()  # type: ignore
 
-    def delete(self, propagation_policy: str | None = None) -> None:  # type: ignore[override]
-        return run_sync(self.async_delete)(propagation_policy=propagation_policy)  # type: ignore
+    def delete(  # type: ignore[override]
+        self,
+        propagation_policy: str | None = None,
+        grace_period: int | None = None,
+        force: bool = False,
+    ) -> None:
+        run_sync(self.async_delete)(
+            propagation_policy=propagation_policy,
+            grace_period=grace_period,
+            force=force,
+        )  # type: ignore
 
     def refresh(self) -> None:  # type: ignore[override]
         return run_sync(self.async_refresh)()  # type: ignore

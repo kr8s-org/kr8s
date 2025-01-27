@@ -128,6 +128,26 @@ async def test_pod_create_and_delete(example_pod_spec):
     assert not await pod.exists()
 
 
+async def test_pod_force_delete(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.create()
+    while not await pod.exists():
+        await anyio.sleep(0.1)
+    await pod.delete(force=True)
+    await anyio.sleep(0.1)
+    assert not await pod.exists()
+
+
+def test_pod_force_delete_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    while not pod.exists():
+        time.sleep(0.1)
+    pod.delete(force=True)
+    time.sleep(0.1)
+    assert not pod.exists()
+
+
 async def test_pod_object_from_name_type(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.create()
@@ -152,7 +172,7 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("jsonpath='{.status.phase}'=Running")
     with pytest.raises(ValueError):
         await pod.wait("foo=NotARealCondition")
-    await pod.delete()
+    await pod.delete(grace_period=10)
     await pod.wait("condition=Ready=False")
     await pod.wait("delete")
 
