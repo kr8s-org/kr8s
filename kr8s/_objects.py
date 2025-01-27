@@ -389,6 +389,8 @@ class APIObject:
         data: dict[str, Any] = {}
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
+        if grace_period and force:
+            raise ValueError("Cannot set both grace_period and force")
         if grace_period:
             data["gracePeriodSeconds"] = grace_period
         elif force:
