@@ -363,34 +363,34 @@ class APIObject:
     async def delete(
         self,
         propagation_policy: str | None = None,
-        grace_period_seconds: int | None = None,
+        grace_period: int | None = None,
         force: bool = False,
     ) -> None:
         """Delete this object from Kubernetes.
 
         Args:
             propagation_policy: The deletion propagation policy.
-            grace_period_seconds: The grace period for deletion.
-            force: Force deletion. (Setting to ``True`` is equivelaent to setting grace_period_seconds to 0)
+            grace_period: The grace period for deletion.
+            force: Force deletion. (Setting to ``True`` is equivelaent to setting grace_period to 0)
         """
         return await self.async_delete(
             propagation_policy=propagation_policy,
-            grace_period_seconds=grace_period_seconds,
+            grace_period=grace_period,
             force=force,
         )
 
     async def async_delete(
         self,
         propagation_policy: str | None = None,
-        grace_period_seconds: int | None = None,
+        grace_period: int | None = None,
         force: bool = False,
     ) -> None:
         """Delete this object from Kubernetes."""
         data: dict[str, Any] = {}
         if propagation_policy:
             data["propagationPolicy"] = propagation_policy
-        if grace_period_seconds:
-            data["gracePeriodSeconds"] = grace_period_seconds
+        if grace_period:
+            data["gracePeriodSeconds"] = grace_period
         elif force:
             data["gracePeriodSeconds"] = 0
         try:
@@ -829,12 +829,12 @@ class APIObjectSyncMixin(APIObject):
     def delete(  # type: ignore[override]
         self,
         propagation_policy: str | None = None,
-        grace_period_seconds: int | None = None,
+        grace_period: int | None = None,
         force: bool = False,
     ) -> None:
         run_sync(self.async_delete)(
             propagation_policy=propagation_policy,
-            grace_period_seconds=grace_period_seconds,
+            grace_period=grace_period,
             force=force,
         )  # type: ignore
 

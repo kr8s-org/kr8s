@@ -172,7 +172,7 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("jsonpath='{.status.phase}'=Running")
     with pytest.raises(ValueError):
         await pod.wait("foo=NotARealCondition")
-    await pod.delete(grace_period_seconds=10)
+    await pod.delete(grace_period=10)
     await pod.wait("condition=Ready=False")
     await pod.wait("delete")
 
