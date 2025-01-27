@@ -28,7 +28,7 @@ class PortForward(_PortForward):
         return run_sync(self.__aexit__)(*args, **kwargs)
 
     def run_forever(self):
-        return run_sync(self.run_forever)()  # type: ignore
+        return run_sync(self.async_run_forever)()  # type: ignore
 
     def start(self):
         """Start a background thread with the port forward running."""
