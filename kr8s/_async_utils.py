@@ -92,7 +92,7 @@ class Portal:
 
 
 def run_sync(
-    coro: Callable[P, AsyncGenerator | Awaitable[T]]
+    coro: Callable[P, AsyncGenerator | Awaitable[T]],
 ) -> Callable[P, Generator | T]:
     """Wraps a coroutine in a function that blocks until it has executed.
 
