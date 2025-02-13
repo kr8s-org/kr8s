@@ -158,7 +158,10 @@ class Api:
                 if stream:
                     assert self._session
                     async with self._session.stream(**kwargs) as response:
-                        if raise_for_status:
+                        if response.is_error and raise_for_status:
+                            # NOTE: Avoid `httpx.ResponseNotRead` w/ streaming requests
+                            # https://github.com/encode/httpx/discussions/1856#discussioncomment-1316674
+                            await response.aread()
                             response.raise_for_status()
                         yield response
                 else:
