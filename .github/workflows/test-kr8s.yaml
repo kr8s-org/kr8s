@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-        kubernetes-version: ["1.32.1"]
+        kubernetes-version: ["1.32.2"]
         include:
           - python-version: '3.10'
             kubernetes-version: 1.31.4
@@ -61,7 +61,7 @@ jobs:
       matrix:
         # Test the minimal and maximal Python versions only
         python-version: ["3.9", "3.12"]
-        kubernetes-version: ["1.32.1"]
+        kubernetes-version: ["1.32.2"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
