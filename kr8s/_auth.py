@@ -70,6 +70,7 @@ class KubeAuth:
 
     async def reauthenticate(self) -> None:
         """Reauthenticate with the server."""
+        logger.debug("Reloading credentials")
         async with self.__auth_lock:
             if self._url:
                 logger.debug("URL specified manually")
@@ -270,7 +271,10 @@ class KubeAuth:
         async with await anyio.open_file(
             os.path.join(self._serviceaccount, "token")
         ) as f:
+            old_token = self.token
             self.token = await f.read()
+            if old_token != self.token:
+                logger.debug("Found new token")
         self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
         if self.namespace is None:
             async with await anyio.open_file(
