@@ -243,7 +243,7 @@ def test_kubeconfig_isdir_fail(tmp_path):
         kr8s.api(kubeconfig=tmp_path)
 
 
-async def test_service_account(serviceaccount):
+async def test_service_account(serviceaccount, k8s_token):
     api = await kr8s.asyncio.api(
         serviceaccount=serviceaccount, kubeconfig="/no/file/here"
     )
@@ -252,9 +252,17 @@ async def test_service_account(serviceaccount):
     serviceaccount = Path(serviceaccount)
     assert api.auth.server
     assert api.auth.token == (serviceaccount / "token").read_text()
-    assert str(serviceaccount) in api.auth.server_ca_file
+    assert api.auth.token == k8s_token
+    assert api.auth.server_ca_file
+    assert str(serviceaccount) in str(api.auth.server_ca_file)
     assert "BEGIN CERTIFICATE" in Path(api.auth.server_ca_file).read_text()
     assert api.auth.namespace == (serviceaccount / "namespace").read_text()
+
+    (serviceaccount / "token").write_text("foo")
+    await api.reauthenticate()
+    assert api.auth.token == "foo"
+
+    (serviceaccount / "token").write_text(k8s_token)
 
 
 async def test_service_account_with_kubeconfig_namespace(serviceaccount):
