@@ -78,7 +78,7 @@ class KubeAuth:
             else:
                 if self._kubeconfig_path_or_dict is not False:
                     await self._load_kubeconfig()
-                if self._serviceaccount and not self.server:
+                if self._serviceaccount:
                     await self._load_service_account()
             if not self.server:
                 raise ValueError("Unable to find valid credentials")
@@ -264,10 +264,11 @@ class KubeAuth:
         self._serviceaccount = os.path.expanduser(self._serviceaccount)
         if not os.path.isdir(self._serviceaccount):
             return
-        self.server = self._format_server_address(
-            os.environ["KUBERNETES_SERVICE_HOST"],
-            os.environ["KUBERNETES_SERVICE_PORT"],
-        )
+        if not self.server:
+            self.server = self._format_server_address(
+                os.environ["KUBERNETES_SERVICE_HOST"],
+                os.environ["KUBERNETES_SERVICE_PORT"],
+            )
         async with await anyio.open_file(
             os.path.join(self._serviceaccount, "token")
         ) as f:
