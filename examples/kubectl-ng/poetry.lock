@@ -617,14 +617,14 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "kr8s"
-version = "0.20.5"
+version = "0.20.6"
 description = "A Kubernetes API library"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "kr8s-0.20.5-py3-none-any.whl", hash = "sha256:2ff08294c88c0b9eb0d4bd23c629fd1052f57b1037bead1a2523bad483093c1b"},
-    {file = "kr8s-0.20.5.tar.gz", hash = "sha256:44250fc88575554fd21517dc1677b0c33757b240f67fcae11102901c5bce5042"},
+    {file = "kr8s-0.20.6-py3-none-any.whl", hash = "sha256:7051808ea3cfb3d407a9485ac1ef7f228e798ff0ac6fba2399bedcda5a9a67f9"},
+    {file = "kr8s-0.20.6.tar.gz", hash = "sha256:49b017001d7f8d2c2aa5c0b88bd277d97e5ef28f5601c11dee1148d8bf669dbf"},
 ]
 
 [package.dependencies]
@@ -1324,4 +1324,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "ef495fb475ac27d8f77c627c2f66534b1d0407a2f32a70fb2928ee630707060b"
+content-hash = "49df58f5f1dbc6b188bb58d86d9768b88f4f73fbb8f51f56cc90c97945d32af1"
