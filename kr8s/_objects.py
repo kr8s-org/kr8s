@@ -124,7 +124,7 @@ class APIObject:
         self._api = value
 
     @property
-    def raw(self) -> Any:
+    def raw(self) -> Box:
         """Raw object returned from the Kubernetes API."""
         self._raw.update({"kind": self.kind, "apiVersion": self.version})
         return self._raw
@@ -723,7 +723,7 @@ class APIObject:
 
     def to_dict(self) -> dict:
         """Return a dictionary representation of this object."""
-        return self.raw
+        return self.raw.to_dict()
 
     def to_lightkube(self) -> Any:
         """Return a lightkube representation of this object."""
