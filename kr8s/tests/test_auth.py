@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import base64
+import ssl
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -47,6 +48,17 @@ async def kubeconfig_with_token(k8s_cluster, k8s_token):
     # Open kubeconfig and extract the certificates
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
     kubeconfig["users"][0]["user"] = {"token": k8s_token}
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name
+
+
+@pytest.fixture
+async def kubeconfig_with_tls_skip_verify(k8s_cluster, k8s_token):
+    # Open kubeconfig and extract the certificates
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    kubeconfig["clusters"][0]["cluster"]["insecure-skip-tls-verify"] = True
     with tempfile.NamedTemporaryFile() as f:
         f.write(yaml.safe_dump(kubeconfig).encode())
         f.flush()
@@ -310,6 +322,15 @@ async def test_token(kubeconfig_with_token):
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_token)
     assert await api.whoami() == "system:serviceaccount:default:pytest"
     assert await anext(api.get("pods", namespace=kr8s.ALL))
+
+
+async def test_tls_skip_verify(kubeconfig_with_tls_skip_verify):
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_with_tls_skip_verify)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
+    ssl_context = await api.auth.ssl_context()
+    assert isinstance(ssl_context, ssl.SSLContext)
+    assert not ssl_context.check_hostname
+    assert ssl_context.verify_mode == ssl.CERT_NONE
 
 
 @pytest.mark.parametrize("absolute", [True, False])
