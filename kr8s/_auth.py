@@ -85,8 +85,6 @@ class KubeAuth:
                 raise ValueError("Unable to find valid credentials")
 
     async def ssl_context(self):
-        if self._insecure_skip_tls_verify:
-            return False
         async with self.__auth_lock:
             if (
                 not self.client_key_file
@@ -96,6 +94,9 @@ class KubeAuth:
                 # If no cert information is provided, fall back to default verification
                 return True
             sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            if self._insecure_skip_tls_verify:
+                sslcontext.check_hostname = False
+                sslcontext.verify_mode = ssl.CERT_NONE
             if self.client_key_file and self.client_cert_file:
                 sslcontext.load_cert_chain(
                     certfile=self.client_cert_file,
