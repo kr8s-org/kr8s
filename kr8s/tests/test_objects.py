@@ -588,6 +588,21 @@ async def test_all_v1_objects_represented():
         assert get_class(obj["kind"], obj["version"])
 
 
+@pytest.mark.parametrize(
+    "name, object_class",
+    [
+        ("pods", Pod),
+        ("services", Service),
+        ("configmaps", ConfigMap),
+        ("nodes", Node),
+    ],
+)
+def test_object_resolver(name, object_class):
+    api = kr8s.api()
+    for obj in api.get(name):
+        assert isinstance(obj, object_class)
+
+
 async def test_object_from_spec(example_pod_spec, example_service_spec):
     pod = object_from_spec(example_pod_spec)
     assert isinstance(pod, Pod)
