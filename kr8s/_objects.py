@@ -774,11 +774,11 @@ class APIObject:
     def pprint(self, use_rich: bool = True, theme: str = "ansi_dark") -> None:
         """Pretty print this object to stdout.
 
-        Prints the object as YAML using ``rich`` if available.
+        Prints the object as YAML (using ``rich`` for syntax highlighting if available).
 
         Args:
-            use_rich: Use ``rich`` to pretty print.
-            theme: The pygments theme to use. Defaults to "ansi_dark" to use default terminal colors.
+            use_rich: Use ``rich`` to pretty print. If ``rich` is not installed this will be ignored.
+            theme: The ``pygments`` theme for ``rich`` to use. Defaults to "ansi_dark" to use default terminal colors.
 
         """
         if use_rich:
