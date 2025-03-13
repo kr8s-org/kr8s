@@ -725,6 +725,10 @@ class APIObject:
         """Return a dictionary representation of this object."""
         return self.raw.to_dict()
 
+    def to_yaml(self) -> str:
+        """Return a YAML representation of this object."""
+        return yaml.dump(self.to_dict())
+
     def to_lightkube(self) -> Any:
         """Return a lightkube representation of this object."""
         try:
@@ -766,6 +770,29 @@ class APIObject:
                 {"version": self.version, "endpoint": self.endpoint, "kind": self.kind},
             )
         return pykube_cls(api, self.raw)
+
+    def pprint(self, use_rich: bool = True, theme: str = "ansi_dark") -> None:
+        """Pretty print this object to stdout.
+
+        Prints the object as YAML using ``rich`` if available.
+
+        Args:
+            use_rich: Use ``rich`` to pretty print.
+            theme: The pygments theme to use. Defaults to "ansi_dark" to use default terminal colors.
+
+        """
+        yaml_output = self.to_yaml()
+        if use_rich:
+            try:
+                from rich import print as rich_print
+                from rich.syntax import Syntax
+
+                yaml_output = Syntax(code=yaml_output, lexer="yaml", theme=theme)
+                rich_print(yaml_output)
+                return
+            except ImportError:
+                pass
+        print(self.to_yaml())
 
     @classmethod
     def gen(cls, *args, **kwargs):
