@@ -12,6 +12,7 @@ from contextlib import suppress
 import anyio
 import httpx
 import pytest
+import yaml
 
 import kr8s
 from kr8s._async_utils import anext
@@ -954,6 +955,12 @@ async def test_pod_to_dict(example_pod_spec):
     pod = Pod(example_pod_spec)
     assert dict(pod) == example_pod_spec
     assert dict(pod) == pod.raw
+
+
+async def test_pod_to_yaml(example_pod_spec):
+    pod = Pod(example_pod_spec)
+    assert f"name: {pod.name}" in pod.to_yaml()
+    assert yaml.safe_load(pod.to_yaml()) == example_pod_spec
 
 
 async def test_adoption(nginx_service):
