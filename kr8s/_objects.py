@@ -781,17 +781,13 @@ class APIObject:
             theme: The pygments theme to use. Defaults to "ansi_dark" to use default terminal colors.
 
         """
-        yaml_output = self.to_yaml()
         if use_rich:
-            try:
+            with contextlib.suppress(ImportError):
                 from rich import print as rich_print
                 from rich.syntax import Syntax
 
-                yaml_output = Syntax(code=yaml_output, lexer="yaml", theme=theme)
-                rich_print(yaml_output)
+                rich_print(Syntax(code=self.to_yaml(), lexer="yaml", theme=theme))
                 return
-            except ImportError:
-                pass
         print(self.to_yaml())
 
     @classmethod
