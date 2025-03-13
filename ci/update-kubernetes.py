@@ -6,7 +6,7 @@ import json
 import os
 import re
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -32,7 +32,8 @@ def get_kubernetes_oss_versions():
                 "eol": datetime.strptime(x["eol"], DATE_FORMAT),
             }
             for x in data
-            if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
+            if datetime.strptime(x["eol"], DATE_FORMAT)
+            > (datetime.now() - timedelta(weeks=52 * 2))
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
