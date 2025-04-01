@@ -625,14 +625,14 @@ class APIObject:
             raise ValueError("No annotations provided")
         await self.async_patch({"metadata": {"annotations": annotations}})
 
-    async def label(self, labels: dict | None = None, **kwargs) -> None:
+    async def label(self, *labels: dict | str, **kwargs) -> None:
         """Add labels to this object in Kubernetes.
 
         Labels can be passed as a dictionary or as keyword arguments.
 
         Args:
             labels:
-                A dictionary of labels to set.
+                A dictionary of labels to set or string to remove.
             **kwargs:
                 Labels to set.
 
@@ -642,15 +642,54 @@ class APIObject:
             >>> # Both of these are equivalent
             >>> deployment.label({"app": "my-app"})
             >>> deployment.label(app="my-app")
-        """
-        return await self.async_label(labels=labels, **kwargs)
 
-    async def async_label(self, labels: dict | None = None, **kwargs) -> None:
-        if labels is None:
-            labels = kwargs
+            >>> # You can also remove a label by passing it's name with a `-` on the end
+            >>> deployment.label("app-")
+        """
+        return await self.async_label(*labels, **kwargs)
+
+    async def async_label(self, *labels: dict | str, **kwargs) -> None:
+        """Add labels to this object in Kubernetes."""
+        if labels and all([isinstance(label, str) for label in labels]):
+            labels_to_remove = []
+            for label in labels:
+                assert isinstance(label, str)
+                assert label.endswith("-"), "Label must end with - to remove"
+                labels_to_remove.append(label[:-1])
+            await self.async_remove_label(*labels_to_remove)
+        else:
+            labels_dict = None
+            if not labels:
+                labels_dict = kwargs
+            if labels and isinstance(labels[0], dict):
+                labels_dict = labels[0]
+            if not labels_dict:
+                raise ValueError("No labels provided")
+            await self.async_patch({"metadata": {"labels": labels_dict}})
+
+    async def remove_label(self, *labels: str) -> None:
+        """Remove labels from this object in Kubernetes.
+
+        Labels can be passed as a list of strings.
+
+        Args:
+            labels: A list of labels to remove.
+
+        Example:
+            >>> from kr8s.objects import Deployment
+            >>> deployment = Deployment.get("my-deployment")
+            >>> deployment.remove_label("app")
+        """
+        return await self.async_remove_label(*labels)
+
+    async def async_remove_label(self, *labels: str) -> None:
+        """Remove labels from this object in Kubernetes."""
         if not labels:
             raise ValueError("No labels provided")
-        await self.async_patch({"metadata": {"labels": labels}})
+        operations = [
+            {"op": "remove", "path": "/metadata/labels/" + label} for label in labels
+        ]
+        await self.async_patch(operations, type="json")
 
     def keys(self) -> list:
         """Return the keys of this object."""

@@ -535,6 +535,12 @@ async def test_pod_label(example_pod_spec):
     assert "foo" in pod.labels
     with pytest.raises(ValueError):
         await pod.label({})
+    await pod.label("foo-")
+    assert "foo" not in pod.labels
+    await pod.label(fizz="buzz")
+    assert "fizz" in pod.labels
+    await pod.remove_label("fizz")
+    assert "fizz" not in pod.labels
     await pod.delete()
 
 
