@@ -632,7 +632,7 @@ class APIObject:
 
         Args:
             labels:
-                A dictionary of labels to set.
+                A dictionary of labels to set or string to remove.
             **kwargs:
                 Labels to set.
 
@@ -642,6 +642,9 @@ class APIObject:
             >>> # Both of these are equivalent
             >>> deployment.label({"app": "my-app"})
             >>> deployment.label(app="my-app")
+
+            >>> # You can also remove a label by passing it's name with a `-` on the end
+            >>> deployment.label("app-")
         """
         return await self.async_label(*labels, **kwargs)
 
