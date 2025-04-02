@@ -45,7 +45,7 @@ import kr8s
 
 async def run():
     while True:
-        for deploy in await kr8s.asyncio.get("deployments", namespace=kr8s.ALL):
+        async for deploy in kr8s.asyncio.get("deployments", namespace=kr8s.ALL):
             if 'pykube-test-operator' in deploy.annotations:
                 await deploy.label(foo="bar")
         await asyncio.sleep(15)

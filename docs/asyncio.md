@@ -21,7 +21,7 @@ For users that want to use `kr8s` with `asyncio` or `trio` you can find the asyn
 ```python
 import kr8s.asyncio
 
-pods = await kr8s.asyncio.get("pods")
+pods = [pod async for pod in kr8s.asyncio.get("pods")]
 ```
 
 Submodules including `kr8s.objects` and `kr8s.portforward` also have `asyncio` equivalents at `kr8s.asyncio.objects` and `kr8s.asyncio.portforward`.
