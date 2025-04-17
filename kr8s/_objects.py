@@ -7,7 +7,6 @@ import json
 import pathlib
 import re
 import time
-import warnings
 from collections.abc import AsyncGenerator, Generator
 from typing import (
     Any,
@@ -1861,9 +1860,17 @@ class Deployment(APIObject):
 
     async def ready_pods(self) -> list[Pod]:
         """Return a list of Pods for this Deployment."""
-        return await self.async_pods()
+        return await self.async_pods(ready=True)
 
     async def async_ready_pods(self) -> list[Pod]:
+        return await self.async_pods(ready=True)
+
+    async def pods(self) -> list[Pod]:
+        """Return a list of Pods for this Deployment."""
+        return await self.async_pods()
+
+    async def async_pods(self, ready: bool = False) -> list[Pod]:
+        """Return a list of Pods for this Deployment."""
         assert self.api
         pods = [
             pod
@@ -1874,25 +1881,16 @@ class Deployment(APIObject):
             )
         ]
         if isinstance(pods, Pod):
-            return [pods]
-        if isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
+            pods = [pods]
+        elif isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
             # The all(isinstance(...) for ...) check doesn't seem to narrow the type
             # correctly in pyright so we need to explicitly use cast
-            return cast(list[Pod], pods)
-        raise TypeError(f"Unexpected type {type(pods)} returned from API")
-
-    async def pods(self) -> list[Pod]:
-        """Return a list of Pods for this Deployment."""
-        warnings.warn(
-            "pods() is deprecated, use ready_pods() instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return await self.async_ready_pods()
-
-    async def async_pods(self) -> list[Pod]:
-        """Return a list of Pods for this Deployment."""
-        return await self.async_ready_pods()
+            pods = cast(list[Pod], pods)
+        else:
+            raise TypeError(f"Unexpected type {type(pods)} returned from API")
+        if ready:
+            return [pod for pod in pods if await pod.async_ready()]
+        return pods
 
     async def ready(self):
         """Check if the deployment is ready."""
