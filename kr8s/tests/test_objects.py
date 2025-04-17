@@ -1114,6 +1114,23 @@ async def test_pod_exec_not_ready(ns):
         await pod.delete()
 
 
+async def test_service_exec(nginx_service):
+    ex = await nginx_service.exec(["date"])
+    assert isinstance(ex, CompletedExec)
+    assert str(datetime.datetime.now().year) in ex.stdout.decode()
+    assert ex.args == ["date"]
+    assert ex.stderr == b""
+    assert ex.returncode == 0
+
+
+async def test_configmap_exec_raises():
+    cm = await ConfigMap(
+        {"metadata": {"name": "nginx", "namespace": "default"}, "data": {"foo": "bar"}}
+    )
+    with pytest.raises(NotImplementedError):
+        await cm.exec(["date"])
+
+
 async def test_configmap_data(ns):
     [cm] = await objects_from_files(CURRENT_DIR / "resources" / "configmap.yaml")
     assert isinstance(cm, ConfigMap)
