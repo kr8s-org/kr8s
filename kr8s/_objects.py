@@ -7,6 +7,7 @@ import json
 import pathlib
 import re
 import time
+import warnings
 from collections.abc import AsyncGenerator, Generator
 from typing import (
     Any,
@@ -482,6 +483,56 @@ class APIObject:
         while self.replicas != replicas:
             await self.async_refresh()
             await anyio.sleep(0.1)
+
+    async def exec(
+        self,
+        command: list[str],
+        *,
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ) -> Exec:
+        """Execute a command in this object."""
+        return await self.async_exec(
+            command,
+            container=container,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            check=check,
+            capture_output=capture_output,
+        )
+
+    async def async_exec(
+        self,
+        command: list[str],
+        *,
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ) -> Exec:
+        """Execute a command in this object."""
+        if not hasattr(self, "ready_pods"):
+            raise NotImplementedError(f"{self.kind} does not support exec")
+        pods: list[Pod] = await self.ready_pods()
+        if not pods:
+            raise RuntimeError("No ready pods found")
+        pod = pods[0]
+        return await pod.async_exec(
+            command,
+            container=container,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            check=check,
+            capture_output=capture_output,
+        )
 
     async def async_watch(self) -> AsyncGenerator[tuple[str, Self]]:
         """Watch this object in Kubernetes."""
@@ -1808,11 +1859,11 @@ class Deployment(APIObject):
     namespaced = True
     scalable = True
 
-    async def pods(self) -> list[Pod]:
+    async def ready_pods(self) -> list[Pod]:
         """Return a list of Pods for this Deployment."""
         return await self.async_pods()
 
-    async def async_pods(self) -> list[Pod]:
+    async def async_ready_pods(self) -> list[Pod]:
         assert self.api
         pods = [
             pod
@@ -1829,6 +1880,19 @@ class Deployment(APIObject):
             # correctly in pyright so we need to explicitly use cast
             return cast(list[Pod], pods)
         raise TypeError(f"Unexpected type {type(pods)} returned from API")
+
+    async def pods(self) -> list[Pod]:
+        """Return a list of Pods for this Deployment."""
+        warnings.warn(
+            "pods() is deprecated, use ready_pods() instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return await self.async_ready_pods()
+
+    async def async_pods(self) -> list[Pod]:
+        """Return a list of Pods for this Deployment."""
+        return await self.async_ready_pods()
 
     async def ready(self):
         """Check if the deployment is ready."""
