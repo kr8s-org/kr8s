@@ -483,6 +483,56 @@ class APIObject:
             await self.async_refresh()
             await anyio.sleep(0.1)
 
+    async def exec(
+        self,
+        command: list[str],
+        *,
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ) -> Exec:
+        """Execute a command in this object."""
+        return await self.async_exec(
+            command,
+            container=container,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            check=check,
+            capture_output=capture_output,
+        )
+
+    async def async_exec(
+        self,
+        command: list[str],
+        *,
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ) -> Exec:
+        """Execute a command in this object."""
+        if not hasattr(self, "ready_pods"):
+            raise NotImplementedError(f"{self.kind} does not support exec")
+        pods: list[Pod] = await self.ready_pods()
+        if not pods:
+            raise RuntimeError("No ready pods found")
+        pod = pods[0]
+        return await pod.async_exec(
+            command,
+            container=container,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            check=check,
+            capture_output=capture_output,
+        )
+
     async def async_watch(self) -> AsyncGenerator[tuple[str, Self]]:
         """Watch this object in Kubernetes."""
         since = self.metadata.get("resourceVersion")
@@ -1808,11 +1858,19 @@ class Deployment(APIObject):
     namespaced = True
     scalable = True
 
+    async def ready_pods(self) -> list[Pod]:
+        """Return a list of Pods for this Deployment."""
+        return await self.async_pods(ready=True)
+
+    async def async_ready_pods(self) -> list[Pod]:
+        return await self.async_pods(ready=True)
+
     async def pods(self) -> list[Pod]:
         """Return a list of Pods for this Deployment."""
         return await self.async_pods()
 
-    async def async_pods(self) -> list[Pod]:
+    async def async_pods(self, ready: bool = False) -> list[Pod]:
+        """Return a list of Pods for this Deployment."""
         assert self.api
         pods = [
             pod
@@ -1823,12 +1881,16 @@ class Deployment(APIObject):
             )
         ]
         if isinstance(pods, Pod):
-            return [pods]
-        if isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
+            pods = [pods]
+        elif isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
             # The all(isinstance(...) for ...) check doesn't seem to narrow the type
             # correctly in pyright so we need to explicitly use cast
-            return cast(list[Pod], pods)
-        raise TypeError(f"Unexpected type {type(pods)} returned from API")
+            pods = cast(list[Pod], pods)
+        else:
+            raise TypeError(f"Unexpected type {type(pods)} returned from API")
+        if ready:
+            return [pod for pod in pods if await pod.async_ready()]
+        return pods
 
     async def ready(self):
         """Check if the deployment is ready."""
