@@ -21,9 +21,9 @@ jobs:
       - name: Show diff
         id: diff
         run: |
-          echo 'diff<<EOF' >> $GITHUB_OUTPUT
+          echo 'diff<<END_OF_DIFF' >> $GITHUB_OUTPUT
           git diff | tee -a $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          echo 'END_OF_DIFF' >> $GITHUB_OUTPUT
           if [ -z "$(git diff)" ]; then
             echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
@@ -31,6 +31,9 @@ jobs:
             echo "Changes to commit"
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
+      - name: Show diff for debugging
+        run: |
+          echo "${{ steps.diff.outputs.diff }}"
       - name: Generate PR title
         uses: ai-action/ollama-action@v1
         if: steps.diff.outputs.has_changes == 'true'
