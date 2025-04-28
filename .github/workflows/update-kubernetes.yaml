@@ -30,7 +30,11 @@ jobs:
       - name: Check if PR is needed
         id: pr-needed
         run: |
-          echo "has_changes=$([[ ! -z "${{ steps.diff.outputs.diff }}" ]] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
+          if [ -z "${{ steps.diff.outputs.diff }}" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
       - name: Generate PR title
         uses: ai-action/ollama-action@v1
         if: ${{ steps.pr-needed.outputs.has_changes }} == 'true'
