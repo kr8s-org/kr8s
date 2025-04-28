@@ -74,4 +74,4 @@ jobs:
       - name: Install kr8s
         run: pip install -e .
       - name: Ensure kr8s works
-        run: python -c "import kr8s; print(kr8s.get('nodes'))"
+        run: python -c "import kr8s; print(list(kr8s.get('nodes')))"
