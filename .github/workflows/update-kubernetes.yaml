@@ -22,11 +22,10 @@ jobs:
         id: diff
         run: |
           echo 'diff<<END_OF_DIFF' >> $GITHUB_OUTPUT
-          DIFF=$(git diff --unified=0)
-          echo "${DIFF@Q}" >> $GITHUB_OUTPUT
+          git diff | tee -a $GITHUB_OUTPUT
           echo 'END_OF_DIFF' >> $GITHUB_OUTPUT
 
-          if [ -z "$DIFF" ]; then
+          if [ -z "$(git diff)" ]; then
             echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
@@ -37,7 +36,7 @@ jobs:
         run: |
           echo "${{ steps.diff.outputs.diff }}"
       - name: Generate PR title
-        uses: ai-action/ollama-action@v1
+        uses: jacobtomlinson/ollama-action@escape-prompt
         if: steps.diff.outputs.has_changes == 'true'
         id: title-llm
         with:
@@ -48,7 +47,9 @@ jobs:
             The title should be in the present tense.
             Your response must be no more than 50 characters.
 
+            ```diff
             ${{ steps.diff.outputs.diff }}
+            ```
 
             Please summarize the changes in the diff with particular attention to the Kubernetes version that is being updated.
             Don't include the Python version information in the title or which files are being edited. Focus only on the Kubernetes version.
