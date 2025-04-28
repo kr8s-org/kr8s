@@ -14,13 +14,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install ruamel.yaml
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
       - name: Update Kubernetes
-        run: ./ci/update-kubernetes.py
+        run: uv run ./ci/update-kubernetes.py
       - name: Show diff
         id: diff
         run: |
