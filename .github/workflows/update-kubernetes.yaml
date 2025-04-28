@@ -22,11 +22,11 @@ jobs:
         id: diff
         run: |
           echo 'diff<<END_OF_DIFF' >> $GITHUB_OUTPUT
-          DIFF=$(git diff)
+          DIFF=$(git diff --unified=0)
           echo "${DIFF@Q}" >> $GITHUB_OUTPUT
           echo 'END_OF_DIFF' >> $GITHUB_OUTPUT
 
-          if [ -z "$(git diff)" ]; then
+          if [ -z "$DIFF" ]; then
             echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
