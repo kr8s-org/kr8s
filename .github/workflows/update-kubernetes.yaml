@@ -45,7 +45,7 @@ jobs:
 
             Here is a diff of the changes:
 
-            ```
+            ```diff
             ${{ steps.diff.outputs.diff }}
             ```
 
