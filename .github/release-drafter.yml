@@ -4,6 +4,8 @@ tag-template: "next"
 
 exclude-labels:
   - kubectl-ng
+exclude-contributors:
+  - pre-commit-ci
 categories:
   - title: "🚨 Breaking"
     label: "breaking"
