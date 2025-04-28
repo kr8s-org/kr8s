@@ -47,10 +47,9 @@ jobs:
             Your response must be no more than 50 characters.
 
             Please summarize the changes in the diff with particular attention to the Kubernetes version that is being updated.
+            Don't include the Python version information in the title or which files are being edited. Focus only on the Kubernetes version.
 
-            ```diff
             ${{ steps.diff.outputs.diff }}
-            ```
 
       - name: Show PR title
         if: steps.diff.outputs.has_changes == 'true'
