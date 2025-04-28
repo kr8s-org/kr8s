@@ -588,11 +588,14 @@ async def test_all_v1_objects_represented():
         "rbac.authorization.k8s.io/v1",
         "apiextensions.k8s.io/v1",
     )
-    # for supported_api in supported_apis:
-    #     assert supported_api in [obj["version"] for obj in objects]
     objects = [obj for obj in k8s_objects if obj["version"] in supported_apis]
+    failures = []
     for obj in objects:
-        assert get_class(obj["kind"], obj["version"])
+        try:
+            assert get_class(obj["kind"], obj["version"])
+        except KeyError:
+            failures.append(obj["name"] + "." + obj["version"])
+    assert not failures, f"Failed to find {len(failures)} objects: {failures}"
 
 
 async def test_object_from_spec(example_pod_spec, example_service_spec):
