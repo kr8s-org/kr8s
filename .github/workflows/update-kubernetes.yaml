@@ -44,10 +44,13 @@ jobs:
             The title should be in the present tense.
             Your response must be no more than 50 characters.
 
-            Please generate a PR title for the following changes:
+            Here is a diff of the changes:
+            
             ```
             ${{ steps.diff.outputs.diff }}
             ```
+            Please generate a PR title with particular attention to the Kubernetes version that is being updated.
+
       - name: Show PR title
         if: steps.diff.outputs.has_changes == 'true'
         run: |
