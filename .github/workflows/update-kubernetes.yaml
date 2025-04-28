@@ -24,7 +24,7 @@ jobs:
           echo 'diff<<EOF' >> $GITHUB_OUTPUT
           git diff | tee -a $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
-          if [ -z "${{ steps.diff.outputs.diff }}" ]; then
+          if [ -z "$(git diff)" ]; then
             echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
