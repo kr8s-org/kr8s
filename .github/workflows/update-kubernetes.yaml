@@ -3,6 +3,10 @@ on:
   schedule:
     - cron:  '30 2 * * *'
   workflow_dispatch: {}
+  pull_request:
+    paths:
+      - .github/workflows/update-kubernetes.yaml
+      - ci/update-kubernetes.py
 
 jobs:
   update-kubernetes:
@@ -18,14 +22,37 @@ jobs:
       - name: Update Kubernetes
         run: ./ci/update-kubernetes.py
       - name: Show diff
-        run: git diff
+        id: diff
+        run: |
+          echo 'diff<<EOF' >> $GITHUB_OUTPUT
+          git diff | tee -a $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+      - name: Generate PR title
+        uses: ai-action/ollama-action@v1
+        id: title-llm
+        with:
+          model: llama3.2
+          prompt: |
+            Generate a PR title for the following changes:
+
+            ```
+            ${{ steps.diff.outputs.diff }}
+            ```
+            The title should be concise and to the point, and should not include any markdown formatting.
+            The title should be in the format of "Update Kubernetes version: remove 1.27" or similar.
+            The title should be no more than 50 characters.
+            The title should be in the present tense.
+            The title is:
+      - name: Show PR title
+        run: |
+          echo "The action would generate the following PR title: ${{ steps.title-llm.outputs.response }}"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
-        if: github.repository == 'kr8s-org/kr8s'
+        if: github.repository == 'kr8s-org/kr8s' && github.ref == 'refs/heads/main'
         with:
           base: main
-          commit-message: "Update Kubernetes versions"
-          title: "Update Kubernetes versions"
+          commit-message: ${{ steps.title-llm.outputs.response }}
+          title: ${{ steps.title-llm.outputs.response }}
           reviewers: "jacobtomlinson"
           token: "${{ secrets.BOT_TOKEN }}"
           labels: |
