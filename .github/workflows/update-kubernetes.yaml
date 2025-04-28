@@ -34,6 +34,11 @@ jobs:
       - name: Show diff for debugging
         run: |
           echo "${{ steps.diff.outputs.diff }}"
+      - name: Cache LLM model
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama
+          key: ${{ runner.os }}-ollama
       - name: Generate PR title
         uses: ai-action/ollama-action@v1
         if: steps.diff.outputs.has_changes == 'true'
@@ -46,10 +51,10 @@ jobs:
             The title should be in the present tense.
             Your response must be no more than 50 characters.
 
+            ${{ steps.diff.outputs.diff }}
+
             Please summarize the changes in the diff with particular attention to the Kubernetes version that is being updated.
             Don't include the Python version information in the title or which files are being edited. Focus only on the Kubernetes version.
-
-            ${{ steps.diff.outputs.diff }}
 
       - name: Show PR title
         if: steps.diff.outputs.has_changes == 'true'
