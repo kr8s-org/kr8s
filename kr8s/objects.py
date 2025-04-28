@@ -63,6 +63,9 @@ from ._objects import (
     IngressClass as _IngressClass,
 )
 from ._objects import (
+    IPAddress as _IPAddress,
+)
+from ._objects import (
     Job as _Job,
 )
 from ._objects import (
@@ -115,6 +118,9 @@ from ._objects import (
 )
 from ._objects import (
     ServiceAccount as _ServiceAccount,
+)
+from ._objects import (
+    ServiceCIDR as _ServiceCIDR,
 )
 from ._objects import (
     StatefulSet as _StatefulSet,
@@ -393,6 +399,14 @@ class CustomResourceDefinition(APIObjectSyncMixin, _CustomResourceDefinition):
 
 class Table(APIObjectSyncMixin, _Table):
     __doc__ = _Table.__doc__
+
+
+class IPAddress(APIObjectSyncMixin, _IPAddress):
+    __doc__ = _IPAddress.__doc__
+
+
+class ServiceCIDR(APIObjectSyncMixin, _ServiceCIDR):
+    __doc__ = _ServiceCIDR.__doc__
 
 
 object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
