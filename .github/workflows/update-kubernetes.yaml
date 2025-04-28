@@ -30,9 +30,12 @@ jobs:
       - name: Check if PR is needed
         id: pr-needed
         run: |
+          echo "Diff: ${{ steps.diff.outputs.diff }}"
           if [ -z "${{ steps.diff.outputs.diff }}" ]; then
+            echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
+            echo "Changes to commit"
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
       - name: Generate PR title
