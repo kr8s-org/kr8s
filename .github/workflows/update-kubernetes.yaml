@@ -38,16 +38,16 @@ jobs:
         with:
           model: llama3.2
           prompt: |
-            Generate a PR title for the following changes:
+            You are a helpful assistant that generates PR titles for Kubernetes version updates.
+            The title should be concise and to the point, and should not include any markdown formatting.
+            The title should be in the format of "Update Kubernetes version: remove 1.27" or similar.
+            The title should be in the present tense.
+            Your response must be no more than 50 characters.
 
+            Please generate a PR title for the following changes:
             ```
             ${{ steps.diff.outputs.diff }}
             ```
-            The title should be concise and to the point, and should not include any markdown formatting.
-            The title should be in the format of "Update Kubernetes version: remove 1.27" or similar.
-            The title should be no more than 50 characters.
-            The title should be in the present tense.
-            The title is:
       - name: Show PR title
         if: steps.diff.outputs.has_changes == 'true'
         run: |
