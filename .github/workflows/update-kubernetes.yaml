@@ -27,8 +27,13 @@ jobs:
           echo 'diff<<EOF' >> $GITHUB_OUTPUT
           git diff | tee -a $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
+      - name: Check if PR is needed
+        id: pr-needed
+        run: |
+          echo "has_changes=$([[ ! -z "${{ steps.diff.outputs.diff }}" ]] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
       - name: Generate PR title
         uses: ai-action/ollama-action@v1
+        if: ${{ steps.pr-needed.outputs.has_changes }} == 'true'
         id: title-llm
         with:
           model: llama3.2
@@ -44,11 +49,12 @@ jobs:
             The title should be in the present tense.
             The title is:
       - name: Show PR title
+        if: ${{ steps.pr-needed.outputs.has_changes }} == 'true'
         run: |
           echo "The action would generate the following PR title: ${{ steps.title-llm.outputs.response }}"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
-        if: github.repository == 'kr8s-org/kr8s' && github.ref == 'refs/heads/main'
+        if: ${{ steps.pr-needed.outputs.has_changes }} == 'true' && github.repository == 'kr8s-org/kr8s' && github.ref == 'refs/heads/main'
         with:
           base: main
           commit-message: ${{ steps.title-llm.outputs.response }}
