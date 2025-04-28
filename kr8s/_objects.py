@@ -2006,6 +2006,28 @@ class NetworkPolicy(APIObject):
     namespaced = True
 
 
+class IPAddress(APIObject):
+    """A Kubernetes IPAddress."""
+
+    version = "networking.k8s.io/v1"
+    endpoint = "ipaddresses"
+    kind = "IPAddress"
+    plural = "ipaddresses"
+    singular = "ipaddress"
+    namespaced = False
+
+
+class ServiceCIDR(APIObject):
+    """A Kubernetes ServiceCIDR."""
+
+    version = "networking.k8s.io/v1"
+    endpoint = "servicecidrs"
+    kind = "ServiceCIDR"
+    plural = "servicecidrs"
+    singular = "servicecidr"
+    namespaced = False
+
+
 ## policy/v1 objects
 
 

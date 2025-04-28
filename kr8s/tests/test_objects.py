@@ -594,7 +594,7 @@ async def test_all_v1_objects_represented():
         try:
             assert get_class(obj["kind"], obj["version"])
         except KeyError:
-            failures.append(obj["name"] + "." + obj["version"])
+            failures.append(f"{obj['kind']} ({obj['name']}.{obj['version']})")
     assert not failures, f"Failed to find {len(failures)} objects: {failures}"
 
 
