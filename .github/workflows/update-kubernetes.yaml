@@ -22,8 +22,10 @@ jobs:
         id: diff
         run: |
           echo 'diff<<END_OF_DIFF' >> $GITHUB_OUTPUT
-          git diff | sed 's/["'\'']/\\&/g' | tee -a $GITHUB_OUTPUT
+          DIFF=$(git diff)
+          echo "${DIFF@Q}" >> $GITHUB_OUTPUT
           echo 'END_OF_DIFF' >> $GITHUB_OUTPUT
+
           if [ -z "$(git diff)" ]; then
             echo "No changes to commit"
             echo "has_changes=false" >> $GITHUB_OUTPUT
