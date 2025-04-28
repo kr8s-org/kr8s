@@ -27,8 +27,6 @@ jobs:
             kubernetes-version: 1.32.3
           - python-version: '3.10'
             kubernetes-version: 1.31.6
-          - python-version: '3.10'
-            kubernetes-version: 1.30.10
     env:
       KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
 
