@@ -90,6 +90,7 @@ class KubeAuth:
                 not self.client_key_file
                 and not self.client_cert_file
                 and not self.server_ca_file
+                and not self._insecure_skip_tls_verify
             ):
                 # If no cert information is provided, fall back to default verification
                 return True
