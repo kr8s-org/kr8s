@@ -1,23 +1,60 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 
+from datetime import datetime
+
 import anyio
 import rich.table
 import typer
 from rich import box
 from rich.console import Console
 from rich.live import Live
+from rich.text import Text
 
 import kr8s
 from kr8s._async_utils import anext
 from kr8s.asyncio.objects import Table
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+CHANGE_INDICATOR_DURATION = 15  # seconds to show change indicators
+EXCLUDED_CHANGE_COLUMNS = ["Age"]  # columns to exclude from change indicators
+
+# Unicode symbols for changes with their styles
+UP_ARROW = Text("↑", style="green")
+DOWN_ARROW = Text("↓", style="red")
+CHANGE_DELTA = Text("Δ", style="cyan")
+
+
+def is_numeric(value):
+    """Check if a string value can be converted to a number."""
+    try:
+        float(value)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def get_change_indicator(old_value, new_value):
+    """Get the appropriate change indicator based on value comparison."""
+    if not is_numeric(old_value) or not is_numeric(new_value):
+        return CHANGE_DELTA if old_value != new_value else Text("")
+
+    old_num = float(old_value)
+    new_num = float(new_value)
+
+    if new_num > old_num:
+        return UP_ARROW
+    elif new_num < old_num:
+        return DOWN_ARROW
+    return Text("")
+
 
 console = Console()
 
 
-async def draw_table(kind, response, resource_names):
+async def draw_table(
+    kind, response, resource_names, previous_state=None, last_update_time=None
+):
     table = rich.table.Table(box=box.SIMPLE)
     table.add_column("Namespace", style="magenta", no_wrap=True)
 
@@ -28,14 +65,57 @@ async def draw_table(kind, response, resource_names):
                 kwargs = {"style": "cyan", "no_wrap": True}
             table.add_column(column["name"], **kwargs)
 
+    current_time = datetime.now()
+    show_indicators = (
+        last_update_time
+        and (current_time - last_update_time).total_seconds()
+        < CHANGE_INDICATOR_DURATION
+    )
+
     for row in response.rows:
         if not resource_names or row["object"]["metadata"]["name"] == resource_names[0]:
-            r = [
-                str(row)
-                for row, column in zip(row["cells"], response.column_definitions)
-                if column["priority"] == 0
-            ]
-            table.add_row(row["object"]["metadata"]["namespace"], *r)
+            cells = []
+            for cell, column in zip(row["cells"], response.column_definitions):
+                if column["priority"] == 0:
+                    cell_str = str(cell)
+                    if (
+                        show_indicators
+                        and previous_state
+                        and column["name"] not in EXCLUDED_CHANGE_COLUMNS
+                    ):
+                        # Find matching previous row
+                        prev_row = next(
+                            (
+                                r
+                                for r in previous_state.rows
+                                if r["object"]["metadata"]["name"]
+                                == row["object"]["metadata"]["name"]
+                                and r["object"]["metadata"]["namespace"]
+                                == row["object"]["metadata"]["namespace"]
+                            ),
+                            None,
+                        )
+                        if prev_row:
+                            prev_cell = next(
+                                (
+                                    c
+                                    for c, col in zip(
+                                        prev_row["cells"],
+                                        previous_state.column_definitions,
+                                    )
+                                    if col["priority"] == 0
+                                    and col["name"] == column["name"]
+                                ),
+                                None,
+                            )
+                            if prev_cell is not None:
+                                indicator = get_change_indicator(
+                                    str(prev_cell), cell_str
+                                )
+                                if indicator:
+                                    cell_str = indicator + Text(" ") + Text(cell_str)
+                    cells.append(cell_str)
+            table.add_row(row["object"]["metadata"]["namespace"], *cells)
 
     if not table.rows:
         if resource_names:
@@ -156,12 +236,18 @@ async def get(
         kind = list(data)[0]
         response = data[kind]
         table = await draw_table(kind, response, resource_names)
+        previous_state = None
+        last_update_time = None
+
         with Live(table, console=console, auto_refresh=False) as live:
             while True:
                 await anyio.sleep(5)
+                previous_state = response
+                last_update_time = datetime.now()
                 data = await get_resources(resources, label_selector, field_selector)
-                # TODO handle changes in resources
                 for kind, response in data.items():
-                    table = await draw_table(kind, response, resource_names)
+                    table = await draw_table(
+                        kind, response, resource_names, previous_state, last_update_time
+                    )
                 live.update(table)
                 live.refresh()
