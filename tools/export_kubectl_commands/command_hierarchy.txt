@@ -1,0 +1,108 @@
+kubectl
+kubectl alpha
+kubectl annotate
+kubectl api-resources
+kubectl api-versions
+kubectl apply
+kubectl apply edit-last-applied
+kubectl apply set-last-applied
+kubectl apply view-last-applied
+kubectl attach
+kubectl auth
+kubectl auth can-i
+kubectl auth reconcile
+kubectl auth whoami
+kubectl autoscale
+kubectl certificate
+kubectl certificate approve
+kubectl certificate deny
+kubectl cluster-info
+kubectl cluster-info dump
+kubectl completion
+kubectl config
+kubectl config current-context
+kubectl config delete-cluster
+kubectl config delete-context
+kubectl config delete-user
+kubectl config get-clusters
+kubectl config get-contexts
+kubectl config get-users
+kubectl config rename-context
+kubectl config set
+kubectl config set-cluster
+kubectl config set-context
+kubectl config set-credentials
+kubectl config unset
+kubectl config use-context
+kubectl config view
+kubectl cordon
+kubectl cp
+kubectl create
+kubectl create clusterrole
+kubectl create clusterrolebinding
+kubectl create configmap
+kubectl create cronjob
+kubectl create deployment
+kubectl create ingress
+kubectl create job
+kubectl create namespace
+kubectl create poddisruptionbudget
+kubectl create priorityclass
+kubectl create quota
+kubectl create role
+kubectl create rolebinding
+kubectl create secret
+kubectl create secret docker-registry
+kubectl create secret generic
+kubectl create secret tls
+kubectl create service
+kubectl create service clusterip
+kubectl create service externalname
+kubectl create service loadbalancer
+kubectl create service nodeport
+kubectl create serviceaccount
+kubectl create token
+kubectl debug
+kubectl delete
+kubectl describe
+kubectl diff
+kubectl drain
+kubectl edit
+kubectl events
+kubectl exec
+kubectl explain
+kubectl expose
+kubectl get
+kubectl kustomize
+kubectl label
+kubectl logs
+kubectl options
+kubectl patch
+kubectl plugin
+kubectl plugin list
+kubectl port-forward
+kubectl proxy
+kubectl replace
+kubectl rollout
+kubectl rollout history
+kubectl rollout pause
+kubectl rollout restart
+kubectl rollout resume
+kubectl rollout status
+kubectl rollout undo
+kubectl run
+kubectl scale
+kubectl set
+kubectl set env
+kubectl set image
+kubectl set resources
+kubectl set selector
+kubectl set serviceaccount
+kubectl set subject
+kubectl taint
+kubectl top
+kubectl top node
+kubectl top pod
+kubectl uncordon
+kubectl version
+kubectl wait
