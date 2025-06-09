@@ -107,6 +107,14 @@ async def whoami(api=None, _asyncio=True):
     return await api.async_whoami()
 
 
+async def create(resources: list[APIObject], api=None, _asyncio=True):
+    """Create resources in the Kubernetes cluster."""
+    if api is None:
+        api = await _api(_asyncio=_asyncio)
+    return await api.async_create(resources)
+
+
+create.__doc__ = Api.create.__doc__
 get.__doc__ = Api.get.__doc__
 version.__doc__ = Api.version.__doc__
 watch.__doc__ = Api.watch.__doc__

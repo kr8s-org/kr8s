@@ -663,6 +663,14 @@ class Api:
             for version in group["versions"]:
                 yield version["groupVersion"]
 
+    async def async_create(self, resources: list[APIObject]):
+        async with asyncio.TaskGroup() as tg:
+            for resource in resources:
+                tg.create_task(resource.create())
+
+    async def create(self, resources: list[APIObject]):
+        return await self.async_create(resources)
+
     @property
     def __version__(self) -> str:
         from . import __version__

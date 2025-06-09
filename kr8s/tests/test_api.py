@@ -10,7 +10,9 @@ import kr8s
 import kr8s.asyncio
 from kr8s._async_utils import anext
 from kr8s._exceptions import APITimeoutError
-from kr8s.asyncio.objects import Pod, Table
+from kr8s.asyncio.objects import Pod, Service, Table
+from kr8s.objects import Pod as SyncPod
+from kr8s.objects import Service as SyncService
 
 
 @pytest.fixture
@@ -461,3 +463,27 @@ async def test_two_pods(ns):
     async with anyio.create_task_group() as tg:
         for pod in pods:
             tg.start_soon(pod.delete)
+
+
+async def test_create(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.create(resources)
+    assert await pod.exists(), "Pod should exist after creation"
+    assert await service.exists(), "Service should exist after creation"
+    await pod.delete()
+    await service.delete()
+
+
+def test_create_sync(example_pod_spec, example_service_spec):
+    pod = SyncPod(example_pod_spec)
+    service = SyncService(example_service_spec)
+    assert pod._asyncio is False
+    assert service._asyncio is False
+    resources = [pod, service]
+    kr8s.create(resources)
+    assert pod.exists(), "Pod should exist after creation"
+    assert service.exists(), "Service should exist after creation"
+    pod.delete()
+    service.delete()

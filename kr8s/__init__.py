@@ -111,6 +111,10 @@ class Api(_AsyncApi):
     def api_versions(self) -> Generator[str]:  # type: ignore
         yield from _run_sync(self.async_api_versions)()
 
+    def create(self, resources: list[objects.APIObject]):  # type: ignore
+        for resource in resources:
+            resource.create()
+
 
 def get(
     kind: str,
@@ -218,6 +222,13 @@ def whoami():
     return _run_sync(_whoami)(_asyncio=False)
 
 
+def create(resources: list[type[APIObject]], api=None):
+    """Creates resources in the Kubernetes cluster."""
+    if api is None:
+        api = _run_sync(_api)(_asyncio=False)
+    api.create(resources)  # type: ignore
+
+
 version = _run_sync(partial(_k8s_version, _asyncio=False))
 update_wrapper(version, _k8s_version)
 watch = _run_sync(partial(_watch, _asyncio=False))
@@ -232,6 +243,7 @@ __all__ = [
     "api",
     "api_resources",
     "asyncio",
+    "create",
     "get",
     "objects",
     "portforward",
