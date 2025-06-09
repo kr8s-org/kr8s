@@ -112,7 +112,7 @@ class Api(_AsyncApi):
         yield from _run_sync(self.async_api_versions)()
 
     def create(self, resources: list[objects.APIObject]):  # type: ignore
-        return _run_sync(self.async_create)(resources) # type: ignore
+        return _run_sync(self.async_create)(resources)  # type: ignore
 
 
 def get(
