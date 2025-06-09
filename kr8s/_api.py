@@ -666,7 +666,7 @@ class Api:
     async def async_create(self, resources: list[APIObject]):
         async with asyncio.TaskGroup() as tg:
             for resource in resources:
-                tg.create_task(resource.create())
+                tg.create_task(resource.async_create())
 
     async def create(self, resources: list[APIObject]):
         return await self.async_create(resources)
