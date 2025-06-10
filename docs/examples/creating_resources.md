@@ -279,24 +279,24 @@ Then with `kr8s` we can load this file and create an object for each resource. T
 ````{tab-item} Sync
 :sync: sync
 ```python
+import kr8s
 from kr8s.objects import objects_from_files
 
 resources = objects_from_files("manifest.yaml")
 
-for resource in resources:
-    resource.create()
+kr8s.create(resources)
 ```
 ````
 
 ````{tab-item} Async
 :sync: async
 ```python
+import kr8s.asyncio
 from kr8s.asyncio.objects import objects_from_files
 
 resources = await objects_from_files("manifest.yaml")
 
-for resource in resources:
-    await resource.create()
+await kr8s.asyncio.create(resources)
 ```
 ````
 

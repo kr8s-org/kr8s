@@ -16,6 +16,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import anyio
 import httpx
 import httpx_ws
 from asyncache import cached  # type: ignore
@@ -662,6 +663,14 @@ class Api:
         for group in api_list["groups"]:
             for version in group["versions"]:
                 yield version["groupVersion"]
+
+    async def async_create(self, resources: list[APIObject]):
+        async with anyio.create_task_group() as tg:
+            for resource in resources:
+                tg.start_soon(resource.async_create)
+
+    async def create(self, resources: list[APIObject]):
+        return await self.async_create(resources)
 
     @property
     def __version__(self) -> str:
