@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
-import anyio
 import asyncio
 import contextlib
 import copy
@@ -17,6 +16,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import anyio
 import httpx
 import httpx_ws
 from asyncache import cached  # type: ignore
