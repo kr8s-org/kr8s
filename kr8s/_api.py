@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from __future__ import annotations
 
+import anyio
 import asyncio
 import contextlib
 import copy
@@ -664,9 +665,9 @@ class Api:
                 yield version["groupVersion"]
 
     async def async_create(self, resources: list[APIObject]):
-        async with asyncio.TaskGroup() as tg:
+        async with anyio.create_task_group() as tg:
             for resource in resources:
-                tg.create_task(resource.async_create())
+                tg.start_soon(resource.async_create)
 
     async def create(self, resources: list[APIObject]):
         return await self.async_create(resources)
