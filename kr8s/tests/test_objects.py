@@ -652,7 +652,7 @@ async def test_new_class_registration():
     assert MyOtherResource._asyncio
 
 
-async def test_new_sync_class_registration():
+async def test_new_sync_class_registration() -> None:
     with pytest.raises(KeyError):
         sync_get_class("MyOtherSyncResource", "foo.kr8s.org/v1alpha1")
 
