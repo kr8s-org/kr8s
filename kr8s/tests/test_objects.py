@@ -35,6 +35,7 @@ from kr8s.asyncio.objects import (
     objects_from_files,
 )
 from kr8s.asyncio.portforward import PortForward
+from kr8s.objects import APIObject as SyncAPIObject
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
 from kr8s.objects import (
@@ -655,7 +656,7 @@ async def test_new_sync_class_registration():
     with pytest.raises(KeyError):
         sync_get_class("MyOtherSyncResource", "foo.kr8s.org/v1alpha1")
 
-    MyOtherSyncResource = sync_new_class(
+    MyOtherSyncResource: type[SyncAPIObject] = sync_new_class(
         "MyOtherSyncResource.foo.kr8s.org/v1alpha1"
     )  # noqa: F841
 
