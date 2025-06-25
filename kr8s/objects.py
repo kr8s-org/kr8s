@@ -412,5 +412,32 @@ class ServiceCIDR(APIObjectSyncMixin, _ServiceCIDR):
 object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
 objects_from_files = run_sync(partial(_objects_from_files, _asyncio=False))
 get_class = partial(_get_class, _asyncio=False)
-new_class = partial(_new_class, asyncio=False)
 object_from_spec = partial(_object_from_spec, _asyncio=False)
+
+
+def new_class(
+    kind: str,
+    version: str | None = None,
+    asyncio: bool = False,
+    namespaced=True,
+    scalable: bool | None = None,
+    scalable_spec: str | None = None,
+    plural: str | None = None,
+) -> type[APIObject]:
+    """Create a new APIObject subclass.
+
+    Args:
+        kind: The Kubernetes resource kind.
+        version: The Kubernetes API version.
+        asyncio: Whether to use asyncio or not.
+        namespaced: Whether the resource is namespaced or not.
+        scalable: Whether the resource is scalable or not.
+        scalable_spec: The name of the field to use for scaling.
+        plural: The plural form of the resource.
+
+    Returns:
+        A new APIObject subclass.
+    """
+    return _new_class(  # type: ignore
+        kind, version, asyncio, namespaced, scalable, scalable_spec, plural
+    )
