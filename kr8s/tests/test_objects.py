@@ -542,6 +542,10 @@ async def test_pod_label(example_pod_spec):
     assert "fizz" in pod.labels
     await pod.remove_label("fizz")
     assert "fizz" not in pod.labels
+    await pod.label({"foo/bar": "baz"})
+    assert "foo/bar" in pod.labels
+    await pod.label("foo/bar-")
+    assert "foo/bar" not in pod.labels
     await pod.delete()
 
 

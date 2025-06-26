@@ -29,6 +29,7 @@ from kr8s._async_utils import run_sync
 from kr8s._data_utils import (
     dict_to_selector,
     dot_to_nested_dict,
+    escape_rfc6901,
     list_dict_unpack,
     xdict,
 )
@@ -736,8 +737,10 @@ class APIObject:
         """Remove labels from this object in Kubernetes."""
         if not labels:
             raise ValueError("No labels provided")
+
         operations = [
-            {"op": "remove", "path": "/metadata/labels/" + label} for label in labels
+            {"op": "remove", "path": "/metadata/labels/" + escape_rfc6901(label)}
+            for label in labels
         ]
         await self.async_patch(operations, type="json")
 

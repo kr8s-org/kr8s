@@ -8,6 +8,7 @@ from kr8s._data_utils import (
     dict_list_pack,
     dict_to_selector,
     dot_to_nested_dict,
+    escape_rfc6901,
     list_dict_unpack,
     sort_versions,
     xdict,
@@ -120,3 +121,10 @@ def test_sort_version_priorities_key():
     for _ in range(30):
         random.shuffle(sample)
         assert sort_versions(list(sample), key=lambda x: x["version"]) == versions
+
+
+def test_escape_rfc6901():
+    assert escape_rfc6901("foo") == "foo"
+    assert escape_rfc6901("foo~bar") == "foo~0bar"
+    assert escape_rfc6901("foo/bar") == "foo~1bar"
+    assert escape_rfc6901("foo/bar/baz") == "foo~1bar~1baz"
