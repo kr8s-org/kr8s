@@ -160,3 +160,15 @@ def sort_versions(
     if reverse:
         output.reverse()
     return output
+
+
+def escape_rfc6901(path: str) -> str:
+    """Escape a path for use in RFC 6901.
+
+    Args:
+        path: The path to escape.
+
+    Returns:
+        The escaped path.
+    """
+    return path.replace("~", "~0").replace("/", "~1")
