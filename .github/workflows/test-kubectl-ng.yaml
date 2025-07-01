@@ -40,14 +40,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install kubectl-ng, dev version of kr8s and testing dependencies
         run: |
-          uv venv && source .venv/bin/activate
+          uv python install ${{ matrix.python-version }}
           uv sync --dev --directory examples/kubectl-ng
           uv pip install -e .
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
         run: |
-          source .venv/bin/activate
           uv run pytest examples/kubectl-ng
       - name: Debug k8s resources
         if: always()
