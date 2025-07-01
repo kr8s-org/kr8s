@@ -1,6 +1,6 @@
 [project]
 name = "kubectl-ng"
-version = "0.0.0"
+dynamic = ["version"]
 description = ""
 authors = [
     {name = "Jacob Tomlinson", email = "jacob@tomlinson.email"}
