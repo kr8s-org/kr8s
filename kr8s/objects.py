@@ -10,8 +10,8 @@ These classes are used to interact with resources in the Kubernetes API server.
 # ruff: noqa: D102
 from __future__ import annotations
 
-from functools import partial
-from typing import Any
+import pathlib
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
@@ -142,6 +142,9 @@ from ._objects import (
 )
 from ._objects import objects_from_files as _objects_from_files
 from .portforward import PortForward
+
+if TYPE_CHECKING:
+    from kr8s import Api
 
 
 class APIObject(APIObjectSyncMixin):
@@ -409,12 +412,6 @@ class ServiceCIDR(APIObjectSyncMixin, _ServiceCIDR):
     __doc__ = _ServiceCIDR.__doc__
 
 
-object_from_name_type = run_sync(partial(_object_from_name_type, _asyncio=False))
-objects_from_files = run_sync(partial(_objects_from_files, _asyncio=False))
-get_class = partial(_get_class, _asyncio=False)
-object_from_spec = partial(_object_from_spec, _asyncio=False)
-
-
 def new_class(
     kind: str,
     version: str | None = None,
@@ -441,3 +438,80 @@ def new_class(
     return _new_class(  # type: ignore
         kind, version, asyncio, namespaced, scalable, scalable_spec, plural
     )
+
+
+def object_from_name_type(
+    name: str,
+    namespace: str | None = None,
+    api: Api | None = None,
+) -> APIObject:
+    """Create an APIObject from a Kubernetes resource name.
+
+    Args:
+        name: A Kubernetes resource name.
+        namespace: The namespace of the resource.
+        api: An optional API instance to use.
+
+    Returns:
+        A corresponding APIObject subclass instance.
+
+    Raises:
+        ValueError: If the resource kind or API version is not supported.
+    """
+    return run_sync(_object_from_name_type)(name, namespace, api, _asyncio=False)  # type: ignore
+
+
+def objects_from_files(
+    path: str | pathlib.Path,
+    api: Api | None = None,
+    recursive: bool = False,
+) -> list[APIObject]:
+    """Create APIObjects from Kubernetes resource files.
+
+    Args:
+        path: A path to a Kubernetes resource file or directory of resource files.
+        api: An optional API instance to use.
+        recursive: Whether to recursively search for resource files in subdirectories.
+
+    Returns:
+        A list of APIObject subclass instances.
+
+    Raises:
+        ValueError: If the resource kind or API version is not supported.
+    """
+    return run_sync(_objects_from_files)(path, api, recursive, _asyncio=False)  # type: ignore
+
+
+def get_class(kind: str, version: str) -> type[APIObject]:
+    """Get an APIObject subclass by kind and version.
+
+    Args:
+        kind: The Kubernetes resource kind.
+        version: The Kubernetes API group/version.
+
+    Returns:
+        An APIObject subclass.
+
+    Raises:
+        KeyError: If no object is registered for the given kind and version.
+    """
+    return _get_class(kind, version, _asyncio=False)  # type: ignore
+
+
+def object_from_spec(
+    spec: dict, api: Api | None = None, allow_unknown_type: bool = False
+) -> APIObject:
+    """Create an APIObject from a Kubernetes resource spec.
+
+    Args:
+        spec: A Kubernetes resource spec.
+        api: An optional API instance to use.
+        allow_unknown_type: Whether to allow unknown resource types.
+
+    Returns:
+        A corresponding APIObject subclass instance.
+
+    Raises:
+        ValueError: If the resource kind or API version is not supported.
+    """
+    return _object_from_spec(spec, api, allow_unknown_type, _asyncio=False)  # type: ignore
