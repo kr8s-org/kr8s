@@ -40,7 +40,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install kubectl-ng, dev version of kr8s and testing dependencies
         run: |
-          uv python install ${{ matrix.python-version }}
           uv sync --dev --directory examples/kubectl-ng
           uv pip install -e .
       - name: Run tests
