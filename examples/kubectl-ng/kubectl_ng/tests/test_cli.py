@@ -8,5 +8,6 @@ runner = CliRunner()
 
 def test_help_default():
     result = runner.invoke(app, [])
+    print(result.stdout)
     assert result.exit_code == 0
     assert "Usage:" in result.stdout
