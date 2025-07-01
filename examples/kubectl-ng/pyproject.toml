@@ -29,7 +29,7 @@ test = [
 kubectl-ng = "kubectl_ng.cli:go"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
@@ -37,3 +37,6 @@ packages = ["kubectl_ng"]
 
 [tool.hatch.version]
 source = "git"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "kubectl_ng/_version.py"
