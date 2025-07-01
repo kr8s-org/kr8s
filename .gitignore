@@ -145,6 +145,7 @@ cython_debug/
 
 docs/autoapi/
 _version.py
+examples/kubectl-ng/kubectl_ng/__version.py
 
 # Jetbrains IDEs
 .idea/

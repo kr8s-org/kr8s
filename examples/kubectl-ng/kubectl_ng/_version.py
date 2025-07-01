@@ -12,6 +12,13 @@ import kr8s
 
 console = Console()
 
+try:
+    from .__version import version as __version__  # noqa
+    from .__version import version_tuple as __version_tuple__  # noqa
+except ImportError:
+    __version__ = "0.0.0"
+    __version_tuple__ = (0, 0, 0)
+
 
 async def version(
     client: bool = typer.Option(
@@ -35,9 +42,9 @@ async def version(
     versions = {}
     versions["clientVersion"] = {
         "client": "kubectl-ng",
-        "gitVersion": kr8s.__version__,
-        "major": kr8s.__version__.split(".")[0],
-        "minor": kr8s.__version__.split(".")[1],
+        "gitVersion": __version__,
+        "major": __version_tuple__[0],
+        "minor": __version_tuple__[1],
         "pythonVersion": sys.version,
     }
     if not client:

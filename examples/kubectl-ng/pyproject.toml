@@ -36,7 +36,7 @@ build-backend = "hatchling.build"
 packages = ["kubectl_ng"]
 
 [tool.hatch.version]
-source = "git"
+source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "kubectl_ng/_version.py"
+version-file = "kubectl_ng/__version.py"
