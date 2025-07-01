@@ -38,15 +38,14 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install kubectl-ng, dev version of kr8s and testing dependencies
-        run: |
-          uv sync --dev --directory examples/kubectl-ng
-          uv pip install -e .
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
         run: |
-          uv run pytest examples/kubectl-ng
+          uv run \
+            --project examples/kubectl-ng \
+            --with-editable kr8s@. \
+            pytest --verbose
       - name: Debug k8s resources
         if: always()
         run: |
