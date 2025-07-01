@@ -45,7 +45,7 @@ jobs:
           uv run \
             --project examples/kubectl-ng \
             --with-editable kr8s@. \
-            pytest --verbose
+            pytest --verbose examples/kubectl-ng
       - name: Debug k8s resources
         if: always()
         run: |
