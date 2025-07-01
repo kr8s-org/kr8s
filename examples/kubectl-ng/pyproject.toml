@@ -2,16 +2,10 @@
 name = "kubectl-ng"
 dynamic = ["version"]
 description = ""
-authors = [
-    {name = "Jacob Tomlinson", email = "jacob@tomlinson.email"}
-]
+authors = [{ name = "Jacob Tomlinson", email = "jacob@tomlinson.email" }]
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-    "typer>=0.12",
-    "rich>=13.3.2",
-    "kr8s==0.20.8",
-]
+dependencies = ["typer>=0.12", "rich>=13.3.2", "kr8s==0.20.8"]
 
 [dependency-groups]
 dev = [
@@ -40,3 +34,6 @@ source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "kubectl_ng/__version.py"
+
+[tool.hatch.version.raw-options]
+root = "../../"
