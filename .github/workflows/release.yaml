@@ -28,25 +28,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Update kr8s pin in kubectl-ng
         run: |
-          pushd examples/kubectl-ng
           until false; do
-            poetry add kr8s==${RELEASE_VERSION} && break
+            uv add --project examples/kubectl-ng kr8s==${RELEASE_VERSION} && break
             echo "Waiting for kr8s==${RELEASE_VERSION} to be available on PyPI..."
             sleep 15
           done
-          poetry lock
-          popd
       - name: Push new pins back to the repo
         run: |
           git config --global user.name 'Kr8s Bot'
@@ -58,9 +51,6 @@ jobs:
           # dynamically generated correctly during publishing
           git tag -d ${RELEASE_VERSION} && git tag ${RELEASE_VERSION}
       - name: Publish kubectl-ng
-        uses: JRubics/poetry-publish@v1.16
-        with:
-          pypi_token: ${{ secrets.PYPI_TOKEN_KUBECTL_NG }}
-          poetry_version: ==1.4.0
-          plugins: "poetry-dynamic-versioning-plugin"
-          package_directory: "examples/kubectl-ng"
+        run: |
+          uv build --project examples/kubectl-ng
+          uv publish --project examples/kubectl-ng --token ${{ secrets.PYPI_TOKEN_KUBECTL_NG }}
