@@ -41,6 +41,7 @@ jobs:
         id: title-llm
         with:
           model: llama3.2:3b
+          version: 0.9.5
           prompt: |
             You are a helpful assistant that generates PR titles for Kubernetes version updates by summarising a git diff.
             The title should be concise and to the point, and should not include any markdown formatting or quotes.
