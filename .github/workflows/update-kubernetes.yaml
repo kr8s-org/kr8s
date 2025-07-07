@@ -36,12 +36,11 @@ jobs:
         run: |
           echo "${{ steps.diff.outputs.diff }}"
       - name: Generate PR title
-        uses: ai-action/ollama-action@v1.0.1
+        uses: ai-action/ollama-action@v1.1.1
         if: steps.diff.outputs.has_changes == 'true'
         id: title-llm
         with:
           model: llama3.2:3b
-          version: 0.9.5
           prompt: |
             You are a helpful assistant that generates PR titles for Kubernetes version updates by summarising a git diff.
             The title should be concise and to the point, and should not include any markdown formatting or quotes.
