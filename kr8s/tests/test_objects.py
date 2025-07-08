@@ -1401,3 +1401,27 @@ async def test_generate_name():
         assert po.metadata.generateName in po.name
     finally:
         await po.delete()
+
+
+async def test_recreate_pod(ns):
+    po = await kr8s.asyncio.objects.Pod.gen(
+        generate_name="nginx-", image="nginx:latest", namespace=ns
+    )
+    await po.create()
+    await po.delete()
+    while await po.exists():
+        await anyio.sleep(0.1)
+    await po.create()
+    while not await po.exists():
+        await anyio.sleep(0.1)
+    assert await po.exists()
+    await po.delete()
+
+
+async def test_create_existing_pod_fails():
+    po = await kr8s.asyncio.objects.Pod.gen(
+        generate_name="nginx-", image="nginx:latest"
+    )
+    await po.create()
+    with pytest.raises(kr8s.ServerError, match="already exists"):
+        await po.create()
