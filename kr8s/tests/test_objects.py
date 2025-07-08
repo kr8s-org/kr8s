@@ -1401,3 +1401,14 @@ async def test_generate_name():
         assert po.metadata.generateName in po.name
     finally:
         await po.delete()
+
+
+async def test_recreate_pod(ns):
+    po = await kr8s.asyncio.objects.Pod.gen(
+        generate_name="nginx-", image="nginx:latest", namespace=ns
+    )
+    await po.create()
+    await po.delete()
+    await po.create()
+    assert await po.exists()
+    await po.delete()
