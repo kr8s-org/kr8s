@@ -5,7 +5,11 @@ description = ""
 authors = [{ name = "Jacob Tomlinson", email = "jacob@tomlinson.email" }]
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["typer>=0.12", "rich>=13.3.2", "kr8s==0.20.8"]
+dependencies = [
+    "typer>=0.12",
+ "rich>=13.3.2",
+ "kr8s==0.20.9",
+]
 
 [dependency-groups]
 dev = [
