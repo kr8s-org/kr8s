@@ -1409,6 +1409,10 @@ async def test_recreate_pod(ns):
     )
     await po.create()
     await po.delete()
+    while await po.exists():
+        await anyio.sleep(0.1)
     await po.create()
+    while not await po.exists():
+        await anyio.sleep(0.1)
     assert await po.exists()
     await po.delete()

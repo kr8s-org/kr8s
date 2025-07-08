@@ -135,6 +135,18 @@ class APIObject:
         self._raw = Box(value)
 
     @property
+    def raw_template(self) -> Box:
+        """Template representation of the Kubernetes resource without instance-specific data.
+
+        Returns a copy of the raw object with metadata.resourceVersion and status removed.
+        This is useful for creating new resources based on existing ones.
+        """
+        template = self.raw.copy()
+        if "metadata" in template:
+            template.metadata.pop("resourceVersion", None)
+        return template
+
+    @property
     def name(self) -> str:
         """Name of the Kubernetes resource."""
         if "name" in self.metadata:
@@ -353,7 +365,7 @@ class APIObject:
             version=self.version,
             url=self.endpoint,
             namespace=self.namespace,
-            data=json.dumps(self.raw),
+            data=json.dumps(self.raw_template),
         ) as resp:
             self.raw = resp.json()
 
