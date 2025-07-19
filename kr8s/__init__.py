@@ -12,11 +12,13 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from functools import partial, update_wrapper
+from typing import cast
 
 from . import asyncio, objects, portforward
 from ._api import ALL
 from ._api import Api as _AsyncApi
 from ._async_utils import run_sync as _run_sync
+from ._async_utils import run_sync_gen as _run_sync_gen
 from ._exceptions import (
     APITimeoutError,
     ConnectionClosedError,
@@ -55,19 +57,19 @@ except ImportError:
 class Api(_AsyncApi):
     _asyncio = False
 
-    def version(self) -> dict:  # type: ignore
-        return _run_sync(self.async_version)()  # type: ignore
+    def version(self) -> dict:  # type: ignore[override]
+        return _run_sync(self.async_version)()
 
-    def reauthenticate(self):  # type: ignore
-        return _run_sync(self.async_reauthenticate)()  # type: ignore
+    def reauthenticate(self):  # type: ignore[override]
+        return _run_sync(self.async_reauthenticate)()
 
-    def whoami(self):  # type: ignore
-        return _run_sync(self.async_whoami)()  # type: ignore
+    def whoami(self):  # type: ignore[override]
+        return _run_sync(self.async_whoami)()
 
-    def lookup_kind(self, kind) -> tuple[str, str, bool]:  # type: ignore
-        return _run_sync(self.async_lookup_kind)(kind)  # type: ignore
+    def lookup_kind(self, kind) -> tuple[str, str, bool]:  # type: ignore[override]
+        return _run_sync(self.async_lookup_kind)(kind)
 
-    def get(  # type: ignore
+    def get(  # type: ignore[override]
         self,
         kind: str | type,
         *names: str,
@@ -78,7 +80,7 @@ class Api(_AsyncApi):
         allow_unknown_type: bool = True,
         **kwargs,
     ) -> Generator[objects.APIObject]:
-        yield from _run_sync(self.async_get)(
+        yield from cast(Generator[objects.APIObject], _run_sync_gen(self.async_get)(
             kind,
             *names,
             namespace=namespace,
@@ -87,9 +89,9 @@ class Api(_AsyncApi):
             as_object=as_object,
             allow_unknown_type=allow_unknown_type,
             **kwargs,
-        )
+        ))
 
-    def watch(  # type: ignore
+    def watch(  # type: ignore[override]
         self,
         kind: str,
         namespace: str | None = None,
@@ -97,22 +99,22 @@ class Api(_AsyncApi):
         field_selector: str | dict | None = None,
         since: str | None = None,
     ) -> Generator[tuple[str, objects.APIObject]]:
-        yield from _run_sync(self.async_watch)(
+        yield from cast(Generator[tuple[str, objects.APIObject]], _run_sync_gen(self.async_watch)(
             kind,
             namespace=namespace,
             label_selector=label_selector,
             field_selector=field_selector,
             since=since,
-        )
+        ))
 
-    def api_resources(self) -> list[dict]:  # type: ignore
-        return _run_sync(self.async_api_resources)()  # type: ignore
+    def api_resources(self) -> list[dict]:  # type: ignore[override]
+        return _run_sync(self.async_api_resources)()
 
-    def api_versions(self) -> Generator[str]:  # type: ignore
-        yield from _run_sync(self.async_api_versions)()
+    def api_versions(self) -> Generator[str]:  # type: ignore[override]
+        yield from _run_sync_gen(self.async_api_versions)()
 
-    def create(self, resources: list[objects.APIObject]):  # type: ignore
-        return _run_sync(self.async_create)(resources)  # type: ignore
+    def create(self, resources: list[objects.APIObject]):  # type: ignore[override]
+        return _run_sync(self.async_create)(cast(list[asyncio.objects.APIObject], resources))
 
 
 def get(
@@ -156,7 +158,7 @@ def get(
         >>> ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
         >>> ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
     """
-    return _run_sync(_get)(
+    return _run_sync_gen(_get)(
         kind,
         *names,
         namespace=namespace,
@@ -225,12 +227,12 @@ def create(resources: list[type[APIObject]], api=None):
     """Creates resources in the Kubernetes cluster."""
     if api is None:
         api = _run_sync(_api)(_asyncio=False)
-    api.create(resources)  # type: ignore
+    api.create(cast(list[asyncio.objects.APIObject], resources))
 
 
 version = _run_sync(partial(_k8s_version, _asyncio=False))
 update_wrapper(version, _k8s_version)
-watch = _run_sync(partial(_watch, _asyncio=False))
+watch = _run_sync_gen(partial(_watch, _asyncio=False))
 update_wrapper(watch, _watch)
 api_resources = _run_sync(partial(_api_resources, _asyncio=False))
 update_wrapper(api_resources, _api_resources)

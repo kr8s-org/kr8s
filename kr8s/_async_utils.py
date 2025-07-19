@@ -91,9 +91,7 @@ class Portal:
         return self._portal.call(func, *args, **kwargs)
 
 
-def run_sync(
-    coro: Callable[P, AsyncGenerator | Awaitable[T]],
-) -> Callable[P, Generator | T]:
+def run_sync(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
     """Wraps a coroutine in a function that blocks until it has executed.
 
     Args:
@@ -102,14 +100,6 @@ def run_sync(
     Returns:
         Callable: A sync function that executes the coroutine via the :class`Portal`.
     """
-    if inspect.isasyncgenfunction(coro):
-
-        @wraps(coro)
-        def run_gen_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
-            return iter_over_async(coro(*args, **kwargs))
-
-        return run_gen_inner
-
     if inspect.iscoroutinefunction(coro):
 
         @wraps(coro)
@@ -121,6 +111,26 @@ def run_sync(
         return run_sync_inner
 
     raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
+
+
+def run_sync_gen(coro: Callable[P, AsyncGenerator[T, None]]) -> Callable[P, Generator[T, None, None]]:
+    """Wraps an async generator in a function that blocks until it has executed.
+
+    Args:
+        coro (AsyncGenerator): An async generator.
+
+    Returns:
+        Callable: A sync function that executes the async generator via the :class`Portal`.
+    """
+    if inspect.isasyncgenfunction(coro):
+
+        @wraps(coro)
+        def run_gen_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
+            return iter_over_async(coro(*args, **kwargs))
+
+        return run_gen_inner
+
+    raise TypeError(f"Expected async generator function, got {coro.__class__.__name__}")
 
 
 def iter_over_async(agen: AsyncGenerator) -> Generator:
