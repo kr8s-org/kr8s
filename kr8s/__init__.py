@@ -80,16 +80,19 @@ class Api(_AsyncApi):
         allow_unknown_type: bool = True,
         **kwargs,
     ) -> Generator[objects.APIObject]:
-        yield from cast(Generator[objects.APIObject], _run_sync_gen(self.async_get)(
-            kind,
-            *names,
-            namespace=namespace,
-            label_selector=label_selector,
-            field_selector=field_selector,
-            as_object=as_object,
-            allow_unknown_type=allow_unknown_type,
-            **kwargs,
-        ))
+        yield from cast(
+            Generator[objects.APIObject],
+            _run_sync_gen(self.async_get)(
+                kind,
+                *names,
+                namespace=namespace,
+                label_selector=label_selector,
+                field_selector=field_selector,
+                as_object=as_object,
+                allow_unknown_type=allow_unknown_type,
+                **kwargs,
+            ),
+        )
 
     def watch(  # type: ignore[override]
         self,
@@ -99,13 +102,16 @@ class Api(_AsyncApi):
         field_selector: str | dict | None = None,
         since: str | None = None,
     ) -> Generator[tuple[str, objects.APIObject]]:
-        yield from cast(Generator[tuple[str, objects.APIObject]], _run_sync_gen(self.async_watch)(
-            kind,
-            namespace=namespace,
-            label_selector=label_selector,
-            field_selector=field_selector,
-            since=since,
-        ))
+        yield from cast(
+            Generator[tuple[str, objects.APIObject]],
+            _run_sync_gen(self.async_watch)(
+                kind,
+                namespace=namespace,
+                label_selector=label_selector,
+                field_selector=field_selector,
+                since=since,
+            ),
+        )
 
     def api_resources(self) -> list[dict]:  # type: ignore[override]
         return _run_sync(self.async_api_resources)()
@@ -114,7 +120,9 @@ class Api(_AsyncApi):
         yield from _run_sync_gen(self.async_api_versions)()
 
     def create(self, resources: list[objects.APIObject]):  # type: ignore[override]
-        return _run_sync(self.async_create)(cast(list[asyncio.objects.APIObject], resources))
+        return _run_sync(self.async_create)(
+            cast(list[asyncio.objects.APIObject], resources)
+        )
 
 
 def get(

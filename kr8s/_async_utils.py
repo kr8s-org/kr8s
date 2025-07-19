@@ -113,7 +113,9 @@ def run_sync(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
     raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
 
 
-def run_sync_gen(coro: Callable[P, AsyncGenerator[T, None]]) -> Callable[P, Generator[T, None, None]]:
+def run_sync_gen(
+    coro: Callable[P, AsyncGenerator[T]],
+) -> Callable[P, Generator[T]]:
     """Wraps an async generator in a function that blocks until it has executed.
 
     Args:

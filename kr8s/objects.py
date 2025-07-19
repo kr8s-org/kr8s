@@ -10,8 +10,8 @@ These classes are used to interact with resources in the Kubernetes API server.
 # ruff: noqa: D102
 from __future__ import annotations
 
-from collections.abc import Generator
 import pathlib
+from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 import httpx
@@ -303,7 +303,9 @@ class Service(APIObjectSyncMixin, _Service):
     def proxy_http_request(  # type: ignore[override]
         self, method: str, path: str, port: int | None = None, **kwargs: Any
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)(method, path, port=port, **kwargs)
+        return run_sync(self.async_proxy_http_request)(
+            method, path, port=port, **kwargs
+        )
 
     def proxy_http_get(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
@@ -447,9 +449,10 @@ def new_class(
     Returns:
         A new APIObject subclass.
     """
-    return cast(type[APIObject], _new_class(
-        kind, version, asyncio, namespaced, scalable, scalable_spec, plural
-    ))
+    return cast(
+        type[APIObject],
+        _new_class(kind, version, asyncio, namespaced, scalable, scalable_spec, plural),
+    )
 
 
 def object_from_name_type(
@@ -470,7 +473,10 @@ def object_from_name_type(
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    return cast(APIObject, run_sync(_object_from_name_type)(name, namespace, api, _asyncio=False))
+    return cast(
+        APIObject,
+        run_sync(_object_from_name_type)(name, namespace, api, _asyncio=False),
+    )
 
 
 def objects_from_files(
@@ -491,7 +497,10 @@ def objects_from_files(
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    return cast(list[APIObject], run_sync(_objects_from_files)(path, api, recursive, _asyncio=False))
+    return cast(
+        list[APIObject],
+        run_sync(_objects_from_files)(path, api, recursive, _asyncio=False),
+    )
 
 
 def get_class(kind: str, version: str) -> type[APIObject]:
@@ -526,4 +535,6 @@ def object_from_spec(
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    return cast(APIObject, _object_from_spec(spec, api, allow_unknown_type, _asyncio=False))
+    return cast(
+        APIObject, _object_from_spec(spec, api, allow_unknown_type, _asyncio=False)
+    )
