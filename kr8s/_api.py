@@ -290,7 +290,7 @@ class Api:
                 "POST",
                 version="authentication.k8s.io/v1",
                 url="tokenreviews",
-                data=json.dumps(payload),
+                content=json.dumps(payload),
             ) as r:
                 data = r.json()
                 return data["status"]["user"]["username"]

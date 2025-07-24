@@ -365,7 +365,7 @@ class APIObject:
             version=self.version,
             url=self.endpoint,
             namespace=self.namespace,
-            data=json.dumps(self.raw_template),
+            content=json.dumps(self.raw_template),
         ) as resp:
             self.raw = resp.json()
 
@@ -415,7 +415,7 @@ class APIObject:
                 version=self.version,
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
-                data=json.dumps(data),
+                content=json.dumps(data),
             ):
                 pass
         except ServerError as e:
@@ -469,7 +469,7 @@ class APIObject:
                 version=self.version,
                 url=url,
                 namespace=self.namespace,
-                data=json.dumps(patch),
+                content=json.dumps(patch),
                 headers=headers,
             ) as resp:
                 self.raw = resp.json()
