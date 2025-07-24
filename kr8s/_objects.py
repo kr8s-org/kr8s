@@ -25,7 +25,7 @@ from typing_extensions import Self
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._async_utils import run_sync
+from kr8s._async_utils import run_sync, run_sync_gen
 from kr8s._data_utils import (
     dict_to_selector,
     dot_to_nested_dict,
@@ -34,7 +34,7 @@ from kr8s._data_utils import (
     xdict,
 )
 from kr8s._exceptions import NotFoundError, ServerError
-from kr8s._exec import Exec
+from kr8s._exec import CompletedExec, Exec
 from kr8s._types import SpecType, SupportsKeysAndGetItem
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import LocalPortType
@@ -506,7 +506,7 @@ class APIObject:
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
-    ) -> Exec:
+    ) -> CompletedExec:
         """Execute a command in this object."""
         return await self.async_exec(
             command,
@@ -528,7 +528,7 @@ class APIObject:
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
-    ) -> Exec:
+    ) -> CompletedExec:
         """Execute a command in this object."""
         if not hasattr(self, "ready_pods"):
             raise NotImplementedError(f"{self.kind} does not support exec")
@@ -659,7 +659,7 @@ class APIObject:
         self,
         conditions: list[str] | str,
         mode: Literal["any", "all"] = "any",
-        timeout: int | None = None,
+        timeout: int | float | None = None,
     ):
         if isinstance(conditions, str):
             conditions = [conditions]
@@ -947,13 +947,13 @@ class APIObjectSyncMixin(APIObject):
             field_selector=field_selector,
             timeout=timeout,
             **kwargs,
-        )  # type: ignore
+        )
 
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
-        return run_sync(self.async_exists)(ensure=ensure)  # type: ignore
+        return run_sync(self.async_exists)(ensure=ensure)
 
     def create(self) -> None:  # type: ignore[override]
-        return run_sync(self.async_create)()  # type: ignore
+        return run_sync(self.async_create)()
 
     def delete(  # type: ignore[override]
         self,
@@ -965,19 +965,19 @@ class APIObjectSyncMixin(APIObject):
             propagation_policy=propagation_policy,
             grace_period=grace_period,
             force=force,
-        )  # type: ignore
+        )
 
     def refresh(self) -> None:  # type: ignore[override]
-        return run_sync(self.async_refresh)()  # type: ignore
+        return run_sync(self.async_refresh)()
 
     def patch(self, patch, *, subresource=None, type=None) -> None:  # type: ignore[override]
-        return run_sync(self.async_patch)(patch, subresource=subresource, type=type)  # type: ignore
+        return run_sync(self.async_patch)(patch, subresource=subresource, type=type)
 
     def scale(self, replicas=None) -> None:  # type: ignore[override]
-        return run_sync(self.async_scale)(replicas=replicas)  # type: ignore
+        return run_sync(self.async_scale)(replicas=replicas)
 
     def watch(self) -> Generator[tuple[str, Self]]:  # type: ignore[override]
-        yield from run_sync(self.async_watch)()
+        yield from run_sync_gen(self.async_watch)()
 
     def wait(  # type: ignore[override]
         self,
@@ -985,23 +985,23 @@ class APIObjectSyncMixin(APIObject):
         mode: Literal["any", "all"] = "any",
         timeout: int | float | None = None,
     ) -> None:
-        return run_sync(self.async_wait)(conditions, mode=mode, timeout=timeout)  # type: ignore
+        return run_sync(self.async_wait)(conditions, mode=mode, timeout=timeout)
 
     def annotate(self, annotations=None, **kwargs) -> None:  # type: ignore[override]
-        return run_sync(self.async_annotate)(annotations, **kwargs)  # type: ignore
+        return run_sync(self.async_annotate)(annotations, **kwargs)
 
-    def label(self, labels=None, **kwargs) -> None:  # type: ignore[override]
-        return run_sync(self.async_label)(labels, **kwargs)  # type: ignore
+    def label(self, *labels: dict | str, **kwargs) -> None:  # type: ignore[override]
+        return run_sync(self.async_label)(*labels, **kwargs)
 
     def set_owner(self, owner) -> None:  # type: ignore[override]
-        return run_sync(self.async_set_owner)(owner)  # type: ignore
+        return run_sync(self.async_set_owner)(owner)
 
     def adopt(self, child) -> None:  # type: ignore[override]
-        return run_sync(self.async_adopt)(child)  # type: ignore
+        return run_sync(self.async_adopt)(child)
 
     @classmethod
     def list(cls, **kwargs) -> Generator[Self]:  # type: ignore[override]
-        yield from run_sync(cls.async_list)(**kwargs)
+        yield from run_sync_gen(cls.async_list)(**kwargs)
 
 
 ## v1 objects
@@ -1390,7 +1390,7 @@ class Pod(APIObject):
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
-    ):
+    ) -> CompletedExec:
         while not await self.async_ready():
             await anyio.sleep(0.1)
 
@@ -1418,7 +1418,7 @@ class Pod(APIObject):
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
-    ):
+    ) -> CompletedExec:
         """Run a command in a container and wait until it completes.
 
         Behaves like :func:`subprocess.run`.
@@ -1895,9 +1895,7 @@ class Deployment(APIObject):
                 namespace=self.namespace,
             )
         ]
-        if isinstance(pods, Pod):
-            pods = [pods]
-        elif isinstance(pods, list) and all(isinstance(pod, Pod) for pod in pods):
+        if all(isinstance(pod, Pod) for pod in pods):
             # The all(isinstance(...) for ...) check doesn't seem to narrow the type
             # correctly in pyright so we need to explicitly use cast
             pods = cast(list[Pod], pods)
@@ -1907,11 +1905,11 @@ class Deployment(APIObject):
             return [pod for pod in pods if await pod.async_ready()]
         return pods
 
-    async def ready(self):
+    async def ready(self) -> bool:
         """Check if the deployment is ready."""
         return await self.async_ready()
 
-    async def async_ready(self):
+    async def async_ready(self) -> bool:
         await self.async_refresh()
         return (
             self.raw["status"].get("observedGeneration", 0)
