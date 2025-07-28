@@ -325,7 +325,9 @@ class Service(APIObjectSyncMixin, _Service):
     def proxy_http_delete(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return as_sync_func(self.async_proxy_http_request)("DELETE", path, port, **kwargs)
+        return as_sync_func(self.async_proxy_http_request)(
+            "DELETE", path, port, **kwargs
+        )
 
     def ready_pods(self) -> list[Pod]:  # type: ignore[override]
         return cast(list[Pod], as_sync_func(self.async_ready_pods)())
