@@ -91,7 +91,7 @@ class Portal:
         return self._portal.call(func, *args, **kwargs)
 
 
-def run_sync(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
+def as_sync_func(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
     """Wraps a coroutine in a function that blocks until it has executed.
 
     Args:
@@ -103,17 +103,17 @@ def run_sync(coro: Callable[P, Awaitable[T]]) -> Callable[P, T]:
     if inspect.iscoroutinefunction(coro):
 
         @wraps(coro)
-        def run_sync_inner(*args: P.args, **kwargs: P.kwargs) -> T:
+        def as_sync_func_inner(*args: P.args, **kwargs: P.kwargs) -> T:
             wrapped = partial(coro, *args, **kwargs)
             portal = Portal()
             return portal.call(wrapped)
 
-        return run_sync_inner
+        return as_sync_func_inner
 
     raise TypeError(f"Expected coroutine function, got {coro.__class__.__name__}")
 
 
-def run_sync_gen(
+def as_sync_generator(
     coro: Callable[P, AsyncGenerator[T]],
 ) -> Callable[P, Generator[T]]:
     """Wraps an async generator in a function that blocks until it has executed.
@@ -127,10 +127,10 @@ def run_sync_gen(
     if inspect.isasyncgenfunction(coro):
 
         @wraps(coro)
-        def run_gen_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
+        def as_sync_generator_inner(*args: P.args, **kwargs: P.kwargs) -> Generator:
             return iter_over_async(coro(*args, **kwargs))
 
-        return run_gen_inner
+        return as_sync_generator_inner
 
     raise TypeError(f"Expected async generator function, got {coro.__class__.__name__}")
 
@@ -165,7 +165,7 @@ def sync(source: C) -> C:
     """Convert all public async methods/properties of an object to universal methods.
 
     Private methods or methods starting with "async_" are ignored.
-    See :func:`run_sync` for more info on how the conversion works.
+    See :func:`as_sync_func` for more info on how the conversion works.
 
     Args:
         source (C): object with coroutines to convert
@@ -210,13 +210,13 @@ def sync(source: C) -> C:
                 method
             ):
                 function = getattr(source, name)
-                setattr(source, name, run_sync(function))
+                setattr(source, name, as_sync_func(function))
 
         elif name == "__aenter__" and not hasattr(source, "__enter__"):
-            setattr(source, "__enter__", run_sync(method))  # noqa: B010
+            setattr(source, "__enter__", as_sync_func(method))  # noqa: B010
 
         elif name == "__aexit__" and not hasattr(source, "__exit__"):
-            setattr(source, "__exit__", run_sync(method))  # noqa: B010
+            setattr(source, "__exit__", as_sync_func(method))  # noqa: B010
 
     return source
 

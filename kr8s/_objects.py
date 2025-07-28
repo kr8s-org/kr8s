@@ -25,7 +25,7 @@ from typing_extensions import Self
 import kr8s
 import kr8s.asyncio
 from kr8s._api import Api
-from kr8s._async_utils import run_sync, run_sync_gen
+from kr8s._async_utils import as_sync_func, as_sync_generator
 from kr8s._data_utils import (
     dict_to_selector,
     dot_to_nested_dict,
@@ -939,7 +939,7 @@ class APIObjectSyncMixin(APIObject):
         timeout: int = 2,
         **kwargs,
     ) -> Self:
-        return run_sync(cls.async_get)(
+        return as_sync_func(cls.async_get)(
             name=name,
             namespace=namespace,
             api=api,
@@ -950,10 +950,10 @@ class APIObjectSyncMixin(APIObject):
         )
 
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
-        return run_sync(self.async_exists)(ensure=ensure)
+        return as_sync_func(self.async_exists)(ensure=ensure)
 
     def create(self) -> None:  # type: ignore[override]
-        return run_sync(self.async_create)()
+        return as_sync_func(self.async_create)()
 
     def delete(  # type: ignore[override]
         self,
@@ -961,23 +961,23 @@ class APIObjectSyncMixin(APIObject):
         grace_period: int | None = None,
         force: bool = False,
     ) -> None:
-        run_sync(self.async_delete)(
+        as_sync_func(self.async_delete)(
             propagation_policy=propagation_policy,
             grace_period=grace_period,
             force=force,
         )
 
     def refresh(self) -> None:  # type: ignore[override]
-        return run_sync(self.async_refresh)()
+        return as_sync_func(self.async_refresh)()
 
     def patch(self, patch, *, subresource=None, type=None) -> None:  # type: ignore[override]
-        return run_sync(self.async_patch)(patch, subresource=subresource, type=type)
+        return as_sync_func(self.async_patch)(patch, subresource=subresource, type=type)
 
     def scale(self, replicas=None) -> None:  # type: ignore[override]
-        return run_sync(self.async_scale)(replicas=replicas)
+        return as_sync_func(self.async_scale)(replicas=replicas)
 
     def watch(self) -> Generator[tuple[str, Self]]:  # type: ignore[override]
-        yield from run_sync_gen(self.async_watch)()
+        yield from as_sync_generator(self.async_watch)()
 
     def wait(  # type: ignore[override]
         self,
@@ -985,23 +985,23 @@ class APIObjectSyncMixin(APIObject):
         mode: Literal["any", "all"] = "any",
         timeout: int | float | None = None,
     ) -> None:
-        return run_sync(self.async_wait)(conditions, mode=mode, timeout=timeout)
+        return as_sync_func(self.async_wait)(conditions, mode=mode, timeout=timeout)
 
     def annotate(self, annotations=None, **kwargs) -> None:  # type: ignore[override]
-        return run_sync(self.async_annotate)(annotations, **kwargs)
+        return as_sync_func(self.async_annotate)(annotations, **kwargs)
 
     def label(self, *labels: dict | str, **kwargs) -> None:  # type: ignore[override]
-        return run_sync(self.async_label)(*labels, **kwargs)
+        return as_sync_func(self.async_label)(*labels, **kwargs)
 
     def set_owner(self, owner) -> None:  # type: ignore[override]
-        return run_sync(self.async_set_owner)(owner)
+        return as_sync_func(self.async_set_owner)(owner)
 
     def adopt(self, child) -> None:  # type: ignore[override]
-        return run_sync(self.async_adopt)(child)
+        return as_sync_func(self.async_adopt)(child)
 
     @classmethod
     def list(cls, **kwargs) -> Generator[Self]:  # type: ignore[override]
-        yield from run_sync_gen(cls.async_list)(**kwargs)
+        yield from as_sync_generator(cls.async_list)(**kwargs)
 
 
 ## v1 objects

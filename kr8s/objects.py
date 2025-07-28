@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 import httpx
 
-from ._async_utils import run_sync, run_sync_gen
+from ._async_utils import as_sync_func, as_sync_generator
 from ._exec import CompletedExec
 from ._objects import APIObjectSyncMixin
 from ._objects import (
@@ -184,13 +184,13 @@ class Namespace(APIObjectSyncMixin, _Namespace):
 class Node(APIObjectSyncMixin, _Node):
 
     def cordon(self):
-        return run_sync(self.async_cordon)()
+        return as_sync_func(self.async_cordon)()
 
     def uncordon(self):
-        return run_sync(self.async_uncordon)()
+        return as_sync_func(self.async_uncordon)()
 
     def taint(self, key, value, *, effect):
-        return run_sync(self.async_taint)(key, value, effect=effect)
+        return as_sync_func(self.async_taint)(key, value, effect=effect)
 
 
 class PersistentVolume(APIObjectSyncMixin, _PersistentVolume):
@@ -203,7 +203,7 @@ class PersistentVolumeClaim(APIObjectSyncMixin, _PersistentVolumeClaim):
 
 class Pod(APIObjectSyncMixin, _Pod):
     def ready(self) -> bool:  # type: ignore[override]
-        return run_sync(self.async_ready)()
+        return as_sync_func(self.async_ready)()
 
     def logs(  # type: ignore[override]
         self,
@@ -218,7 +218,7 @@ class Pod(APIObjectSyncMixin, _Pod):
         follow=False,
         timeout=3600,
     ) -> Generator[str]:
-        yield from run_sync_gen(self.async_logs)(
+        yield from as_sync_generator(self.async_logs)(
             container,
             pretty,
             previous,
@@ -242,7 +242,7 @@ class Pod(APIObjectSyncMixin, _Pod):
         check: bool = True,
         capture_output: bool = True,
     ) -> CompletedExec:
-        return run_sync(self.async_exec)(
+        return as_sync_func(self.async_exec)(
             command,
             container=container,
             stdin=stdin,
@@ -261,7 +261,7 @@ class Pod(APIObjectSyncMixin, _Pod):
         value: str | None = None,
         toleration_seconds: int | None = None,
     ):
-        return run_sync(self.async_tolerate)(
+        return as_sync_func(self.async_tolerate)(
             key,
             operator=operator,
             effect=effect,
@@ -284,7 +284,7 @@ class PodTemplate(APIObjectSyncMixin, _PodTemplate):
 class ReplicationController(APIObjectSyncMixin, _ReplicationController):
 
     def ready(self):
-        return run_sync(self.async_ready)()
+        return as_sync_func(self.async_ready)()
 
 
 class ResourceQuota(APIObjectSyncMixin, _ResourceQuota):
@@ -303,35 +303,35 @@ class Service(APIObjectSyncMixin, _Service):
     def proxy_http_request(  # type: ignore[override]
         self, method: str, path: str, port: int | None = None, **kwargs: Any
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)(
+        return as_sync_func(self.async_proxy_http_request)(
             method, path, port=port, **kwargs
         )
 
     def proxy_http_get(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("GET", path, port, **kwargs)
+        return as_sync_func(self.async_proxy_http_request)("GET", path, port, **kwargs)
 
     def proxy_http_post(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("POST", path, port, **kwargs)
+        return as_sync_func(self.async_proxy_http_request)("POST", path, port, **kwargs)
 
     def proxy_http_put(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("PUT", path, port, **kwargs)
+        return as_sync_func(self.async_proxy_http_request)("PUT", path, port, **kwargs)
 
     def proxy_http_delete(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("DELETE", path, port, **kwargs)
+        return as_sync_func(self.async_proxy_http_request)("DELETE", path, port, **kwargs)
 
     def ready_pods(self) -> list[Pod]:  # type: ignore[override]
-        return cast(list[Pod], run_sync(self.async_ready_pods)())
+        return cast(list[Pod], as_sync_func(self.async_ready_pods)())
 
     def ready(self):
-        return run_sync(self.async_ready)()
+        return as_sync_func(self.async_ready)()
 
     def portforward(
         self, remote_port, local_port="match", address="127.0.0.1"
@@ -352,10 +352,10 @@ class DaemonSet(APIObjectSyncMixin, _DaemonSet):
 class Deployment(APIObjectSyncMixin, _Deployment):
 
     def pods(self) -> list[Pod]:  # type: ignore[override]
-        return cast(list[Pod], run_sync(self.async_pods)())
+        return cast(list[Pod], as_sync_func(self.async_pods)())
 
     def ready(self) -> bool:  # type: ignore[override]
-        return run_sync(self.async_ready)()
+        return as_sync_func(self.async_ready)()
 
 
 class ReplicaSet(APIObjectSyncMixin, _ReplicaSet):
@@ -475,7 +475,7 @@ def object_from_name_type(
     """
     return cast(
         APIObject,
-        run_sync(_object_from_name_type)(name, namespace, api, _asyncio=False),
+        as_sync_func(_object_from_name_type)(name, namespace, api, _asyncio=False),
     )
 
 
@@ -499,7 +499,7 @@ def objects_from_files(
     """
     return cast(
         list[APIObject],
-        run_sync(_objects_from_files)(path, api, recursive, _asyncio=False),
+        as_sync_func(_objects_from_files)(path, api, recursive, _asyncio=False),
     )
 
 
