@@ -993,6 +993,9 @@ class APIObjectSyncMixin(APIObject):
     def label(self, *labels: dict | str, **kwargs) -> None:  # type: ignore[override]
         return as_sync_func(self.async_label)(*labels, **kwargs)
 
+    def remove_label(self, *labels: str) -> None:  # type: ignore[override]
+        return as_sync_func(self.async_remove_label)(*labels)
+
     def set_owner(self, owner) -> None:  # type: ignore[override]
         return as_sync_func(self.async_set_owner)(owner)
 
