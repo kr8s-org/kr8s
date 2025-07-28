@@ -580,6 +580,7 @@ def test_pod_label_sync(example_pod_spec):
     assert "foo2" not in pod.labels
     pod.delete()
 
+
 def test_pod_watch_sync(example_pod_spec):
     pod = SyncPod(example_pod_spec)
     pod.create()
