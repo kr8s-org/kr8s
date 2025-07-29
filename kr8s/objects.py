@@ -11,11 +11,13 @@ These classes are used to interact with resources in the Kubernetes API server.
 from __future__ import annotations
 
 import pathlib
-from typing import TYPE_CHECKING, Any
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 import httpx
 
-from ._async_utils import run_sync
+from ._async_utils import as_sync_func, as_sync_generator
+from ._exec import CompletedExec
 from ._objects import APIObjectSyncMixin
 from ._objects import (
     Binding as _Binding,
@@ -182,13 +184,13 @@ class Namespace(APIObjectSyncMixin, _Namespace):
 class Node(APIObjectSyncMixin, _Node):
 
     def cordon(self):
-        return run_sync(self.async_cordon)()  # type: ignore
+        return as_sync_func(self.async_cordon)()
 
     def uncordon(self):
-        return run_sync(self.async_uncordon)()  # type: ignore
+        return as_sync_func(self.async_uncordon)()
 
     def taint(self, key, value, *, effect):
-        return run_sync(self.async_taint)(key, value, effect=effect)  # type: ignore
+        return as_sync_func(self.async_taint)(key, value, effect=effect)
 
 
 class PersistentVolume(APIObjectSyncMixin, _PersistentVolume):
@@ -200,10 +202,10 @@ class PersistentVolumeClaim(APIObjectSyncMixin, _PersistentVolumeClaim):
 
 
 class Pod(APIObjectSyncMixin, _Pod):
-    def ready(self):
-        return run_sync(self.async_ready)()  # type: ignore
+    def ready(self) -> bool:  # type: ignore[override]
+        return as_sync_func(self.async_ready)()
 
-    def logs(
+    def logs(  # type: ignore[override]
         self,
         container=None,
         pretty=None,
@@ -215,8 +217,8 @@ class Pod(APIObjectSyncMixin, _Pod):
         limit_bytes=None,
         follow=False,
         timeout=3600,
-    ):
-        return run_sync(self.async_logs)(
+    ) -> Generator[str]:
+        yield from as_sync_generator(self.async_logs)(
             container,
             pretty,
             previous,
@@ -227,20 +229,20 @@ class Pod(APIObjectSyncMixin, _Pod):
             limit_bytes,
             follow,
             timeout,
-        )  # type: ignore
+        )
 
-    def exec(
+    def exec(  # type: ignore[override]
         self,
-        command,
+        command: list[str],
         *,
-        container=None,
-        stdin=None,
-        stdout=None,
-        stderr=None,
-        check=True,
-        capture_output=True,
-    ):
-        return run_sync(self.async_exec)(
+        container: str | None = None,
+        stdin: str | BinaryIO | None = None,
+        stdout: BinaryIO | None = None,
+        stderr: BinaryIO | None = None,
+        check: bool = True,
+        capture_output: bool = True,
+    ) -> CompletedExec:
+        return as_sync_func(self.async_exec)(
             command,
             container=container,
             stdin=stdin,
@@ -248,10 +250,18 @@ class Pod(APIObjectSyncMixin, _Pod):
             stderr=stderr,
             check=check,
             capture_output=capture_output,
-        )  # type: ignore
+        )
 
-    def tolerate(self, key, *, operator, effect, value=None, toleration_seconds=None):
-        return run_sync(self.async_tolerate)(
+    def tolerate(  # type: ignore[override]
+        self,
+        key: str,
+        *,
+        operator: str,
+        effect: str,
+        value: str | None = None,
+        toleration_seconds: int | None = None,
+    ):
+        return as_sync_func(self.async_tolerate)(
             key,
             operator=operator,
             effect=effect,
@@ -274,7 +284,7 @@ class PodTemplate(APIObjectSyncMixin, _PodTemplate):
 class ReplicationController(APIObjectSyncMixin, _ReplicationController):
 
     def ready(self):
-        return run_sync(self.async_ready)()  # type: ignore
+        return as_sync_func(self.async_ready)()
 
 
 class ResourceQuota(APIObjectSyncMixin, _ResourceQuota):
@@ -290,34 +300,40 @@ class ServiceAccount(APIObjectSyncMixin, _ServiceAccount):
 
 
 class Service(APIObjectSyncMixin, _Service):
-    def proxy_http_request(  # type: ignore
+    def proxy_http_request(  # type: ignore[override]
         self, method: str, path: str, port: int | None = None, **kwargs: Any
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)(method, path, port=port, **kwargs)  # type: ignore
+        return as_sync_func(self.async_proxy_http_request)(
+            method, path, port=port, **kwargs
+        )
 
-    def proxy_http_get(  # type: ignore
+    def proxy_http_get(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("GET", path, port, **kwargs)  # type: ignore
+        return as_sync_func(self.async_proxy_http_request)("GET", path, port, **kwargs)
 
-    def proxy_http_post(self, path: str, port: int | None = None, **kwargs) -> None:  # type: ignore
-        return run_sync(self.async_proxy_http_request)("POST", path, port, **kwargs)  # type: ignore
-
-    def proxy_http_put(  # type: ignore
+    def proxy_http_post(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("PUT", path, port, **kwargs)  # type: ignore
+        return as_sync_func(self.async_proxy_http_request)("POST", path, port, **kwargs)
 
-    def proxy_http_delete(  # type: ignore
+    def proxy_http_put(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
     ) -> httpx.Response:
-        return run_sync(self.async_proxy_http_request)("DELETE", path, port, **kwargs)  # type: ignore
+        return as_sync_func(self.async_proxy_http_request)("PUT", path, port, **kwargs)
 
-    def ready_pods(self) -> list[Pod]:  # type: ignore
-        return run_sync(self.async_ready_pods)()  # type: ignore
+    def proxy_http_delete(  # type: ignore[override]
+        self, path: str, port: int | None = None, **kwargs
+    ) -> httpx.Response:
+        return as_sync_func(self.async_proxy_http_request)(
+            "DELETE", path, port, **kwargs
+        )
+
+    def ready_pods(self) -> list[Pod]:  # type: ignore[override]
+        return cast(list[Pod], as_sync_func(self.async_ready_pods)())
 
     def ready(self):
-        return run_sync(self.async_ready)()  # type: ignore
+        return as_sync_func(self.async_ready)()
 
     def portforward(
         self, remote_port, local_port="match", address="127.0.0.1"
@@ -337,11 +353,11 @@ class DaemonSet(APIObjectSyncMixin, _DaemonSet):
 
 class Deployment(APIObjectSyncMixin, _Deployment):
 
-    def pods(self) -> list[Pod]:  # type: ignore
-        return run_sync(self.async_pods)()  # type: ignore
+    def pods(self) -> list[Pod]:  # type: ignore[override]
+        return cast(list[Pod], as_sync_func(self.async_pods)())
 
-    def ready(self):
-        return run_sync(self.async_ready)()  # type: ignore
+    def ready(self) -> bool:  # type: ignore[override]
+        return as_sync_func(self.async_ready)()
 
 
 class ReplicaSet(APIObjectSyncMixin, _ReplicaSet):
@@ -435,8 +451,9 @@ def new_class(
     Returns:
         A new APIObject subclass.
     """
-    return _new_class(  # type: ignore
-        kind, version, asyncio, namespaced, scalable, scalable_spec, plural
+    return cast(
+        type[APIObject],
+        _new_class(kind, version, asyncio, namespaced, scalable, scalable_spec, plural),
     )
 
 
@@ -458,7 +475,10 @@ def object_from_name_type(
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    return run_sync(_object_from_name_type)(name, namespace, api, _asyncio=False)  # type: ignore
+    return cast(
+        APIObject,
+        as_sync_func(_object_from_name_type)(name, namespace, api, _asyncio=False),
+    )
 
 
 def objects_from_files(
@@ -479,7 +499,10 @@ def objects_from_files(
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    return run_sync(_objects_from_files)(path, api, recursive, _asyncio=False)  # type: ignore
+    return cast(
+        list[APIObject],
+        as_sync_func(_objects_from_files)(path, api, recursive, _asyncio=False),
+    )
 
 
 def get_class(kind: str, version: str) -> type[APIObject]:
@@ -495,7 +518,7 @@ def get_class(kind: str, version: str) -> type[APIObject]:
     Raises:
         KeyError: If no object is registered for the given kind and version.
     """
-    return _get_class(kind, version, _asyncio=False)  # type: ignore
+    return cast(type[APIObject], _get_class(kind, version, _asyncio=False))
 
 
 def object_from_spec(
@@ -514,4 +537,6 @@ def object_from_spec(
     Raises:
         ValueError: If the resource kind or API version is not supported.
     """
-    return _object_from_spec(spec, api, allow_unknown_type, _asyncio=False)  # type: ignore
+    return cast(
+        APIObject, _object_from_spec(spec, api, allow_unknown_type, _asyncio=False)
+    )

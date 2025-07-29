@@ -11,7 +11,7 @@ from __future__ import annotations
 import threading
 import time
 
-from ._async_utils import run_sync
+from ._async_utils import as_sync_func
 from ._portforward import LocalPortType
 from ._portforward import PortForward as _PortForward
 
@@ -22,13 +22,13 @@ class PortForward(_PortForward):
     _bg_thread = None
 
     def __enter__(self, *args, **kwargs):
-        return run_sync(self.__aenter__)(*args, **kwargs)
+        return as_sync_func(self.__aenter__)(*args, **kwargs)
 
     def __exit__(self, *args, **kwargs):
-        return run_sync(self.__aexit__)(*args, **kwargs)
+        return as_sync_func(self.__aexit__)(*args, **kwargs)
 
     def run_forever(self):
-        return run_sync(self.async_run_forever)()  # type: ignore
+        return as_sync_func(self.async_run_forever)()  # type: ignore
 
     def start(self):
         """Start a background thread with the port forward running."""

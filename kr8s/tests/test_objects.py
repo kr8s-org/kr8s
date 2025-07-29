@@ -546,7 +546,39 @@ async def test_pod_label(example_pod_spec):
     assert "foo/bar" in pod.labels
     await pod.label("foo/bar-")
     assert "foo/bar" not in pod.labels
+    await pod.label(foo1="bar1", foo2="bar2")
+    assert "foo1" in pod.labels
+    assert "foo2" in pod.labels
+    await pod.label("foo1-", "foo2-")
+    assert "foo1" not in pod.labels
+    assert "foo2" not in pod.labels
     await pod.delete()
+
+
+def test_pod_label_sync(example_pod_spec):
+    pod = SyncPod(example_pod_spec)
+    pod.create()
+    pod.label({"foo": "bar"})
+    assert "foo" in pod.labels
+    with pytest.raises(ValueError):
+        pod.label({})
+    pod.label("foo-")
+    assert "foo" not in pod.labels
+    pod.label(fizz="buzz")
+    assert "fizz" in pod.labels
+    pod.remove_label("fizz")
+    assert "fizz" not in pod.labels
+    pod.label({"foo/bar": "baz"})
+    assert "foo/bar" in pod.labels
+    pod.label("foo/bar-")
+    assert "foo/bar" not in pod.labels
+    pod.label(foo1="bar1", foo2="bar2")
+    assert "foo1" in pod.labels
+    assert "foo2" in pod.labels
+    pod.label("foo1-", "foo2-")
+    assert "foo1" not in pod.labels
+    assert "foo2" not in pod.labels
+    pod.delete()
 
 
 def test_pod_watch_sync(example_pod_spec):
