@@ -325,21 +325,26 @@ class Api:
         if group:
             version = f"{group}/{version}"
         for resource in resources:
+            name = resource["name"]
+            singular_name = resource['singularName']
+            if len(singular_name) == 0 and len(name) > 1:
+                singular_name = name.lower()[:-1]
+
             if (not version or version in resource["version"]) and (
-                kind == resource["name"]
-                or kind == resource["kind"]
-                or kind == resource["singularName"]
-                or ("shortNames" in resource and kind in resource["shortNames"])
+                    kind == name
+                    or kind == resource["kind"]
+                    or kind == singular_name
+                    or ("shortNames" in resource and kind in resource["shortNames"])
             ):
                 if "/" in resource["version"]:
                     return (
-                        f"{resource['singularName']}.{resource['version']}",
-                        resource["name"],
+                        f"{singular_name}.{resource['version']}",
+                        name,
                         resource["namespaced"],
                     )
                 return (
-                    f"{resource['singularName']}/{resource['version']}",
-                    resource["name"],
+                    f"{singular_name}/{resource['version']}",
+                    name,
                     resource["namespaced"],
                 )
         raise ValueError(f"Kind {kind} not found.")
