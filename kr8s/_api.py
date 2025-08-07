@@ -327,8 +327,8 @@ class Api:
         for resource in resources:
             name = resource["name"]
             singular_name = resource['singularName']
-            if len(singular_name) == 0 and len(name) > 1:
-                singular_name = name.lower()[:-1]
+            if len(singular_name) == 0:
+                singular_name = name.lower()
 
             if (not version or version in resource["version"]) and (
                     kind == name
