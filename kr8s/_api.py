@@ -326,15 +326,15 @@ class Api:
             version = f"{group}/{version}"
         for resource in resources:
             name = resource["name"]
-            singular_name = resource['singularName']
+            singular_name = resource["singularName"]
             if len(singular_name) == 0:
                 singular_name = name.lower()
 
             if (not version or version in resource["version"]) and (
-                    kind == name
-                    or kind == resource["kind"]
-                    or kind == singular_name
-                    or ("shortNames" in resource and kind in resource["shortNames"])
+                kind == name
+                or kind == resource["kind"]
+                or kind == singular_name
+                or ("shortNames" in resource and kind in resource["shortNames"])
             ):
                 if "/" in resource["version"]:
                     return (
