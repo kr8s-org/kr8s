@@ -60,7 +60,7 @@ jobs:
       fail-fast: false
       matrix:
         # Test the minimal and maximal Python versions only
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3.13"]
         kubernetes-version: ["1.33.2"]
     steps:
       - uses: actions/checkout@v2
