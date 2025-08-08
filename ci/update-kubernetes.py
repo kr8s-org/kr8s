@@ -51,10 +51,9 @@ def get_kubernetes_oss_versions():
             {
                 "cycle": x["cycle"],
                 "latest_version": x["latest"],
-                "eol": datetime.strptime(x["eol"], DATE_FORMAT),
+                "eol": get_support_date(x),
             }
             for x in data
-            if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -72,7 +71,6 @@ def get_azure_aks_versions():
                 "eol": get_support_date(x),
             }
             for x in data
-            if get_support_date(x) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -89,7 +87,6 @@ def get_amazon_eks_versions():
                 "eol": get_support_date(x),
             }
             for x in data
-            if get_support_date(x) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -106,7 +103,6 @@ def get_google_kubernetes_engine_versions():
                 "eol": get_support_date(x),
             }
             for x in data
-            if get_support_date(x) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -142,12 +138,15 @@ def get_kind_versions():
 
 
 def get_versions():
-    oss_versions = get_kubernetes_oss_versions()
-    versions = extend_versions(oss_versions, get_azure_aks_versions(), "Azure AKS")
+    versions = get_kubernetes_oss_versions()
+    versions = extend_versions(versions, get_azure_aks_versions(), "Azure AKS")
     versions = extend_versions(versions, get_amazon_eks_versions(), "Amazon EKS")
     versions = extend_versions(
         versions, get_google_kubernetes_engine_versions(), "Google Kubernetes Engine"
     )
+    print("Pruning versions that are past their support date...")
+    versions = [x for x in versions if x["eol"] > datetime.now()]
+
     container_tags = get_kind_versions()
 
     for version in versions:
