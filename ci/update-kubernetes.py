@@ -22,7 +22,7 @@ yaml.preserve_quotes = True
 yaml.indent(mapping=2, sequence=4, offset=2)
 
 DATE_FORMAT = "%Y-%m-%d"
-SUPPORT_MODE = "standard"  # "standard" or "extended"
+SUPPORT_MODE = "extended"  # "standard" or "extended"
 
 
 def extract_dates(data):
