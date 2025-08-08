@@ -22,6 +22,23 @@ yaml.preserve_quotes = True
 yaml.indent(mapping=2, sequence=4, offset=2)
 
 DATE_FORMAT = "%Y-%m-%d"
+SUPPORT_MODE = "standard"  # "standard" or "extended"
+
+
+def extract_dates(data):
+    if "extendedSupport" in data and isinstance(data["extendedSupport"], str):
+        yield datetime.strptime(data["extendedSupport"], DATE_FORMAT)
+    if "eol" in data and isinstance(data["eol"], str):
+        yield datetime.strptime(data["eol"], DATE_FORMAT)
+    if "lts" in data and isinstance(data["lts"], str):
+        yield datetime.strptime(data["lts"], DATE_FORMAT)
+
+
+def get_support_date(data):
+    if SUPPORT_MODE == "standard":
+        return min(extract_dates(data))
+    elif SUPPORT_MODE == "extended":
+        return max(extract_dates(data))
 
 
 def get_kubernetes_oss_versions():
@@ -49,19 +66,13 @@ def get_azure_aks_versions():
     with urllib.request.urlopen(url) as payload:
         data = json.load(payload)
 
-        # Workaround for https://github.com/kr8s-org/kr8s/issues/514
-        # Ensure that the `eol` date is the original date and the`lts` date is the extended date.
-        for x in data:
-            if "lts" in x and x["lts"]:
-                x["eol"], x["lts"] = sorted([x["eol"], x["lts"]])
-
         data = [
             {
                 "cycle": x["cycle"],
-                "eol": datetime.strptime(x["eol"], DATE_FORMAT),
+                "eol": get_support_date(x),
             }
             for x in data
-            if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
+            if get_support_date(x) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -75,10 +86,10 @@ def get_amazon_eks_versions():
         data = [
             {
                 "cycle": x["cycle"],
-                "eol": datetime.strptime(x["eol"], DATE_FORMAT),
+                "eol": get_support_date(x),
             }
             for x in data
-            if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
+            if get_support_date(x) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -92,10 +103,10 @@ def get_google_kubernetes_engine_versions():
         data = [
             {
                 "cycle": x["cycle"],
-                "eol": datetime.strptime(x["eol"], DATE_FORMAT),
+                "eol": get_support_date(x),
             }
             for x in data
-            if datetime.strptime(x["eol"], DATE_FORMAT) > datetime.now()
+            if get_support_date(x) > datetime.now()
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
