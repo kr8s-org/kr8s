@@ -348,6 +348,7 @@ Overview <self>
 installation
 examples/index
 guides/index
+version-support
 ```
 
 ```{toctree}
