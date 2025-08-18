@@ -3,7 +3,7 @@
 [![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 [![PyPI](https://img.shields.io/pypi/v/kr8s)](https://pypi.org/project/kr8s/)
 [![Python Version Support](https://img.shields.io/badge/Python%20support-3.9%7C3.10%7C3.11%7C3.12%7C3.13-blue)](https://pypi.org/project/kr8s/)
-[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.30%7C1.31%7C1.32%7C1.33-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
+[![Kubernetes Version Support](https://img.shields.io/badge/Kubernetes%20support-1.28%7C1.29%7C1.30%7C1.31%7C1.32%7C1.33-blue)](https://docs.kr8s.org/en/stable/installation.html#supported-kubernetes-versions)
 [![PyPI - Wheel](https://img.shields.io/pypi/wheel/kr8s)](https://pypi.org/project/kr8s/)
 [![PyPI - License](https://img.shields.io/pypi/l/kr8s)](https://pypi.org/project/kr8s/)
 <iframe src="https://ghbtns.com/github-btn.html?user=kr8s-org&repo=kr8s&type=star&count=true" frameborder="0" scrolling="0" width="150" height="20" title="GitHub"></iframe>
@@ -348,6 +348,7 @@ Overview <self>
 installation
 examples/index
 guides/index
+version-support
 ```
 
 ```{toctree}
