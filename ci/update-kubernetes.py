@@ -34,11 +34,25 @@ def extract_dates(data):
         yield datetime.strptime(data["lts"], DATE_FORMAT)
 
 
+def has_eol(data):
+    """Check if a version has a defined end of life."""
+    if "eol" in data and isinstance(data["eol"], str):
+        return True
+    if "extendedSupport" in data and isinstance(data["extendedSupport"], str):
+        return True
+    if "lts" in data and isinstance(data["lts"], str):
+        return True
+    return False
+
+
 def get_support_date(data):
+    dates = list(extract_dates(data))
+    if not dates:
+        return None
     if SUPPORT_MODE == "standard":
-        return min(extract_dates(data))
+        return min(dates)
     elif SUPPORT_MODE == "extended":
-        return max(extract_dates(data))
+        return max(dates)
 
 
 def get_kubernetes_oss_versions():
@@ -54,6 +68,7 @@ def get_kubernetes_oss_versions():
                 "eol": get_support_date(x),
             }
             for x in data
+            if has_eol(x)
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -71,6 +86,7 @@ def get_azure_aks_versions():
                 "eol": get_support_date(x),
             }
             for x in data
+            if has_eol(x)
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -87,6 +103,7 @@ def get_amazon_eks_versions():
                 "eol": get_support_date(x),
             }
             for x in data
+            if has_eol(x)
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
@@ -103,6 +120,7 @@ def get_google_kubernetes_engine_versions():
                 "eol": get_support_date(x),
             }
             for x in data
+            if has_eol(x)
         ]
         data.sort(key=lambda x: x["eol"], reverse=True)
     return data
