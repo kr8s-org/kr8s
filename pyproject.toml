@@ -20,32 +20,6 @@ dependencies = [
     "python-box>=7.0.1",
     "typing_extensions>=4.12.2",
 ]
-[project.optional-dependencies]
-test = [
-    "pytest>=7.2.2",
-    "pytest-asyncio>=0.20.3",
-    "pytest-kind>=22.11.1",
-    "pytest-timeout>=2.1.0",
-    "pytest-rerunfailures>=11.1.2",
-    "pytest-cov>=4.0.0",
-    "trio>=0.22.0",
-    "types-pyyaml>=6.0",
-    "lightkube>=0.13.0",
-    "kubernetes>=26.1.0",
-    "pykube-ng>=23.6.0",
-    "kubernetes-asyncio>=24.2.3",
-    "kubernetes-validate>=1.28.0",
-]
-docs = [
-    "sphinx>=5.3.0",
-    "sphinx-autobuild>=2021.3.14",
-    "myst-parser>=1.0.0",
-    "furo>=2023.3.27",
-    "sphinx-copybutton>=0.5.1",
-    "sphinx-design>=0.3.0",
-    "sphinxcontrib-mermaid>=0.8.1",
-    "sphinx-autoapi>=2.1.0",
-]
 
 [project.urls]
 Documentation = "https://docs.kr8s.org/en/stable"
@@ -61,21 +35,12 @@ reruns = 0
 reruns_delay = 1
 asyncio_mode = "auto"
 
-[tool.hatch.envs.test]
-features = ["test"]
-
-[tool.hatch.envs.test.scripts]
-default = "pytest kr8s"
-run = "pytest kr8s"
-ci = "pytest kr8s --reruns=3"
-
-[tool.hatch.envs.docs]
-features = ["docs"]
-
-[tool.hatch.envs.docs.scripts]
-build = "sphinx-build docs/ docs/_build/"
-rtd = "sphinx-build docs/ _readthedocs/html/"
-serve = "sphinx-autobuild docs docs/_build --ignore 'docs/autoapi/**/*' --host 0.0.0.0"
+[tool.taskipy.tasks]
+test = "pytest kr8s"
+test-ci = "pytest kr8s --reruns=3"
+docs = "sphinx-build docs/ docs/_build/"
+docs-rtd = "sphinx-build docs/ _readthedocs/html/"
+docs-serve = "sphinx-autobuild docs docs/_build --ignore 'docs/autoapi/**/*' --host 0.0.0.0"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "kr8s/_version.py"
@@ -89,6 +54,32 @@ source = "vcs"
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.2.2",
+    "pytest-asyncio>=0.20.3",
+    "pytest-kind>=22.11.1",
+    "pytest-timeout>=2.1.0",
+    "pytest-rerunfailures>=11.1.2",
+    "pytest-cov>=4.0.0",
+    "trio>=0.22.0",
+    "types-pyyaml>=6.0",
+    "lightkube>=0.13.0",
+    "kubernetes>=26.1.0",
+    "pykube-ng>=23.6.0",
+    "kubernetes-asyncio>=24.2.3",
+    "kubernetes-validate>=1.28.0",
+    "sphinx>=5.3.0",
+    "sphinx-autobuild>=2021.3.14",
+    "myst-parser>=1.0.0",
+    "furo>=2023.3.27",
+    "sphinx-copybutton>=0.5.1",
+    "sphinx-design>=0.3.0",
+    "sphinxcontrib-mermaid>=0.8.1",
+    "sphinx-autoapi>=2.1.0",
+    "taskipy>=1.14.1",
+]
 
 [tool.ruff]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.

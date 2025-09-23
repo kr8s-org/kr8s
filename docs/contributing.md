@@ -4,11 +4,11 @@ Contributions are very welcome. Check out our [open issues on GitHub](https://gi
 
 ## Development environment
 
-We recommend you develop `kr8s` inside a virtual environment. We use [hatch](https://hatch.pypa.io/) for builds, virtual environments and task running, but you can use whatever you prefer.
+We recommend you develop `kr8s` inside a virtual environment. We use [uv](https://github.com/astral-sh/uv) for builds, virtual environments and task running, but you can use whatever you prefer.
 
 ```bash
-pip install hatch
-hatch shell  # Creates the hatch venv and activates it
+pip install uv
+uv sync --dev
 ```
 
 But there are many different tools out there so feel free to use whichever you prefer and install `kr8s` in development mode.
@@ -23,7 +23,7 @@ pip install -e .
 Tests in `kr8s` are run with `pytest`. To handle testing again Kubernetes we also use [kind](https://kind.sigs.k8s.io/) via the [`pytest-kind`](https://pypi.org/project/pytest-kind/) plugin. Kind launches a Kubernetes cluster inside a single Docker container which is great for local development. All setup is handles via fixtures so as long as you have `docker` you can run the tests.
 
 ```bash
-hatch run test:run
+uv run task test
 ```
 
 Or you can install the test dependencies and invoke `pytest` yourself.
@@ -38,7 +38,7 @@ pytest kr8s
 Documentation is built with [Sphinx](https://www.sphinx-doc.org/en/master/). You can build the docs locally.
 
 ```bash
-hatch run docs:serve
+uv run task docs-serve
 ```
 
 Or you can install the docs dependencies and invoke `sphinx-build` or `sphinx-autobuild` yourself.
