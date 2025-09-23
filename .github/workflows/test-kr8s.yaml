@@ -48,7 +48,7 @@ jobs:
       - name: Run tests
         env:
           KUBERNETES_VERSION: ${{ matrix.kubernetes-version }}
-        run: uv run job test-ci
+        run: uv run task test-ci
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         env:

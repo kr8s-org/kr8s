@@ -23,7 +23,7 @@ pip install -e .
 Tests in `kr8s` are run with `pytest`. To handle testing again Kubernetes we also use [kind](https://kind.sigs.k8s.io/) via the [`pytest-kind`](https://pypi.org/project/pytest-kind/) plugin. Kind launches a Kubernetes cluster inside a single Docker container which is great for local development. All setup is handles via fixtures so as long as you have `docker` you can run the tests.
 
 ```bash
-uv run job test
+uv run task test
 ```
 
 Or you can install the test dependencies and invoke `pytest` yourself.
@@ -38,7 +38,7 @@ pytest kr8s
 Documentation is built with [Sphinx](https://www.sphinx-doc.org/en/master/). You can build the docs locally.
 
 ```bash
-uv run job docs-serve
+uv run task docs-serve
 ```
 
 Or you can install the docs dependencies and invoke `sphinx-build` or `sphinx-autobuild` yourself.

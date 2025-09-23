@@ -35,7 +35,7 @@ reruns = 0
 reruns_delay = 1
 asyncio_mode = "auto"
 
-[tool.jobs]
+[tool.taskipy.tasks]
 test = "pytest kr8s"
 test-ci = "pytest kr8s --reruns=3"
 docs = "sphinx-build docs/ docs/_build/"
@@ -57,7 +57,6 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "uv-job>=0.1.0",
     "pytest>=7.2.2",
     "pytest-asyncio>=0.20.3",
     "pytest-kind>=22.11.1",
@@ -79,6 +78,7 @@ dev = [
     "sphinx-design>=0.3.0",
     "sphinxcontrib-mermaid>=0.8.1",
     "sphinx-autoapi>=2.1.0",
+    "taskipy>=1.14.1",
 ]
 
 [tool.ruff]
