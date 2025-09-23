@@ -4,6 +4,7 @@ tag-template: "next"
 
 exclude-labels:
   - kubectl-ng
+  - skip-changelog
 exclude-contributors:
   - pre-commit-ci
 categories:
