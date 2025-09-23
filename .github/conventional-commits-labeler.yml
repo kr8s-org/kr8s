@@ -1,0 +1,5 @@
+skip-changelog: ['pre-commit-ci-*']
+bug: 'fix/*'
+enhancement: ['feature/*', 'feat/*']
+documentation: ['docs/*', 'doc/*']
+hygiene: ['ci/*', 'test/*', 'build/*', 'chore/*']
