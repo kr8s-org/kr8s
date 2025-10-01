@@ -22,10 +22,16 @@ import httpx_ws
 from asyncache import cached  # type: ignore
 from cachetools import TTLCache  # type: ignore
 from cryptography import x509
+from packaging.version import parse as parse_version
 
 from ._auth import KubeAuth
+from ._constants import (
+    KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
+    KUBERNETES_MINIMUM_SUPPORTED_VERSION,
+)
 from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
+from ._version import __version__
 
 if TYPE_CHECKING:
     from ._objects import APIObject
@@ -81,6 +87,7 @@ class Api:
     def __await__(self):
         async def f():
             await self.auth
+            await self._check_version()
             return self
 
         return f().__await__()
@@ -261,6 +268,24 @@ class Api:
     async def async_version(self) -> dict:
         async with self.call_api(method="GET", version="", base="/version") as response:
             return response.json()
+
+    async def _check_version(self) -> None:
+        version = await self.async_version()
+        if (
+            parse_version(version["gitVersion"]) < KUBERNETES_MINIMUM_SUPPORTED_VERSION
+            or parse_version(version["gitVersion"])
+            > KUBERNETES_MAXIMUM_SUPPORTED_VERSION
+        ):
+            warnings.warn(
+                f"Kubernetes version {version['gitVersion']} is not supported. "
+                f"Supported versions for kr8s {__version__} are "
+                f"{KUBERNETES_MINIMUM_SUPPORTED_VERSION}"
+                f" to "
+                f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION}"
+                ".",
+                UserWarning,
+                stacklevel=2,
+            )
 
     async def reauthenticate(self) -> None:
         """Reauthenticate the API."""
