@@ -232,7 +232,7 @@ def update_version_support(versions):
         f"KUBERNETES_MAXIMUM_SUPPORTED_VERSION = parse_version(\"{versions[0]['cycle']}\")",
         version_support,
     )
-    Path("kr8s/__init__.py").write_text(version_support)
+    Path("kr8s/_constants.py").write_text(version_support)
 
 
 def main():
