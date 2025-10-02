@@ -1110,6 +1110,15 @@ async def test_pod_exec(ubuntu_pod):
     assert ex.returncode == 0
 
 
+async def test_pod_exec_timeout(ubuntu_pod):
+    ex = await ubuntu_pod.exec(["date"], timeout=2)
+    assert isinstance(ex, CompletedExec)
+    assert str(datetime.datetime.now().year) in ex.stdout.decode()
+    assert ex.args == ["date"]
+    assert ex.stderr == b""
+    assert ex.returncode == 0
+
+
 async def test_pod_exec_error(ubuntu_pod):
     with pytest.raises(ExecError):
         await ubuntu_pod.exec(["date", "foo"])
