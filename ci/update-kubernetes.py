@@ -220,6 +220,21 @@ def update_badges(filename, versions):
     Path(filename).write_text(readme)
 
 
+def update_version_support(versions):
+    version_support = Path("kr8s/_constants.py").read_text()
+    version_support = re.sub(
+        r"KUBERNETES_MINIMUM_SUPPORTED_VERSION = .*",
+        f"KUBERNETES_MINIMUM_SUPPORTED_VERSION = parse_version(\"{versions[-1]['cycle']}\")",
+        version_support,
+    )
+    version_support = re.sub(
+        r"KUBERNETES_MAXIMUM_SUPPORTED_VERSION = .*",
+        f"KUBERNETES_MAXIMUM_SUPPORTED_VERSION = parse_version(\"{versions[0]['cycle']}\")",
+        version_support,
+    )
+    Path("kr8s/_constants.py").write_text(version_support)
+
+
 def main():
     versions = get_versions()
     print(f"Latest version: {versions[0]['cycle']}")
@@ -235,6 +250,7 @@ def main():
         update_workflow(versions, ".github/workflows/test-kubectl-ng.yaml")
         update_badges("README.md", versions)
         update_badges("docs/index.md", versions)
+        update_version_support(versions)
     else:
         print("DEBUG env var set, skipping file updates")
 

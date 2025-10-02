@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import queue
 import threading
+from unittest.mock import AsyncMock
 
 import anyio
 import pytest
@@ -487,3 +488,12 @@ def test_create_sync(example_pod_spec, example_service_spec):
     assert service.exists(), "Service should exist after creation"
     pod.delete()
     service.delete()
+
+
+async def test_bad_kubernetes_version():
+    api = await kr8s.asyncio.api()
+    keep = api.async_version
+    api.async_version = AsyncMock(return_value={"gitVersion": "1.27.0"})
+    with pytest.warns(UserWarning):
+        await api._check_version()
+    api.async_version = keep

@@ -225,11 +225,10 @@ def test_reauthenticate_sync(k8s_cluster):
 
 async def test_bad_auth(serviceaccount):
     (Path(serviceaccount) / "token").write_text("abc123")
-    api = await kr8s.asyncio.api(
-        serviceaccount=serviceaccount, kubeconfig="/no/file/here"
-    )
-    serviceaccount = Path(serviceaccount)
     with pytest.raises(kr8s.ServerError, match="Unauthorized"):
+        api = await kr8s.asyncio.api(
+            serviceaccount=serviceaccount, kubeconfig="/no/file/here"
+        )
         await api.version()
 
 

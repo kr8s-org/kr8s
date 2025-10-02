@@ -19,6 +19,10 @@ from ._api import ALL
 from ._api import Api as _AsyncApi
 from ._async_utils import as_sync_func as _as_sync_func
 from ._async_utils import as_sync_generator as _as_sync_generator
+from ._constants import (
+    KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
+    KUBERNETES_MINIMUM_SUPPORTED_VERSION,
+)
 from ._exceptions import (
     APITimeoutError,
     ConnectionClosedError,
@@ -265,4 +269,6 @@ __all__ = [
     "ExecError",
     "NotFoundError",
     "ServerError",
+    "KUBERNETES_MINIMUM_SUPPORTED_VERSION",
+    "KUBERNETES_MAXIMUM_SUPPORTED_VERSION",
 ]
