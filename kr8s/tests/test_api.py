@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import queue
 import threading
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import anyio
@@ -18,14 +19,36 @@ from kr8s.objects import Service as SyncService
 
 @pytest.fixture
 async def example_crd(example_crd_spec):
-    example = await kr8s.asyncio.objects.CustomResourceDefinition(example_crd_spec)
+    async with create_delete_crd(example_crd_spec) as example:
+        yield example
+
+
+@asynccontextmanager
+async def create_delete_crd(spec):
+    example = await kr8s.asyncio.objects.CustomResourceDefinition(spec)
+
+    # Clean up any existing CRD if it exists from a previous failed test run
+    if await example.exists():
+        await example.delete()
+    while await example.exists():
+        await anyio.sleep(0.1)
+
+    # Create the CRD
     if not await example.exists():
         await example.create()
+    while not await example.exists():
+        await anyio.sleep(0.1)
+
+    # Check that the CRD gets returned
     assert example in [
         crd async for crd in kr8s.asyncio.get("customresourcedefinitions")
     ]
     yield example
+
+    # Clean up the CRD
     await example.delete()
+    while await example.exists():
+        await anyio.sleep(0.1)
 
 
 async def test_factory_bypass() -> None:
@@ -497,3 +520,15 @@ async def test_bad_kubernetes_version():
     with pytest.warns(UserWarning):
         await api._check_version()
     api.async_version = keep
+
+
+async def test_crd_caching(example_crd_spec):
+    api = await kr8s.asyncio.api()
+
+    # Populate the cache
+    [r async for r in api.get("pods")]
+
+    # Register a new CRD
+    async with create_delete_crd(example_crd_spec) as example_crd:
+        # Try to get the new CRD (which isn't in the cache, so the cache should be bypassed)
+        [r async for r in api.get(example_crd.name)]

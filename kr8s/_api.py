@@ -341,11 +341,16 @@ class Api:
         """
         return await self.async_lookup_kind(kind)
 
-    async def async_lookup_kind(self, kind) -> tuple[str, str, bool]:
+    async def async_lookup_kind(
+        self, kind, skip_cache: bool = False
+    ) -> tuple[str, str, bool]:
         """Lookup a Kubernetes resource kind."""
         from ._objects import parse_kind
 
-        resources = await self.async_api_resources()
+        if skip_cache:
+            resources = await self.async_api_resources_uncached()
+        else:
+            resources = await self.async_api_resources()
         kind, group, version = parse_kind(kind)
         if group:
             version = f"{group}/{version}"
@@ -367,6 +372,10 @@ class Api:
                     resource["name"],
                     resource["namespaced"],
                 )
+
+        if not skip_cache:
+            return await self.async_lookup_kind(kind, skip_cache=True)
+
         raise ValueError(f"Kind {kind} not found.")
 
     @contextlib.asynccontextmanager
@@ -635,6 +644,9 @@ class Api:
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
     @cached(TTLCache(1, 60 * 60 * 6))
     async def async_api_resources(self) -> list[dict]:
+        return await self.async_api_resources_uncached()
+
+    async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""
         resources = []
         async with self.call_api(method="GET", version="", base="/api") as response:
