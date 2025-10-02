@@ -506,6 +506,7 @@ class APIObject:
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
+        timeout: int | None = None,
     ) -> CompletedExec:
         """Execute a command in this object."""
         return await self.async_exec(
@@ -516,6 +517,7 @@ class APIObject:
             stderr=stderr,
             check=check,
             capture_output=capture_output,
+            timeout=timeout,
         )
 
     async def async_exec(
@@ -528,6 +530,7 @@ class APIObject:
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
+        timeout: int | None = None,
     ) -> CompletedExec:
         """Execute a command in this object."""
         if not hasattr(self, "ready_pods"):
@@ -544,6 +547,7 @@ class APIObject:
             stderr=stderr,
             check=check,
             capture_output=capture_output,
+            timeout=timeout,
         )
 
     async def async_watch(self) -> AsyncGenerator[tuple[str, Self]]:
@@ -1393,6 +1397,7 @@ class Pod(APIObject):
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
+        timeout: int | None = None,
     ) -> CompletedExec:
         while not await self.async_ready():
             await anyio.sleep(0.1)
@@ -1406,6 +1411,7 @@ class Pod(APIObject):
             stdin=stdin,
             check=check,
             capture_output=capture_output,
+            timeout=timeout,
         )
         async with ex.run() as process:
             await process.wait()
@@ -1421,6 +1427,7 @@ class Pod(APIObject):
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
+        timeout: int | None = None,
     ) -> CompletedExec:
         """Run a command in a container and wait until it completes.
 
@@ -1441,6 +1448,8 @@ class Pod(APIObject):
                 If True, raise an exception if the command fails.
             capture_output:
                 If True, store stdout and stderr from the container in an attribute.
+            timeout:
+                If set, timeout for recieving bytes.
 
         Returns:
             A :class:`kr8s._exec.CompletedExec` object.
@@ -1460,6 +1469,7 @@ class Pod(APIObject):
             stderr=stderr,
             check=check,
             capture_output=capture_output,
+            timeout=timeout,
         )
 
     @classmethod

@@ -35,6 +35,7 @@ class Exec:
         stderr: BinaryIO | None = None,
         check: bool = True,
         capture_output: bool = True,
+        timeout: int | None = None,
     ) -> None:
         self._resource = resource
         self._container = container
@@ -43,6 +44,7 @@ class Exec:
         self._stdout = stdout
         self._stderr = stderr
         self._capture_output = capture_output
+        self._timeout = timeout
 
         self.args = command
         self.stdout = b""
@@ -80,7 +82,7 @@ class Exec:
                     await ws.send_bytes(STDIN_CHANNEL.to_bytes() + self._stdin.read())  # type: ignore
                 await ws.send_bytes(CLOSE_CHANNEL.to_bytes() + STDIN_CHANNEL.to_bytes())  # type: ignore
             while True:
-                message = await ws.receive_bytes()
+                message = await ws.receive_bytes(timeout=self._timeout)
                 channel, message = int(message[0]), message[1:]
                 if message:
                     if channel == STDOUT_CHANNEL:
