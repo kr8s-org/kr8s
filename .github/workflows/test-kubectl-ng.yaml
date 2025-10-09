@@ -23,15 +23,15 @@ jobs:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         kubernetes-version: ["1.33.4"]
         include:
-          - python-version: '3.13'
+          - python-version: "3.14"
             kubernetes-version: 1.32.8
-          - python-version: '3.13'
+          - python-version: "3.14"
             kubernetes-version: 1.31.12
-          - python-version: '3.13'
+          - python-version: "3.14"
             kubernetes-version: 1.30.13
-          - python-version: '3.13'
+          - python-version: "3.14"
             kubernetes-version: 1.29.14
-          - python-version: '3.13'
+          - python-version: "3.14"
             kubernetes-version: 1.28.15
     env:
       KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
