@@ -199,7 +199,9 @@ def update_workflow(versions, workflow_path):
     for version in versions[1:]:
         workflow["jobs"]["test"]["strategy"]["matrix"]["include"].append(
             {
-                "python-version": "3.10",
+                "python-version": workflow["jobs"]["test"]["strategy"]["matrix"][
+                    "python-version"
+                ][-1],
                 "kubernetes-version": version["latest_kind_container"],
             }
         )
