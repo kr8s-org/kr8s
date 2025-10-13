@@ -138,8 +138,10 @@ def extend_versions(versions, extended_versions, provider):
                         f"{provider} support date {extended_version['eol']:%Y-%m-%d}"
                     )
                     version["eol"] = extended_version["eol"]
-                    existing_source = version.get("support_source", "OSS Standard Support")
-                    
+                    existing_source = version.get(
+                        "support_source", "OSS Standard Support"
+                    )
+
                     def format_sources(existing, new):
                         items = [
                             s.strip().lstrip("-").strip()
@@ -151,8 +153,13 @@ def extend_versions(versions, extended_versions, provider):
                             items.append(new)
                         return " <br> - " + " <br> - ".join(items)
 
-                    if "Extended Support" in existing_source and provider not in existing_source:
-                        version["support_source"] = format_sources(existing_source, provider)
+                    if (
+                        "Extended Support" in existing_source
+                        and provider not in existing_source
+                    ):
+                        version["support_source"] = format_sources(
+                            existing_source, provider
+                        )
                     elif existing_source == "OSS Standard Support":
                         version["support_source"] = f"- {provider} Extended Support"
     return versions
@@ -253,6 +260,7 @@ def update_version_support(versions):
         version_support,
     )
     Path("kr8s/_constants.py").write_text(version_support)
+
 
 def update_docs_table(versions, doc_path):
     """Generates and inserts a Markdown table of supported versions into a doc file."""
