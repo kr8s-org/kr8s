@@ -66,6 +66,7 @@ def get_kubernetes_oss_versions():
                 "cycle": x["cycle"],
                 "latest_version": x["latest"],
                 "eol": get_support_date(x),
+                "support_source": "OSS Standard Support",
             }
             for x in data
             if has_eol(x)
@@ -137,6 +138,23 @@ def extend_versions(versions, extended_versions, provider):
                         f"{provider} support date {extended_version['eol']:%Y-%m-%d}"
                     )
                     version["eol"] = extended_version["eol"]
+                    existing_source = version.get("support_source", "OSS Standard Support")
+                    
+                    def format_sources(existing, new):
+                        items = [
+                            s.strip().lstrip("-").strip()
+                            for s in existing.replace("<br>", ",").split(",")
+                            if s.strip()
+                        ]
+                        # Add new provider if not already present
+                        if new not in items:
+                            items.append(new)
+                        return " <br> - " + " <br> - ".join(items)
+
+                    if "Extended Support" in existing_source and provider not in existing_source:
+                        version["support_source"] = format_sources(existing_source, provider)
+                    elif existing_source == "OSS Standard Support":
+                        version["support_source"] = f"- {provider} Extended Support"
     return versions
 
 
@@ -236,6 +254,38 @@ def update_version_support(versions):
     )
     Path("kr8s/_constants.py").write_text(version_support)
 
+def update_docs_table(versions, doc_path):
+    """Generates and inserts a Markdown table of supported versions into a doc file."""
+    print(f"Updating support table in {doc_path}...")
+    doc_path = Path(doc_path)
+
+    # 1. Build the Markdown table
+    table_lines = [
+        "| Kubernetes Version | Support Until | Source of Support |",
+        "|--------------------|---------------|-------------------|",
+    ]
+    for version in versions:
+        eol_date = version["eol"].strftime("%Y-%m-%d")
+        source = version.get("support_source", "OSS Standard Support")
+        table_lines.append(f"| {version['cycle']} | {eol_date} | {source} |")
+
+    table = "\n".join(table_lines)
+
+    # 2. Read the doc file
+    content = doc_path.read_text()
+
+    # 3. Replace content between markers
+    new_content = re.sub(
+        r"(<!-- BEGIN: VERSION_TABLE -->)(.*?)(<!-- END: VERSION_TABLE -->)",
+        f"\\1\n{table}\n\\3",
+        content,
+        flags=re.DOTALL,
+    )
+
+    # 4. Write updated content
+    doc_path.write_text(new_content)
+    print("Version support table updated successfully!")
+
 
 def main():
     versions = get_versions()
@@ -253,6 +303,8 @@ def main():
         update_badges("README.md", versions)
         update_badges("docs/index.md", versions)
         update_version_support(versions)
+        update_docs_table(versions, "docs/version-support.md")
+
     else:
         print("DEBUG env var set, skipping file updates")
 
