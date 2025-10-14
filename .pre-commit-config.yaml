@@ -11,7 +11,7 @@ repos:
           - --target-version=py38
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.13.3'
+    rev: 'v0.14.0'
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -32,7 +32,7 @@ repos:
       exclude: "examples|venv|ci|docs"
       additional_dependencies: [types-pyyaml>=6.0]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
     -   id: pyupgrade
         args: [--py39-plus]
