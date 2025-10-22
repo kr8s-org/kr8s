@@ -149,3 +149,5 @@ examples/kubectl-ng/kubectl_ng/__version.py
 
 # Jetbrains IDEs
 .idea/
+
+uv.lock
