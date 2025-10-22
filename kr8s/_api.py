@@ -19,7 +19,6 @@ from typing import (
 import anyio
 import httpx
 import httpx_ws
-from asyncache import cached  # type: ignore
 from cachetools import TTLCache  # type: ignore
 from cryptography import x509
 from packaging.version import parse as parse_version
@@ -31,6 +30,7 @@ from ._constants import (
 )
 from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
+from ._vendored.asyncache import cached  # type: ignore
 from ._version import __version__
 
 if TYPE_CHECKING:
