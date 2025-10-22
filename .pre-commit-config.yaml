@@ -6,7 +6,7 @@ repos:
     hooks:
       - id: black
         language_version: python3
-        exclude: versioneer.py
+        exclude: versioneer.py|.*_vendored\/.*
         args:
           - --target-version=py38
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -15,6 +15,7 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        exclude: ".*_vendored\/.*"
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5
     hooks:
@@ -25,14 +26,16 @@ repos:
           - --use-current-year
           - --no-extra-eol
           - --detect-license-in-X-top-lines=5
+        exclude: ".*_vendored\/.*"
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.18.2'
     hooks:
     - id: mypy
-      exclude: "examples|venv|ci|docs"
-      additional_dependencies: [types-pyyaml>=6.0]
+      exclude: "examples|venv|ci|docs|.*_vendored\/.*"
+      additional_dependencies: [types-pyyaml>=6.0, types-cachetools]
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.21.0
     hooks:
     -   id: pyupgrade
         args: [--py39-plus]
+        exclude: ".*_vendored\/.*"

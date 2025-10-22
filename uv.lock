@@ -188,18 +188,6 @@ wheels = [
 ]
 
 [[package]]
-name = "asyncache"
-version = "0.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cachetools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/49/cf/17f8a6b6b97f77b5981fbce1266913e718daaa3467b46f60a785cbaadc29/asyncache-0.3.1.tar.gz", hash = "sha256:9a1e60a75668e794657489bdea6540ee7e3259c483517b934670db7600bf5035", size = 3797 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/94/51927deb4f40872361ec4f5534f68f7a9ce81c4ef20bf5cd765307f4c15d/asyncache-0.3.1-py3-none-any.whl", hash = "sha256:ef20a1024d265090dd1e0785c961cf98b9c32cc7d9478973dcf25ac1b80011f5", size = 3722 },
-]
-
-[[package]]
 name = "attrs"
 version = "25.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -943,15 +931,16 @@ wheels = [
 
 [[package]]
 name = "kr8s"
-version = "0.20.10.dev22+gcef94296e.d20250923"
+version = "0.20.11.dev12+g4fa3fcae0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
-    { name = "asyncache" },
+    { name = "cachetools" },
     { name = "cryptography" },
     { name = "exceptiongroup", marker = "python_full_version < '3.12'" },
     { name = "httpx" },
     { name = "httpx-ws" },
+    { name = "packaging" },
     { name = "python-box" },
     { name = "python-jsonpath" },
     { name = "pyyaml" },
@@ -982,17 +971,17 @@ dev = [
     { name = "taskipy" },
     { name = "trio" },
     { name = "types-pyyaml" },
-    { name = "uv-job" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=3.7.0" },
-    { name = "asyncache", specifier = ">=0.3.1" },
+    { name = "cachetools", specifier = ">=5.2.0" },
     { name = "cryptography", specifier = ">=35" },
     { name = "exceptiongroup", marker = "python_full_version < '3.12'", specifier = ">=1.2.0" },
     { name = "httpx", specifier = ">=0.24.1" },
     { name = "httpx-ws", specifier = ">=0.7.0" },
+    { name = "packaging", specifier = ">=23.0" },
     { name = "python-box", specifier = ">=7.0.1" },
     { name = "python-jsonpath", specifier = ">=0.7.1" },
     { name = "pyyaml", specifier = ">=6.0" },
@@ -1023,7 +1012,6 @@ dev = [
     { name = "taskipy", specifier = ">=1.14.1" },
     { name = "trio", specifier = ">=0.22.0" },
     { name = "types-pyyaml", specifier = ">=6.0" },
-    { name = "uv-job", specifier = ">=0.1.0" },
 ]
 
 [[package]]
@@ -2290,18 +2278,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/15/22/9ee70a2574a4f4599c47dd506532914ce044817c7752a79b6a51286319bc/urllib3-2.5.0.tar.gz", hash = "sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760", size = 393185 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/c2/fe1e52489ae3122415c51f387e221dd0773709bad6c6cdaa599e8a2c5185/urllib3-2.5.0-py3-none-any.whl", hash = "sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc", size = 129795 },
-]
-
-[[package]]
-name = "uv-job"
-version = "0.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/72/9f/bf93303ecb7c971dcb3e69d3667a0e80a725ffa2728ae247e95822f5eadd/uv_job-0.1.0.tar.gz", hash = "sha256:6e363896f94bc99bcec6b17f96187e3692fc6141d0acf482d5f8c57ec38a27a6", size = 1710 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/66/2f37d5d4131b62ccd89545ca965cb882e691cbca6483aef3981263918892/uv_job-0.1.0-py3-none-any.whl", hash = "sha256:e070bffedbda33befdd16e587d8b168b73f9dedb64ad990a5b9e9e3714556ff1", size = 2051 },
 ]
 
 [[package]]
