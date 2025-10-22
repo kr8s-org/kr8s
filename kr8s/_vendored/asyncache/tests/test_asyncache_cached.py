@@ -18,8 +18,7 @@ def sync(func):
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(func(*args, **kwargs))
+        return asyncio.run(func(*args, **kwargs))
 
     return wrapped
 
