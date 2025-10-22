@@ -9,7 +9,6 @@ classifiers = ["Programming Language :: Python :: 3"]
 requires-python = ">=3.9"
 dynamic = ["version"]
 dependencies = [
-    "asyncache>=0.3.1",
     "cryptography>=35",
     "exceptiongroup >= 1.2.0; python_version < '3.12'",
     "packaging>=23.0",
@@ -20,6 +19,7 @@ dependencies = [
     "httpx-ws>=0.7.0",
     "python-box>=7.0.1",
     "typing_extensions>=4.12.2",
+    "cachetools>=5.2.0",
 ]
 
 [project.urls]
