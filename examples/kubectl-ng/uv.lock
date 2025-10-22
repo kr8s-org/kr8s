@@ -22,18 +22,6 @@ wheels = [
 ]
 
 [[package]]
-name = "asyncache"
-version = "0.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cachetools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/49/cf/17f8a6b6b97f77b5981fbce1266913e718daaa3467b46f60a785cbaadc29/asyncache-0.3.1.tar.gz", hash = "sha256:9a1e60a75668e794657489bdea6540ee7e3259c483517b934670db7600bf5035", size = 3797, upload-time = "2022-11-15T10:06:47.476Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/94/51927deb4f40872361ec4f5534f68f7a9ce81c4ef20bf5cd765307f4c15d/asyncache-0.3.1-py3-none-any.whl", hash = "sha256:ef20a1024d265090dd1e0785c961cf98b9c32cc7d9478973dcf25ac1b80011f5", size = 3722, upload-time = "2022-11-15T10:06:45.546Z" },
-]
-
-[[package]]
 name = "attrs"
 version = "25.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -491,23 +479,24 @@ wheels = [
 
 [[package]]
 name = "kr8s"
-version = "0.20.10"
+version = "0.20.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "asyncache" },
+    { name = "cachetools" },
     { name = "cryptography" },
     { name = "exceptiongroup", marker = "python_full_version < '3.12'" },
     { name = "httpx" },
     { name = "httpx-ws" },
+    { name = "packaging" },
     { name = "python-box" },
     { name = "python-jsonpath" },
     { name = "pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/a2/15710f5e929d1297463cb2ed217fa80a00c5e692a80eb82479faf02c5cb0/kr8s-0.20.10.tar.gz", hash = "sha256:2e7902c6d48d186fe1b227bbb233984f1a96b8f1073fe5f2c231f05648dea917", size = 3033458, upload-time = "2025-09-23T15:09:36.646Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dc/85/3d8854e1891fc2080aa68064f72d2706f2da66d4f588d386f57467dd6f3d/kr8s-0.20.11.tar.gz", hash = "sha256:bdcf4bcea4b07a76273dcff2ef84a7c3a026022f199ecf7bd19a0a12882dcc6a", size = 2836803, upload-time = "2025-10-22T10:43:36.022Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/7f/138dc617a840dd3fa918b90b266b952c0194b5144215373203cb74b2c051/kr8s-0.20.10-py3-none-any.whl", hash = "sha256:d1b2b1249166685e306cc414ee0ebe634a2381bd016dd866d7f983ae35b5c126", size = 78957, upload-time = "2025-09-23T15:09:32.369Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/62/c01de355eab8d7324a9faeaef0e9e38dadfcd5a2ecec53ec50d4351054a6/kr8s-0.20.11-py3-none-any.whl", hash = "sha256:7d256daa1fed8686992ea0ee8d55ba77f5fb0b3f54b67d7eceac74eaf0981650", size = 85545, upload-time = "2025-10-22T10:43:34.459Z" },
 ]
 
 [[package]]
@@ -533,7 +522,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "kr8s", specifier = "==0.20.10" },
+    { name = "kr8s", specifier = "==0.20.11" },
     { name = "rich", specifier = ">=13.3.2" },
     { name = "typer", specifier = ">=0.12" },
 ]
