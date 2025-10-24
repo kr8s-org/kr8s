@@ -6,6 +6,7 @@ import contextlib
 import json
 import pathlib
 import re
+import sys
 import time
 from collections.abc import AsyncGenerator, Generator
 from typing import (
@@ -20,7 +21,11 @@ import httpx
 import jsonpath
 import yaml
 from box import Box
-from typing_extensions import Self
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 import kr8s
 import kr8s.asyncio
