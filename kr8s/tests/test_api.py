@@ -525,6 +525,7 @@ def test_create_sync(example_pod_spec, example_service_spec):
         "v1.27.0",
         "1.27.0-eks-113cf36",
         "v1.27.0-eks-113cf36",
+        f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor+1}",
         "asdkjhaskdjhasd",
     ],
 )
