@@ -293,7 +293,7 @@ class Api:
             return
 
         # We only care about major/minor version differences, so we truncate the patch version
-        version = parse_version(f"{version.major}.{version.minor}.0")
+        version = parse_version(f"{version.major}.{version.minor}")
         if (
             version < KUBERNETES_MINIMUM_SUPPORTED_VERSION
             or version > KUBERNETES_MAXIMUM_SUPPORTED_VERSION

@@ -8,11 +8,14 @@ from unittest.mock import AsyncMock
 
 import anyio
 import pytest
-from packaging.version import parse as parse_version
 
 import kr8s
 import kr8s.asyncio
 from kr8s._async_utils import anext
+from kr8s._constants import (
+    KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
+    KUBERNETES_MINIMUM_SUPPORTED_VERSION,
+)
 from kr8s._exceptions import APITimeoutError
 from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
@@ -534,11 +537,15 @@ async def test_bad_kubernetes_version(version):
     api.async_version = keep
 
 
-async def test_good_kubernetes_version():
-    from kr8s._constants import KUBERNETES_MAXIMUM_SUPPORTED_VERSION as v
-
-    # Create a version that is just above the maximum supported version
-    version = str(parse_version(f"{v.major}.{v.minor}.{v.micro+15}"))
+@pytest.mark.parametrize(
+    "version",
+    [
+        str(KUBERNETES_MINIMUM_SUPPORTED_VERSION),
+        str(KUBERNETES_MAXIMUM_SUPPORTED_VERSION),
+        f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor}.15",
+    ],
+)
+async def test_good_kubernetes_version(version):
     api = await kr8s.asyncio.api()
     keep = api.async_version
     api.async_version = AsyncMock(return_value={"gitVersion": version})
