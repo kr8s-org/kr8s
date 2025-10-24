@@ -273,18 +273,17 @@ class Api:
     async def _check_version(self) -> None:
         version = await self.async_version()
         git_version = version["gitVersion"]
-        # Remove variant suffix if present, e.g v1.32.9-eks-113cf36 -> v1.32.9
-        git_version = git_version.split("-")[0] if "-" in git_version else git_version
 
         supported_message = (
-            "Supported versions for kr8s {__version__} are "
+            f"Supported versions for kr8s {__version__} are "
             f"{KUBERNETES_MINIMUM_SUPPORTED_VERSION}"
             " to "
             f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION}."
         )
 
         try:
-            version = parse_version(git_version)
+            # Remove variant suffix if present before parsing, e.g v1.32.9-eks-113cf36 -> v1.32.9
+            version = parse_version(git_version.split("-")[0])
         except InvalidVersion:
             warnings.warn(
                 f"Unable to parse Kubernetes version {git_version}. {supported_message}",

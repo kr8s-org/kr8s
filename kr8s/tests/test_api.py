@@ -527,7 +527,7 @@ async def test_bad_kubernetes_version(version):
     api = await kr8s.asyncio.api()
     keep = api.async_version
     api.async_version = AsyncMock(return_value={"gitVersion": version})
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning, match=version):
         await api._check_version()
     api.async_version = keep
 
