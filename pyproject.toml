@@ -18,7 +18,7 @@ dependencies = [
     "httpx>=0.24.1",
     "httpx-ws>=0.7.0",
     "python-box>=7.0.1",
-    "typing_extensions>=4.12.2",
+    "typing_extensions>=4.12.2; python_version < '3.12'",
     "cachetools>=5.2.0",
 ]
 
