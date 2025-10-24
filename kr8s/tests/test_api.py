@@ -513,10 +513,20 @@ def test_create_sync(example_pod_spec, example_service_spec):
     service.delete()
 
 
-async def test_bad_kubernetes_version():
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1.27.0",
+        "v1.27.0",
+        "1.27.0-eks-113cf36",
+        "v1.27.0-eks-113cf36",
+        "asdkjhaskdjhasd",
+    ],
+)
+async def test_bad_kubernetes_version(version):
     api = await kr8s.asyncio.api()
     keep = api.async_version
-    api.async_version = AsyncMock(return_value={"gitVersion": "1.27.0"})
+    api.async_version = AsyncMock(return_value={"gitVersion": version})
     with pytest.warns(UserWarning):
         await api._check_version()
     api.async_version = keep

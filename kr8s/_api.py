@@ -21,6 +21,7 @@ import httpx
 import httpx_ws
 from cachetools import TTLCache  # type: ignore
 from cryptography import x509
+from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
 
 from ._auth import KubeAuth
@@ -271,18 +272,33 @@ class Api:
 
     async def _check_version(self) -> None:
         version = await self.async_version()
+        git_version = version["gitVersion"]
+        # Remove variant suffix if present, e.g v1.32.9-eks-113cf36 -> v1.32.9
+        git_version = git_version.split("-")[0] if "-" in git_version else git_version
+
+        supported_message = (
+            "Supported versions for kr8s {__version__} are "
+            f"{KUBERNETES_MINIMUM_SUPPORTED_VERSION}"
+            " to "
+            f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION}."
+        )
+
+        try:
+            version = parse_version(git_version)
+        except InvalidVersion:
+            warnings.warn(
+                f"Unable to parse Kubernetes version {git_version}. {supported_message}",
+                UserWarning,
+                stacklevel=2,
+            )
+            return
+
         if (
-            parse_version(version["gitVersion"]) < KUBERNETES_MINIMUM_SUPPORTED_VERSION
-            or parse_version(version["gitVersion"])
-            > KUBERNETES_MAXIMUM_SUPPORTED_VERSION
+            version < KUBERNETES_MINIMUM_SUPPORTED_VERSION
+            or version > KUBERNETES_MAXIMUM_SUPPORTED_VERSION
         ):
             warnings.warn(
-                f"Kubernetes version {version['gitVersion']} is not supported. "
-                f"Supported versions for kr8s {__version__} are "
-                f"{KUBERNETES_MINIMUM_SUPPORTED_VERSION}"
-                f" to "
-                f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION}"
-                ".",
+                f"Kubernetes version {git_version} is not supported. {supported_message}",
                 UserWarning,
                 stacklevel=2,
             )
@@ -711,8 +727,6 @@ class Api:
 
     @property
     def __version__(self) -> str:
-        from . import __version__
-
         return f"kr8s/{__version__}"
 
     @property
