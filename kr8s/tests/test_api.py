@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import queue
 import threading
+import warnings
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import anyio
 import pytest
+from packaging.version import parse as parse_version
 
 import kr8s
 import kr8s.asyncio
@@ -529,6 +531,20 @@ async def test_bad_kubernetes_version(version):
     api.async_version = AsyncMock(return_value={"gitVersion": version})
     with pytest.warns(UserWarning, match=version):
         await api._check_version()
+    api.async_version = keep
+
+
+async def test_good_kubernetes_version():
+    from kr8s._constants import KUBERNETES_MAXIMUM_SUPPORTED_VERSION as v
+
+    # Create a version that is just above the maximum supported version
+    version = str(parse_version(f"{v.major}.{v.minor}.{v.micro+15}"))
+    api = await kr8s.asyncio.api()
+    keep = api.async_version
+    api.async_version = AsyncMock(return_value={"gitVersion": version})
+    with warnings.catch_warnings(record=True) as w:
+        await api._check_version()
+        assert w == []
     api.async_version = keep
 
 
