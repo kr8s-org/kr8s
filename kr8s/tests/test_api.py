@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import queue
 import threading
+import warnings
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
@@ -11,6 +12,10 @@ import pytest
 import kr8s
 import kr8s.asyncio
 from kr8s._async_utils import anext
+from kr8s._constants import (
+    KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
+    KUBERNETES_MINIMUM_SUPPORTED_VERSION,
+)
 from kr8s._exceptions import APITimeoutError
 from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
@@ -520,6 +525,7 @@ def test_create_sync(example_pod_spec, example_service_spec):
         "v1.27.0",
         "1.27.0-eks-113cf36",
         "v1.27.0-eks-113cf36",
+        f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor+1}",
         "asdkjhaskdjhasd",
     ],
 )
@@ -529,6 +535,25 @@ async def test_bad_kubernetes_version(version):
     api.async_version = AsyncMock(return_value={"gitVersion": version})
     with pytest.warns(UserWarning, match=version):
         await api._check_version()
+    api.async_version = keep
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        str(KUBERNETES_MINIMUM_SUPPORTED_VERSION),
+        str(KUBERNETES_MAXIMUM_SUPPORTED_VERSION),
+        f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor}.15",
+        f"{KUBERNETES_MINIMUM_SUPPORTED_VERSION}-eks-113cf36",
+    ],
+)
+async def test_good_kubernetes_version(version):
+    api = await kr8s.asyncio.api()
+    keep = api.async_version
+    api.async_version = AsyncMock(return_value={"gitVersion": version})
+    with warnings.catch_warnings(record=True) as w:
+        await api._check_version()
+        assert w == []
     api.async_version = keep
 
 
