@@ -543,6 +543,7 @@ async def test_bad_kubernetes_version(version):
         str(KUBERNETES_MINIMUM_SUPPORTED_VERSION),
         str(KUBERNETES_MAXIMUM_SUPPORTED_VERSION),
         f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor}.15",
+        f"{KUBERNETES_MINIMUM_SUPPORTED_VERSION}-eks-113cf36",
     ],
 )
 async def test_good_kubernetes_version(version):
