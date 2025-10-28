@@ -87,12 +87,13 @@ class KubeConfigSet(KubeConfigMixin):
         data = {
             "apiVersion": "v1",
             "kind": "Config",
-            "preferences": self.preferences,
             "clusters": self.clusters,
             "users": self.users,
             "contexts": self.contexts,
             "current-context": self.current_context,
         }
+        if self.preferences:
+            data["preferences"] = self.preferences
         if self.extensions:
             data["extensions"] = self.extensions
         return data
