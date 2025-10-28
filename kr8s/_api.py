@@ -31,7 +31,6 @@ from ._constants import (
 )
 from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
-from ._vendored.asyncache import cached  # type: ignore
 from ._version import __version__
 
 if TYPE_CHECKING:
@@ -54,6 +53,9 @@ class Api:
 
     _asyncio = True
     _instances: dict[str, weakref.WeakValueDictionary] = {}
+    # Cache api-resources for 6 hours because kubectl does
+    # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
+    _cached_api_resources: TTLCache[None, list[dict]] = TTLCache(1, 60 * 60 * 6)
 
     def __init__(self, **kwargs) -> None:
         if not kwargs.pop("bypass_factory", False):
@@ -657,11 +659,13 @@ class Api:
         """Get the Kubernetes API resources."""
         return await self.async_api_resources()
 
-    # Cache for 6 hours because kubectl does
-    # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
-    @cached(TTLCache(1, 60 * 60 * 6))
     async def async_api_resources(self) -> list[dict]:
-        return await self.async_api_resources_uncached()
+        if self._cached_api_resources.get(None):
+            return self._cached_api_resources[None]
+        else:
+            self._cached_api_resources[None] =  await self.async_api_resources_uncached()
+
+        return self._cached_api_resources[None]
 
     async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""
