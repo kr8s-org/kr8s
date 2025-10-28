@@ -663,7 +663,7 @@ class Api:
         if self._cached_api_resources.get(None):
             return self._cached_api_resources[None]
         else:
-            self._cached_api_resources[None] =  await self.async_api_resources_uncached()
+            self._cached_api_resources[None] = await self.async_api_resources_uncached()
 
         return self._cached_api_resources[None]
 
