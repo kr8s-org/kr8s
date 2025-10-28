@@ -334,20 +334,20 @@ class KubeConfig(KubeConfigMixin):
 
     @property
     def preferences(self) -> list[dict]:
-        return self._raw["preferences"]
+        return self._raw.get("preferences", [])
 
     @property
     def clusters(self) -> list[dict]:
-        return self._raw["clusters"]
+        return self._raw.get("clusters", [])
 
     @property
     def users(self) -> list[dict]:
-        return self._raw["users"]
+        return self._raw.get("users", [])
 
     @property
     def contexts(self) -> list[dict]:
-        return self._raw["contexts"]
+        return self._raw.get("contexts", [])
 
     @property
     def extensions(self) -> list[dict]:
-        return self._raw["extensions"] if "extensions" in self._raw else []
+        return self._raw.get("extensions", [])
