@@ -51,7 +51,12 @@ async def test_kubeconfig_from_dict(temp_kubeconfig, cls):
     with open(temp_kubeconfig) as fh:
         config = yaml.safe_load(fh)
     kubeconfig = await cls(config)
-    assert kubeconfig.raw == config
+    assert kubeconfig.raw["clusters"] == config["clusters"]
+    assert kubeconfig.raw["users"] == config["users"]
+    assert kubeconfig.raw["contexts"] == config["contexts"]
+    # Preferences and extensions are optional
+    assert kubeconfig.raw.get("preferences", {}) == config.get("preferences", {})
+    assert kubeconfig.raw.get("extensions", []) == config.get("extensions", [])
 
 
 @pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
