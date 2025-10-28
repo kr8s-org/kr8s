@@ -350,4 +350,4 @@ class KubeConfig(KubeConfigMixin):
 
     @property
     def extensions(self) -> list[dict]:
-        return self._raw["extensions"] if "extensions" in self._raw else []
+        return self._raw.get("extensions", [])
