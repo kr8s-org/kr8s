@@ -55,7 +55,7 @@ class Api:
     _instances: dict[str, weakref.WeakValueDictionary] = {}
     # Cache api-resources for 6 hours because kubectl does
     # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
-    _cached_api_resources: TTLCache[None, list[dict]] = TTLCache(1, 60 * 60 * 6)
+    _cached_api_resources: TTLCache[int, list[dict]] = TTLCache(1, 60 * 60 * 6)
 
     def __init__(self, **kwargs) -> None:
         if not kwargs.pop("bypass_factory", False):
@@ -660,12 +660,12 @@ class Api:
         return await self.async_api_resources()
 
     async def async_api_resources(self) -> list[dict]:
-        if self._cached_api_resources.get(None):
-            return self._cached_api_resources[None]
+        if self._cached_api_resources.get(1):
+            return self._cached_api_resources[1]
         else:
-            self._cached_api_resources[None] = await self.async_api_resources_uncached()
+            self._cached_api_resources[1] =  await self.async_api_resources_uncached()
 
-        return self._cached_api_resources[None]
+        return self._cached_api_resources[1]
 
     async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""
