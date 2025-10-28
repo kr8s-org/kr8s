@@ -93,7 +93,7 @@ class KubeConfigSet(KubeConfigMixin):
             "current-context": self.current_context,
         }
         if self.preferences:
-            data["preferences"] = self.preferences
+            data["preferences"] = self.preferences  # type: ignore[assignment]
         if self.extensions:
             data["extensions"] = self.extensions
         return data
@@ -175,7 +175,7 @@ class KubeConfigSet(KubeConfigMixin):
                 pass
 
     @property
-    def preferences(self) -> list[dict]:
+    def preferences(self) -> dict:
         return self._configs[0].preferences
 
     @property
@@ -334,8 +334,8 @@ class KubeConfig(KubeConfigMixin):
         return self._raw
 
     @property
-    def preferences(self) -> list[dict]:
-        return self._raw.get("preferences", [])
+    def preferences(self) -> dict:
+        return self._raw.get("preferences", {})
 
     @property
     def clusters(self) -> list[dict]:
