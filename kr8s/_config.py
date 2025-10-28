@@ -334,7 +334,7 @@ class KubeConfig(KubeConfigMixin):
 
     @property
     def preferences(self) -> list[dict]:
-        return self._raw["preferences"]
+        return self._raw.get("preferences", {})
 
     @property
     def clusters(self) -> list[dict]:
