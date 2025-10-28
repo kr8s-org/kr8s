@@ -55,10 +55,8 @@ async def test_kubeconfig_from_dict(temp_kubeconfig, cls):
     assert kubeconfig.raw["users"] == config["users"]
     assert kubeconfig.raw["contexts"] == config["contexts"]
     # Preferences and extensions are optional
-    if "preferences" in config:
-        assert kubeconfig.raw["preferences"] == config["preferences"]
-    if "extensions" in config:
-        assert kubeconfig.raw["extensions"] == config["extensions"]
+    assert kubeconfig.raw.get("preferences", {}) == config.get("preferences", {})
+    assert kubeconfig.raw.get("extensions", []) == config.get("extensions", [])
 
 
 @pytest.mark.parametrize("cls", [KubeConfig, KubeConfigSet])
