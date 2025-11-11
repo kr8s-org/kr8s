@@ -2,7 +2,7 @@
 #  dependency. Make sure to update flake8-bugbear manually on a regular basis.
 repos:
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.9.0
+    rev: 25.11.0
     hooks:
       - id: black
         language_version: python3
@@ -11,7 +11,7 @@ repos:
           - --target-version=py38
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.14.3'
+    rev: 'v0.14.4'
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -34,7 +34,7 @@ repos:
       exclude: "examples|venv|ci|docs|.*_vendored\/.*"
       additional_dependencies: [types-pyyaml>=6.0, types-cachetools]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.0
+    rev: v3.21.1
     hooks:
     -   id: pyupgrade
         args: [--py39-plus]
