@@ -140,12 +140,37 @@ def extend_versions(versions, extended_versions, provider):
     return versions
 
 
+def dockerhub_auth():
+    if not os.environ.get("DOCKERHUB_USERNAME") or not os.environ.get(
+        "DOCKERHUB_TOKEN"
+    ):
+        return None
+    data = json.dumps(
+        {
+            "identifier": os.environ.get("DOCKERHUB_USERNAME"),
+            "secret": os.environ.get("DOCKERHUB_TOKEN"),
+        }
+    ).encode()
+    req = urllib.request.Request(
+        "https://hub.docker.com/v2/auth/token",
+        data=data,
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.load(resp)["access_token"]
+
+
 def get_kind_versions():
     print("Loading Kubernetes tags from https://hub.docker.com/r/kindest/node/tags...")
     container_tags = []
+    headers = {}
+    jwt_token = dockerhub_auth()
+    if jwt_token:
+        headers = {"Authorization": f"Bearer {jwt_token}"}
     next_url = "https://hub.docker.com/v2/repositories/kindest/node/tags"
     while next_url:
-        with urllib.request.urlopen(next_url) as url:
+        req = urllib.request.Request(next_url, headers=headers)
+        with urllib.request.urlopen(req) as url:
             results = json.load(url)
             container_tags += results["results"]
             if "next" in results and results["next"]:
