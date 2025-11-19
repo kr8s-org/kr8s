@@ -10,6 +10,7 @@ on:
 
 jobs:
   update-kubernetes:
+    if: github.repository == 'kr8s-org/kr8s'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,6 +18,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Update Kubernetes
+        env:
+          # Set optional secrets for Docker Hub authentication
+          # If not set, the script will not attempt to authenticate with Docker Hub
+          # but may run into rate limiting errors from Docker Hub.
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || '' }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN || '' }}
         run: uv run ./ci/update-kubernetes.py
       - name: Show diff
         id: diff
