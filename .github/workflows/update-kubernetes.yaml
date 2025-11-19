@@ -10,6 +10,7 @@ on:
 
 jobs:
   update-kubernetes:
+    if: github.repository == 'kr8s-org/kr8s'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
