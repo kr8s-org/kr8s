@@ -366,8 +366,7 @@ async def test_namespace_with_url(k8s_cluster, ns):
     """Test that namespace is loaded from kubeconfig even when URL is provided."""
     # Load the kubeconfig and set a specific namespace
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
-    test_namespace = ns
-    kubeconfig["contexts"][0]["context"]["namespace"] = test_namespace
+    kubeconfig["contexts"][0]["context"]["namespace"] = ns
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as f:
         yaml.dump(kubeconfig, f)
@@ -378,11 +377,11 @@ async def test_namespace_with_url(k8s_cluster, ns):
 
         # Test 1: Without URL - should read namespace from kubeconfig
         auth_without_url = await KubeAuth(kubeconfig=f.name)
-        assert auth_without_url.namespace == test_namespace
+        assert auth_without_url.namespace == ns
 
         # Test 2: With URL - should STILL read namespace from kubeconfig
         auth_with_url = await KubeAuth(kubeconfig=f.name, url=server_url)
-        assert auth_with_url.namespace == test_namespace
+        assert auth_with_url.namespace == ns
         assert auth_with_url.server == server_url
 
 
@@ -410,8 +409,7 @@ async def test_namespace_with_url_no_namespace_in_kubeconfig(k8s_cluster):
 def test_namespace_with_url_sync(k8s_cluster, ns):
     """Test namespace loading with URL using sync API."""
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
-    test_namespace = ns
-    kubeconfig["contexts"][0]["context"]["namespace"] = test_namespace
+    kubeconfig["contexts"][0]["context"]["namespace"] = ns
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as f:
         yaml.dump(kubeconfig, f)
@@ -421,5 +419,5 @@ def test_namespace_with_url_sync(k8s_cluster, ns):
 
         # Test with sync kr8s.api()
         api = kr8s.api(kubeconfig=f.name, url=server_url)
-        assert api.namespace == test_namespace
+        assert api.namespace == ns
         assert api.auth.server == server_url
