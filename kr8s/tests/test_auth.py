@@ -368,18 +368,18 @@ async def test_namespace_with_url(k8s_cluster):
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
     test_namespace = "kube-system"
     kubeconfig["contexts"][0]["context"]["namespace"] = test_namespace
-    
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         yaml.dump(kubeconfig, f)
         f.flush()
-        
+
         # Get the server URL from kubeconfig
         server_url = kubeconfig["clusters"][0]["cluster"]["server"]
-        
+
         # Test 1: Without URL - should read namespace from kubeconfig
         auth_without_url = await KubeAuth(kubeconfig=f.name)
         assert auth_without_url.namespace == test_namespace
-        
+
         # Test 2: With URL - should STILL read namespace from kubeconfig
         auth_with_url = await KubeAuth(kubeconfig=f.name, url=server_url)
         assert auth_with_url.namespace == test_namespace
@@ -392,17 +392,17 @@ async def test_namespace_with_url_no_namespace_in_kubeconfig(k8s_cluster):
     # Ensure no namespace is set in context
     if "namespace" in kubeconfig["contexts"][0]["context"]:
         del kubeconfig["contexts"][0]["context"]["namespace"]
-    
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         yaml.dump(kubeconfig, f)
         f.flush()
-        
+
         server_url = kubeconfig["clusters"][0]["cluster"]["server"]
-        
+
         # Both with and without URL should default to 'default' namespace
         auth_without_url = await KubeAuth(kubeconfig=f.name)
         auth_with_url = await KubeAuth(kubeconfig=f.name, url=server_url)
-        
+
         assert auth_without_url.namespace == "default"
         assert auth_with_url.namespace == "default"
 
@@ -412,13 +412,13 @@ def test_namespace_with_url_sync(k8s_cluster):
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
     test_namespace = "kube-system"
     kubeconfig["contexts"][0]["context"]["namespace"] = test_namespace
-    
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         yaml.dump(kubeconfig, f)
         f.flush()
-        
+
         server_url = kubeconfig["clusters"][0]["cluster"]["server"]
-        
+
         # Test with sync kr8s.api()
         api = kr8s.api(kubeconfig=f.name, url=server_url)
         assert api.namespace == test_namespace
