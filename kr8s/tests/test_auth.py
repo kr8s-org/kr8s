@@ -362,14 +362,14 @@ def test_url_formatting(host, port, expected):
     assert KubeAuth._format_server_address(host, port) == expected
 
 
-async def test_namespace_with_url(k8s_cluster):
+async def test_namespace_with_url(k8s_cluster, ns):
     """Test that namespace is loaded from kubeconfig even when URL is provided."""
     # Load the kubeconfig and set a specific namespace
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
-    test_namespace = "kube-system"
+    test_namespace = ns
     kubeconfig["contexts"][0]["context"]["namespace"] = test_namespace
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as f:
         yaml.dump(kubeconfig, f)
         f.flush()
 
@@ -393,7 +393,7 @@ async def test_namespace_with_url_no_namespace_in_kubeconfig(k8s_cluster):
     if "namespace" in kubeconfig["contexts"][0]["context"]:
         del kubeconfig["contexts"][0]["context"]["namespace"]
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as f:
         yaml.dump(kubeconfig, f)
         f.flush()
 
@@ -407,13 +407,13 @@ async def test_namespace_with_url_no_namespace_in_kubeconfig(k8s_cluster):
         assert auth_with_url.namespace == "default"
 
 
-def test_namespace_with_url_sync(k8s_cluster):
+def test_namespace_with_url_sync(k8s_cluster, ns):
     """Test namespace loading with URL using sync API."""
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
-    test_namespace = "kube-system"
+    test_namespace = ns
     kubeconfig["contexts"][0]["context"]["namespace"] = test_namespace
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as f:
         yaml.dump(kubeconfig, f)
         f.flush()
 
