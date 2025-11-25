@@ -362,6 +362,19 @@ def test_url_formatting(host, port, expected):
     assert KubeAuth._format_server_address(host, port) == expected
 
 
+async def test_proxy_is_read(k8s_cluster, tmp_path):
+    proxy_url = "https://localhost:8001"
+    config = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    config["clusters"][0]["cluster"]["proxy-url"] = proxy_url
+    Path(tmp_path / "kubeconfig").write_text(yaml.safe_dump(config))
+
+    auth_no_proxy = await KubeAuth(kubeconfig=k8s_cluster.kubeconfig_path)
+    assert auth_no_proxy.proxy is None
+
+    auth_with_proxy = await KubeAuth(kubeconfig=str(tmp_path / "kubeconfig"))
+    assert auth_with_proxy.proxy == proxy_url
+
+
 async def test_namespace_with_url(k8s_cluster, ns):
     """Test that namespace is loaded from kubeconfig even when URL is provided."""
     # Load the kubeconfig and set a specific namespace
