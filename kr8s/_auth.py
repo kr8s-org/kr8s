@@ -119,7 +119,7 @@ class KubeAuth:
         self._namespace = value
 
     @property
-    def proxy(self) -> str | None:
+    def proxy(self) -> Optional[str]:
         if "proxy-url" in self._cluster:
             return self._cluster["proxy-url"]
         return None
