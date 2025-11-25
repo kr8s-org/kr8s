@@ -117,6 +117,7 @@ class Api:
             verify=await self.auth.ssl_context(),
             timeout=self._timeout,
             follow_redirects=True,
+            proxy=self.auth.proxy,
         )
 
     def _construct_url(
