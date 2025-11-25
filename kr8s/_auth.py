@@ -75,6 +75,8 @@ class KubeAuth:
             self.server = ""
             if self._url:
                 logger.debug("URL specified manually")
+                if self._kubeconfig_path_or_dict is not False:
+                    await self._load_kubeconfig()
                 self.server = self._url
             else:
                 if self._kubeconfig_path_or_dict is not False:
