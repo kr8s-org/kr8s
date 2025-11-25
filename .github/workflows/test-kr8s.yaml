@@ -5,11 +5,13 @@ on:
       - ".github/workflows/test-kr8s.yaml"
       - "kr8s/**"
       - "pyproject.toml"
+      - "conftest.py"
   push:
     paths:
       - ".github/workflows/test-kr8s.yaml"
       - "kr8s/**"
       - "pyproject.toml"
+      - "conftest.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
