@@ -5,13 +5,14 @@ import os
 import time
 from collections.abc import Generator
 from pathlib import Path
+from typing import Optional
 
 import pytest
 import yaml
 from pytest_kind.cluster import KindCluster
 
 
-def get_github_actions_default_kubernetes_version() -> str | None:
+def get_github_actions_default_kubernetes_version() -> Optional[str]:
     try:
         workflow_file = Path(".github/workflows/test-kr8s.yaml")
         if not workflow_file.exists():
