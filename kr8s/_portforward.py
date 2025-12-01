@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Literal, Union
 
 import anyio
 import httpx_ws
-import sniffio
 
 from ._exceptions import ConnectionClosedError
 from ._types import APIObjectWithPods
@@ -86,12 +85,15 @@ class PortForward:
         local_port: LocalPortType = "match",
         address: list[str] | str = "127.0.0.1",
     ) -> None:
-        with suppress(sniffio.AsyncLibraryNotFoundError):
-            if sniffio.current_async_library() != "asyncio":
-                raise RuntimeError(
-                    "PortForward only works with asyncio, "
-                    "see https://github.com/kr8s-org/kr8s/issues/104"
-                )
+        with suppress(ImportError):
+            import sniffio
+
+            with suppress(sniffio.AsyncLibraryNotFoundError):
+                if sniffio.current_async_library() != "asyncio":
+                    raise RuntimeError(
+                        "PortForward only works with asyncio, "
+                        "see https://github.com/kr8s-org/kr8s/issues/104"
+                    )
         self.server = None
         self.servers: list[asyncio.Server] = []
         self.remote_port = remote_port
