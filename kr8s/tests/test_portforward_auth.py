@@ -63,7 +63,8 @@ async def test_portforward_invalid_token(k8s_cluster):
         await pod.wait("condition=Deleted")
 
     await pod.create()
-    await pod.wait("condition=Ready")
+    try:
+        await pod.wait("condition=Ready")
 
         # 2. Create a temporary kubeconfig with an INVALID token
         # We read the current kubeconfig
@@ -143,6 +144,7 @@ async def test_portforward_invalid_token(k8s_cluster):
 
             # Verify it is a 401 or 403 (likely 401 for invalid token)
             assert excinfo.value.response.status_code in (401, 403)
+            print(f"Success: Caught expected ServerError (401/403): {excinfo.value}")
 
     finally:
         await pod.delete()
