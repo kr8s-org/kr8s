@@ -25,15 +25,13 @@ def k8s_cluster():
 
 @pytest.mark.asyncio
 async def test_portforward_invalid_token(k8s_cluster):
-    # 1. Get a valid pod first using the default cluster fixture
-    # We need a pod to attempt portforwarding on.
-    # We use the local kubeconfig to connect to the existing cluster.
+    # Connect with admin kubeconfig to create a real pod
     try:
         api_admin = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     except Exception as e:
-        pytest.skip(f"Skipping test: Could not connect to cluster: {e}")
+        pytest.skip(f"Skipping: cannot connect to cluster: {e}")
 
-    # Check if we can list pods (connectivity check)
+    # Simple connectivity check
     try:
         async for _ in api_admin.get("pods", namespace="default"):
             break
@@ -65,9 +63,7 @@ async def test_portforward_invalid_token(k8s_cluster):
         await pod.wait("condition=Deleted")
 
     await pod.create()
-    print(f"Created pod: {pod.name}")
-    try:
-        await pod.wait("condition=Ready")
+    await pod.wait("condition=Ready")
 
         # 2. Create a temporary kubeconfig with an INVALID token
         # We read the current kubeconfig
@@ -95,6 +91,7 @@ async def test_portforward_invalid_token(k8s_cluster):
             # Fallback if no context structure
             pass
 
+        # Write invalid kubeconfig to a temp file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as tmp_kubeconfig:
             yaml.dump(kubeconfig_data, tmp_kubeconfig)
             tmp_kubeconfig.flush()
@@ -141,15 +138,13 @@ async def test_portforward_invalid_token(k8s_cluster):
             # Let's try to connect and see if it raises.
 
             with pytest.raises(ServerError) as excinfo:
-                async with pf._connect_websocket() as ws:
+                async with pf._connect_websocket() as _:
                     pass
 
             # Verify it is a 401 or 403 (likely 401 for invalid token)
             assert excinfo.value.response.status_code in (401, 403)
-            print(f"Caught expected error: {excinfo.value}")
 
     finally:
-        # Cleanup
         await pod.delete()
 
 
