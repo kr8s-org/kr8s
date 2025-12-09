@@ -25,6 +25,7 @@ extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
     "autoapi.extension",
+    "sphinx_llm.txt",
 ]
 suppress_warnings = ["autoapi"]
 
