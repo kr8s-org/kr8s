@@ -21,14 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-        kubernetes-version: ["1.34.0"]
+        kubernetes-version: ["1.34.3"]
         include:
           - python-version: "3.14"
-            kubernetes-version: 1.33.4
+            kubernetes-version: 1.33.7
           - python-version: "3.14"
-            kubernetes-version: 1.32.8
+            kubernetes-version: 1.32.11
           - python-version: "3.14"
-            kubernetes-version: 1.31.12
+            kubernetes-version: 1.31.14
           - python-version: "3.14"
             kubernetes-version: 1.30.13
           - python-version: "3.14"

@@ -80,6 +80,7 @@ dev = [
     "sphinxcontrib-mermaid>=0.8.1",
     "sphinx-autoapi>=2.1.0",
     "taskipy>=1.14.1",
+    "sphinx-llm>=0.1.4",
 ]
 
 [tool.ruff]
