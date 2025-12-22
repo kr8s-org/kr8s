@@ -11,7 +11,7 @@ repos:
           - --target-version=py38
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.14.8'
+    rev: 'v0.14.10'
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -28,7 +28,7 @@ repos:
           - --detect-license-in-X-top-lines=5
         exclude: ".*_vendored\/.*"
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.19.0'
+    rev: 'v1.19.1'
     hooks:
     - id: mypy
       exclude: "examples|venv|ci|docs|.*_vendored\/.*"
