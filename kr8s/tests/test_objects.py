@@ -14,7 +14,11 @@ import httpx
 import pytest
 import yaml
 
+import yaml
+from unittest import mock
+
 import kr8s
+
 from kr8s._async_utils import anext
 from kr8s._exceptions import NotFoundError
 from kr8s._exec import CompletedExec, ExecError
@@ -1466,3 +1470,44 @@ async def test_create_existing_pod_fails():
     await po.create()
     with pytest.raises(kr8s.ServerError, match="already exists"):
         await po.create()
+
+
+async def test_portforward_invalid_token(k8s_cluster):
+    # Create a temporary kubeconfig with an INVALID token
+    kubeconfig_data = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+
+    # Replace the user entry with a simple token user
+    kubeconfig_data["users"] = [
+        {"name": "invalid-user", "user": {"token": "invalid-token-12345"}}
+    ]
+    # Update context to use this user
+    current_context = kubeconfig_data.get("current-context")
+    if not current_context and kubeconfig_data["contexts"]:
+        current_context = kubeconfig_data["contexts"][0]["name"]  # pragma: no cover
+
+    if current_context:
+        for ctx in kubeconfig_data["contexts"]:
+            if ctx["name"] == current_context:
+                ctx["context"]["user"] = "invalid-user"
+                break
+
+    # Initialize a new API with the invalid kubeconfig
+    # We mock _check_version because the invalid token will cause it to fail
+    with mock.patch("kr8s._api.Api._check_version", new_callable=mock.AsyncMock):
+        api_invalid = await kr8s.asyncio.api(kubeconfig=kubeconfig_data)
+
+    # Create a Pod object bound to this invalid API
+    pod_invalid = kr8s.asyncio.objects.Pod(
+        {"metadata": {"name": "test-portforward-auth", "namespace": "default"}},
+        api=api_invalid,
+    )
+
+    # Attempt portforward and expect ServerError (Unauthorized)
+    pf = pod_invalid.portforward(80, local_port=None)
+
+    with pytest.raises(kr8s.ServerError) as excinfo:
+        async with pf._connect_websocket() as _:
+            pass
+
+    # Verify it is a 401 or 403 (likely 401 for invalid token)
+    assert excinfo.value.response.status_code in (401, 403)
