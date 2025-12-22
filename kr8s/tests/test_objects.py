@@ -8,17 +8,14 @@ import platform
 import tempfile
 import time
 from contextlib import suppress
+from unittest import mock
 
 import anyio
 import httpx
 import pytest
 import yaml
 
-import yaml
-from unittest import mock
-
 import kr8s
-
 from kr8s._async_utils import anext
 from kr8s._exceptions import NotFoundError
 from kr8s._exec import CompletedExec, ExecError
