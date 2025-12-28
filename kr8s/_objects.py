@@ -388,16 +388,22 @@ class APIObject:
         if op == ApplyPatchOp.SSA_FORCE:
             params["force"] = "true"
 
-        async with self.api.call_api(
-            "PATCH",
-            version=self.version,
-            url=f"{self.endpoint}/{self.name}",
-            namespace=self.namespace,
-            content=json.dumps(self.raw_template),
-            headers={"Content-Type": op.content_type()},
-            params=params,
-        ) as resp:
-            self.raw = resp.json()
+        try:
+            async with self.api.call_api(
+                "PATCH",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}",
+                namespace=self.namespace,
+                content=json.dumps(self.raw_template),
+                headers={"Content-Type": op.content_type()},
+                params=params,
+            ) as resp:
+                self.raw = resp.json()
+        except ServerError as e:
+            if e.response and e.response.status_code == 404:
+                await self.async_create()
+            else:
+                raise
 
     async def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
