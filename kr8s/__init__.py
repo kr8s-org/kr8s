@@ -15,7 +15,7 @@ from functools import partial, update_wrapper
 from typing import Union, cast
 
 from . import asyncio, objects, portforward
-from ._api import ALL
+from ._api import ALL, ApplyPatchOp
 from ._api import Api as _AsyncApi
 from ._async_utils import as_sync_func as _as_sync_func
 from ._async_utils import as_sync_generator as _as_sync_generator
@@ -130,7 +130,7 @@ class Api(_AsyncApi):
             cast(list[asyncio.objects.APIObject], resources)
         )
 
-    def apply(self, resources: list[objects.APIObject]):
+    def apply(self, resources: list[objects.APIObject], op: ApplyPatchOp = ApplyPatchOp.STRATEGIC):
         return _as_sync_func(self.async_apply)(
             cast(list[asyncio.objects.APIObject], resources)
         )
@@ -256,11 +256,11 @@ def create(resources: list[type[APIObject]], api=None):
     api.create(cast(list[asyncio.objects.APIObject], resources))
 
 
-def apply(resources: list[type[APIObject]], api=None):
+def apply(resources: list[type[APIObject]], op: ApplyPatchOp=ApplyPatchOp.STRATEGIC, api=None):
     """Creates or updates resources in the Kubernetes cluster using server-side apply."""
     if api is None:
         api = _as_sync_func(_api)(_asyncio=False)
-    api.apply(cast(list[asyncio.objects.APIObject], resources))
+    api.apply(cast(list[asyncio.objects.APIObject], resources), op=op)
 
 
 version = _as_sync_func(partial(_k8s_version, _asyncio=False))

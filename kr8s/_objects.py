@@ -29,7 +29,7 @@ else:
 
 import kr8s
 import kr8s.asyncio
-from kr8s._api import Api
+from kr8s._api import Api, ApplyPatchOp
 from kr8s._async_utils import as_sync_func, as_sync_generator
 from kr8s._data_utils import (
     dict_to_selector,
@@ -378,26 +378,30 @@ class APIObject:
         """Create this object in Kubernetes."""
         return await self.async_create()
 
-    async def async_apply(self) -> None:
+    async def async_apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
         assert self.api
         # Remove managedFields which must be nil when using server-side apply
-
         self.metadata.managedFields = None
+
+        params = {"fieldManager": "kr8s"}
+        if op == ApplyPatchOp.SSA_FORCE:
+            params["force"] = "true"
+
         async with self.api.call_api(
             "PATCH",
             version=self.version,
             url=f"{self.endpoint}/{self.name}",
             namespace=self.namespace,
             content=json.dumps(self.raw_template),
-            headers={"Content-Type": "application/apply-patch+yaml"},
-            params={"fieldManager": "kr8s"},
+            headers={"Content-Type": op.content_type()},
+            params=params,
         ) as resp:
             self.raw = resp.json()
 
-    async def apply(self) -> None:
+    async def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
-        return await self.async_apply()
+        return await self.async_apply(op=op)
 
     async def delete(
         self,
@@ -987,8 +991,8 @@ class APIObjectSyncMixin(APIObject):
     def create(self) -> None:  # type: ignore[override]
         return as_sync_func(self.async_create)()
 
-    def apply(self) -> None:
-        return as_sync_func(self.async_apply)()
+    def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
+        return as_sync_func(self.async_apply)(op=op)
 
     def delete(  # type: ignore[override]
         self,
