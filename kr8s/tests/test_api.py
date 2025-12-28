@@ -17,7 +17,7 @@ from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
     KUBERNETES_MINIMUM_SUPPORTED_VERSION,
 )
-from kr8s._exceptions import APITimeoutError
+from kr8s._exceptions import APITimeoutError, ServerError
 from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
@@ -539,7 +539,9 @@ async def test_update_with_apply(example_pod_spec, example_service_spec):
     await kr8s.asyncio.apply([pod])
     assert pod.labels["foo"] == "bar", "Apply should send updated resource"
     updated_pod = await Pod.get(pod.name, namespace=pod.namespace)
-    assert updated_pod.labels["foo"] == "bar", "Pod we got by re-fetching should have updated labels"
+    assert (
+        updated_pod.labels["foo"] == "bar"
+    ), "Pod we got by re-fetching should have updated labels"
     await pod.delete()
 
 
@@ -555,14 +557,32 @@ async def test_update_with_ssa(example_pod_spec, example_service_spec):
     assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
 
 
-@pytest.mark.skip(reason="We need to parametrise the field manager name to test this")
 async def test_update_with_ssa_force(example_pod_spec, example_service_spec):
     """
     SSA has semantics about modifying fields owned by other managers.
 
     We would need to use the force option to override this.
     """
-    raise NotImplementedError("We need to parametrise the field manager name to test this")
+    pod = await Pod(example_pod_spec)
+    pod.labels["my_field"] = "other-manager"
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+
+    api = await kr8s.asyncio.api()
+    api.field_manager = "other-manager"
+    await kr8s.asyncio.apply(resources, ApplyPatchOp.SSA, api=api)
+    assert pod.exists(), "Pod should exist after creation"
+
+    api.field_manager = "kr8s"
+    with pytest.RaisesGroup(ServerError):
+        pod.labels["my_field"] = "changed"
+        await kr8s.asyncio.apply([pod], ApplyPatchOp.SSA)
+
+    await kr8s.asyncio.apply([pod], ApplyPatchOp.SSA_FORCE)
+    assert pod.exists(), "Pod should exist after creation"
+    assert (
+        pod.labels["my_field"] == "changed"
+    ), "SSA update should send updated resource"
 
 
 @pytest.mark.parametrize(

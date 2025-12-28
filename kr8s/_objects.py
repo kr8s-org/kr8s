@@ -384,7 +384,7 @@ class APIObject:
         # Remove managedFields which must be nil when using server-side apply
         self.metadata.managedFields = None
 
-        params = {"fieldManager": "kr8s"}
+        params = {"fieldManager": self.api.field_manager}
         if op == ApplyPatchOp.SSA_FORCE:
             params["force"] = "true"
 
