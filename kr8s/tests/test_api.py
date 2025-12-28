@@ -568,12 +568,13 @@ async def test_update_with_ssa_force(example_pod_spec, example_service_spec):
     service = await Service(example_service_spec)
     resources = [pod, service]
 
-    api = await kr8s.asyncio.api()
-    api.field_manager = "other-manager"
-    await kr8s.asyncio.apply(resources, ApplyPatchOp.SSA, api=api)
+    other_api = await kr8s.asyncio.api(field_manager="other-manager")
+    pod.api = other_api  # api param in helpers is ignored
+    await kr8s.asyncio.apply(resources, ApplyPatchOp.SSA)
     assert pod.exists(), "Pod should exist after creation"
 
-    api.field_manager = "kr8s"
+    api = await kr8s.asyncio.api(field_manager="kr8s")
+    pod.api = api  # api param in helpers is ignored
     with pytest.RaisesGroup(ServerError):
         pod.labels["my_field"] = "changed"
         await kr8s.asyncio.apply([pod], ApplyPatchOp.SSA)
