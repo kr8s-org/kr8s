@@ -11,6 +11,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
+from kr8s import ApplyPatchOp
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -536,11 +537,32 @@ async def test_update_with_apply(example_pod_spec, example_service_spec):
     await kr8s.asyncio.create(resources)
     pod.labels["foo"] = "bar"
     await kr8s.asyncio.apply([pod])
-    assert pod.exists(), "Pod should exist after creation"
     assert pod.labels["foo"] == "bar", "Apply should send updated resource"
     updated_pod = await Pod.get(pod.name, namespace=pod.namespace)
     assert updated_pod.labels["foo"] == "bar", "Pod we got by re-fetching should have updated labels"
     await pod.delete()
+
+
+async def test_update_with_ssa(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.apply(resources, ApplyPatchOp.SSA)
+
+    pod.labels["foo"] = "bar"
+    await pod.apply(ApplyPatchOp.SSA)
+    assert pod.exists(), "Pod should exist after creation"
+    assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
+
+
+@pytest.mark.skip(reason="We need to parametrise the field manager name to test this")
+async def test_update_with_ssa_force(example_pod_spec, example_service_spec):
+    """
+    SSA has semantics about modifying fields owned by other managers.
+
+    We would need to use the force option to override this.
+    """
+    raise NotImplementedError("We need to parametrise the field manager name to test this")
 
 
 @pytest.mark.parametrize(
