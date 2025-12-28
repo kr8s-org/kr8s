@@ -8,11 +8,12 @@ from kr8s._api import Api
 
 from . import objects, portforward
 from ._api import api
-from ._helpers import api_resources, create, get, version, watch, whoami
+from ._helpers import api_resources, apply, create, get, version, watch, whoami
 
 __all__ = [
     "api",
     "api_resources",
+    "apply",
     "create",
     "get",
     "objects",

@@ -378,6 +378,27 @@ class APIObject:
         """Create this object in Kubernetes."""
         return await self.async_create()
 
+    async def async_apply(self) -> None:
+        """Create or update this object in Kubernetes using server-side apply."""
+        assert self.api
+        # Remove managedFields which must be nil when using server-side apply
+
+        self.metadata.managedFields = None
+        async with self.api.call_api(
+            "PATCH",
+            version=self.version,
+            url=f"{self.endpoint}/{self.name}",
+            namespace=self.namespace,
+            content=json.dumps(self.raw_template),
+            headers={"Content-Type": "application/apply-patch+yaml"},
+            params={"fieldManager": "kr8s"},
+        ) as resp:
+            self.raw = resp.json()
+
+    async def apply(self) -> None:
+        """Create or update this object in Kubernetes using server-side apply."""
+        return await self.async_apply()
+
     async def delete(
         self,
         propagation_policy: str | None = None,
@@ -965,6 +986,9 @@ class APIObjectSyncMixin(APIObject):
 
     def create(self) -> None:  # type: ignore[override]
         return as_sync_func(self.async_create)()
+
+    def apply(self) -> None:
+        return as_sync_func(self.async_apply)()
 
     def delete(  # type: ignore[override]
         self,

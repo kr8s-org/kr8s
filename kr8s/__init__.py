@@ -130,6 +130,11 @@ class Api(_AsyncApi):
             cast(list[asyncio.objects.APIObject], resources)
         )
 
+    def apply(self, resources: list[objects.APIObject]):
+        return _as_sync_func(self.async_apply)(
+            cast(list[asyncio.objects.APIObject], resources)
+        )
+
 
 def get(
     kind: str,
@@ -251,6 +256,13 @@ def create(resources: list[type[APIObject]], api=None):
     api.create(cast(list[asyncio.objects.APIObject], resources))
 
 
+def apply(resources: list[type[APIObject]], api=None):
+    """Creates or updates resources in the Kubernetes cluster using server-side apply."""
+    if api is None:
+        api = _as_sync_func(_api)(_asyncio=False)
+    api.apply(cast(list[asyncio.objects.APIObject], resources))
+
+
 version = _as_sync_func(partial(_k8s_version, _asyncio=False))
 update_wrapper(version, _k8s_version)
 watch = _as_sync_generator(partial(_watch, _asyncio=False))
@@ -266,6 +278,7 @@ __all__ = [
     "api_resources",
     "asyncio",
     "create",
+    "apply",
     "get",
     "objects",
     "portforward",

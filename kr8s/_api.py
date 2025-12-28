@@ -739,6 +739,17 @@ class Api:
     async def create(self, resources: list[APIObject]):
         return await self.async_create(resources)
 
+
+    async def async_apply(self, resources: list[APIObject]):
+        """Use server-side apply to create or update resources."""
+        async with anyio.create_task_group() as tg:
+            for resource in resources:
+                tg.start_soon(resource.async_apply)
+
+    async def apply(self, resources: list[APIObject]):
+        """Use server-side apply to create or update resources."""
+        return await self.async_apply(resources)
+
     @property
     def __version__(self) -> str:
         return f"kr8s/{__version__}"
