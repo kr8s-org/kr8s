@@ -991,7 +991,7 @@ class APIObjectSyncMixin(APIObject):
     def create(self) -> None:  # type: ignore[override]
         return as_sync_func(self.async_create)()
 
-    def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
+    def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC):
         return as_sync_func(self.async_apply)(op=op)
 
     def delete(  # type: ignore[override]

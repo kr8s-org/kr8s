@@ -45,8 +45,10 @@ logger = logging.getLogger(__name__)
 class ApplyPatchOp(enum.Enum):
     """
     The method used to apply a patch to a resource.
+
     `kubectl apply` uses a Strategic Merge Patch by default, but also supports the other methods.
     """
+
     MERGE = enum.auto()
     JSON_PATCH = enum.auto()
     STRATEGIC = enum.auto()
@@ -765,14 +767,17 @@ class Api:
     async def create(self, resources: list[APIObject]):
         return await self.async_create(resources)
 
-
-    async def async_apply(self, resources: list[APIObject], op: ApplyPatchOp = ApplyPatchOp.STRATEGIC):
+    async def async_apply(
+        self, resources: list[APIObject], op: ApplyPatchOp = ApplyPatchOp.STRATEGIC
+    ):
         """Use server-side apply to create or update resources."""
         async with anyio.create_task_group() as tg:
             for resource in resources:
                 tg.start_soon(resource.async_apply, op)
 
-    async def apply(self, resources: list[APIObject], op: ApplyPatchOp = ApplyPatchOp.STRATEGIC):
+    async def apply(
+        self, resources: list[APIObject], op: ApplyPatchOp = ApplyPatchOp.STRATEGIC
+    ):
         """Use server-side apply to create or update resources."""
         return await self.async_apply(resources, op)
 

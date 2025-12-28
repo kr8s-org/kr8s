@@ -130,7 +130,11 @@ class Api(_AsyncApi):
             cast(list[asyncio.objects.APIObject], resources)
         )
 
-    def apply(self, resources: list[objects.APIObject], op: ApplyPatchOp = ApplyPatchOp.STRATEGIC):
+    def apply(
+        self,
+        resources: list[objects.APIObject],  # type: ignore[override]
+        op: ApplyPatchOp = ApplyPatchOp.STRATEGIC,
+    ):
         return _as_sync_func(self.async_apply)(
             cast(list[asyncio.objects.APIObject], resources)
         )
@@ -256,7 +260,11 @@ def create(resources: list[type[APIObject]], api=None):
     api.create(cast(list[asyncio.objects.APIObject], resources))
 
 
-def apply(resources: list[type[APIObject]], op: ApplyPatchOp=ApplyPatchOp.STRATEGIC, api=None):
+def apply(
+    resources: list[type[APIObject]],
+    op: ApplyPatchOp = ApplyPatchOp.STRATEGIC,
+    api=None,
+):
     """Creates or updates resources in the Kubernetes cluster using server-side apply."""
     if api is None:
         api = _as_sync_func(_api)(_asyncio=False)

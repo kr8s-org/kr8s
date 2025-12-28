@@ -121,7 +121,12 @@ async def create(resources: list[APIObject], api=None, _asyncio=True):
     return await api.async_create(resources)
 
 
-async def apply(resources: list[APIObject], op: ApplyPatchOp=ApplyPatchOp.STRATEGIC, api=None, _asyncio=True) -> None:
+async def apply(
+    resources: list[APIObject],
+    op: ApplyPatchOp = ApplyPatchOp.STRATEGIC,
+    api=None,
+    _asyncio=True,
+) -> None:
     """Create or update resources in the Kubernetes cluster using server-side apply."""
     if api is None:
         api = await _api(_asyncio=_asyncio)
