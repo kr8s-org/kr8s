@@ -518,6 +518,31 @@ def test_create_sync(example_pod_spec, example_service_spec):
     service.delete()
 
 
+async def test_create_with_apply(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.apply(resources)
+    assert pod.exists(), "Pod should exist after creation"
+    assert service.exists(), "Service should exist after creation"
+    await pod.delete()
+    await service.delete()
+
+
+async def test_update_with_apply(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.create(resources)
+    pod.labels["foo"] = "bar"
+    await kr8s.asyncio.apply([pod])
+    assert pod.exists(), "Pod should exist after creation"
+    assert pod.labels["foo"] == "bar", "Apply should send updated resource"
+    updated_pod = await Pod.get(pod.name, namespace=pod.namespace)
+    assert updated_pod.labels["foo"] == "bar", "Pod we got by re-fetching should have updated labels"
+    await pod.delete()
+
+
 @pytest.mark.parametrize(
     "version",
     [
