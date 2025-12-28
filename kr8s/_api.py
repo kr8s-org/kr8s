@@ -92,9 +92,10 @@ class Api:
         self._serviceaccount = kwargs.get("serviceaccount")
         self._session: httpx.AsyncClient | None = None
         self._timeout = None
-        self.field_manager = kwargs.get(
-            "field_manager", "kr8s"
-        )  # used in Server Side Apply
+        self.field_manager = kwargs.get("field_manager")  # used in Server Side Apply
+        if not self.field_manager:
+            self.field_manager = "kr8s"
+
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,

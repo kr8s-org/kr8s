@@ -208,6 +208,8 @@ def api(
     serviceaccount: str | None = None,
     namespace: str | None = None,
     context: str | None = None,
+    *,
+    field_manager: str | None = None,
 ) -> Api:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
@@ -219,6 +221,7 @@ def api(
         serviceaccount: The path of a service account to use
         namespace: The namespace to use
         context: The context to use
+        field_manager: The field manager to use for server-side apply
 
     Returns:
         The API object
@@ -234,6 +237,7 @@ def api(
         serviceaccount=serviceaccount,
         namespace=namespace,
         context=context,
+        field_manager=field_manager,
         _asyncio=False,
     )
     assert isinstance(ret, Api)
