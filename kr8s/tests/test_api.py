@@ -586,6 +586,12 @@ async def test_update_with_ssa_force(example_pod_spec, example_service_spec):
     ), "SSA update should send updated resource"
 
 
+async def test_apply_creates_if_not_exists(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.apply()
+    assert pod.exists(), "Pod should exist after creation"
+
+
 @pytest.mark.parametrize(
     "version",
     [
