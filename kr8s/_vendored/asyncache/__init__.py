@@ -122,6 +122,7 @@ def cached(
 
                 return val
 
+        func.cache = cache
         return functools.wraps(func)(wrapper)
 
     return decorator
@@ -194,6 +195,7 @@ def cachedmethod(
 
                 return val
 
+        method.cache = cache
         return functools.wraps(method)(wrapper)
 
     return decorator
