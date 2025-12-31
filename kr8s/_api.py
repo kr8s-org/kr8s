@@ -7,6 +7,8 @@ import contextlib
 import copy
 import json
 import logging
+import pathlib
+import re
 import ssl
 import threading
 import warnings
@@ -39,6 +41,50 @@ if TYPE_CHECKING:
 
 ALL = "all"
 logger = logging.getLogger(__name__)
+
+
+overly_cautious_illegal_file_characters = re.compile(r"[^\w/.]")
+
+
+def compute_discovery_cache_dir(parent_dir: pathlib.Path, host: str) -> pathlib.Path:
+    """Port of kubectl's discovery cache dir."""
+    schemeless_host = host.replace("https://", "", 1).replace("http://", "", 1)
+    safe_host = re.sub(overly_cautious_illegal_file_characters, "_", schemeless_host)
+    return parent_dir / safe_host
+
+
+def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = None):
+    """
+    Load API resources from kubectl's discovery cache.
+
+    Kubernetes clients need to look up what resources are available on the server.
+    Kubectl caches this information on disk.
+    You can load this information and skip sending many requests to the server.
+    """
+    if not cache_dir:
+        cache_dir_base = (
+            pathlib.Path(api.auth.kubeconfig.path).parent / "cache" / "discovery"
+        )
+        cache_dir = pathlib.Path(
+            compute_discovery_cache_dir(cache_dir_base, api.auth.server)
+        )
+
+    out = []
+
+    for dir_group in cache_dir.iterdir():
+        if not dir_group.is_dir():
+            continue
+
+        for dir_version in dir_group.iterdir():
+            if not dir_version.is_dir():
+                continue  # TODO: skips v1/serverresources.json
+
+            for file in dir_version.iterdir():  # there should only be one file per dir
+                data = json.loads(file.read_text())
+                group_version = data["groupVersion"]
+                out.append(api.collect_api_resources(data, group_version))
+
+    api.async_api_resources.cache[api] = out  # type: ignore
 
 
 class Api:
