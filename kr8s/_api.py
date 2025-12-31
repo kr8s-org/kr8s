@@ -71,18 +71,10 @@ def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = N
 
     out = []
 
-    for dir_group in cache_dir.iterdir():
-        if not dir_group.is_dir():
-            continue
-
-        for dir_version in dir_group.iterdir():
-            if not dir_version.is_dir():
-                continue  # TODO: skips v1/serverresources.json
-
-            for file in dir_version.iterdir():  # there should only be one file per dir
-                data = json.loads(file.read_text())
-                group_version = data["groupVersion"]
-                out.append(api.collect_api_resources(data, group_version))
+    for file in cache_dir.rglob("serverresources.json"):
+        data = json.loads(file.read_text())
+        group_version = data["groupVersion"]
+        out.append(api.collect_api_resources(data, group_version))
 
     api.async_api_resources.cache[api] = out  # type: ignore
 
