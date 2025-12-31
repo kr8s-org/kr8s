@@ -69,13 +69,30 @@ def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = N
             compute_discovery_cache_dir(cache_dir_base, api.auth.server)
         )
 
+    logger.debug(f"Loading API resources from kubectl cache in {cache_dir}")
+    if not (cache_dir / "servergroups.json").exists():
+        logger.warning(
+            f"Directory {cache_dir} does not contain `servergroups.json`, "
+            "this may not be a standard kubectl cache directory",
+        )
+
     out = []
 
     for file in cache_dir.rglob("serverresources.json"):
-        data = json.loads(file.read_text())
-        group_version = data["groupVersion"]
-        out.append(api.collect_api_resources(data, group_version))
+        try:
+            data = json.loads(file.read_text())
+            group_version = data["groupVersion"]
+            out.append(api.collect_api_resources(data, group_version))
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Failed to load API resources from {file}: {e}")
+            continue
+        except KeyError as e:
+            logger.warning(
+                f"Invalid API resources file {file}, expected key 'groupVersion': {e}"
+            )
+            continue
 
+    logger.debug(f"Loaded {len(out)} API resources from kubectl cache")
     api.async_api_resources.cache[api] = out  # type: ignore
 
 
