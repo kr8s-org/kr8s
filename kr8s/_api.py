@@ -687,13 +687,7 @@ class Api:
                 method="GET", version="", base="/api", url=version
             ) as response:
                 resource = response.json()
-            resources.extend(
-                [
-                    {"version": version, **r}
-                    for r in resource["resources"]
-                    if "/" not in r["name"]
-                ]
-            )
+            resources.extend(self.collect_api_resources(resource, version))
         async with self.call_api(method="GET", version="", base="/apis") as response:
             api_list = response.json()
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
@@ -705,14 +699,16 @@ class Api:
                     method="GET", version="", base="/apis", url=version
                 ) as response:
                     resource = response.json()
-                resources.extend(
-                    [
-                        {"version": version, **r}
-                        for r in resource["resources"]
-                        if "/" not in r["name"]
-                    ]
-                )
+                resources.extend(self.collect_api_resources(resource, version))
         return resources
+
+    def collect_api_resources(self, resource, version):
+        """Add an API resource to the list of resources."""
+        return [
+            {"version": version, **r}
+            for r in resource["resources"]
+            if "/" not in r["name"]
+        ]
 
     async def api_versions(self) -> AsyncGenerator[str]:
         """Get the Kubernetes API versions."""
