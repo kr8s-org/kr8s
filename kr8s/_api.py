@@ -21,7 +21,6 @@ from typing import (
 import anyio
 import httpx
 import httpx_ws
-from cachetools import TTLCache  # type: ignore
 from cryptography import x509
 from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
@@ -33,7 +32,6 @@ from ._constants import (
 )
 from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
-from ._vendored.asyncache import cached  # type: ignore
 from ._version import __version__
 
 if TYPE_CHECKING:
@@ -93,7 +91,24 @@ def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = N
             continue
 
     logger.debug(f"Loaded {len(out)} API resources from kubectl cache")
-    api.async_api_resources.cache[api] = out  # type: ignore
+    api.resource_kind_cache.set(out)  # type: ignore
+
+
+class ResourceKindCache:
+    """Cache for API resources kinds."""
+
+    # TODO: Add TTL
+
+    def __init__(self, cache: list[dict] | None = None):
+        self.cache = [] if cache is None else cache
+        self.loaded = cache is not None
+
+    def get(self):
+        # TODO: break this up by resources
+        return self.cache
+
+    def set(self, resources: list[dict]):
+        self.cache = resources
 
 
 class Api:
@@ -139,6 +154,11 @@ class Api:
             Api._instances[thread_loop_id] = weakref.WeakValueDictionary()
         key = hash_kwargs(kwargs)
         Api._instances[thread_loop_id][key] = self
+
+        # TODO: make this injectable
+        # TODO: fill with kubectl cache
+        # TODO: fill from k8s
+        self.resource_kind_cache = ResourceKindCache()
 
     def __await__(self):
         async def f():
@@ -725,11 +745,13 @@ class Api:
         """Get the Kubernetes API resources."""
         return await self.async_api_resources()
 
-    # Cache for 6 hours because kubectl does
-    # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
-    @cached(TTLCache(1, 60 * 60 * 6))
     async def async_api_resources(self) -> list[dict]:
-        return await self.async_api_resources_uncached()
+        if self.resource_kind_cache.loaded:
+            return self.resource_kind_cache.get()
+        else:
+            value = await self.async_api_resources_uncached()
+            self.resource_kind_cache.set(value)
+            return value
 
     async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""
