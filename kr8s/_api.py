@@ -108,6 +108,7 @@ class ResourceKindCache:
         return self.cache
 
     def set(self, resources: list[dict]):
+        self.loaded = True
         self.cache = resources
 
 
