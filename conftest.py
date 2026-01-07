@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import gc
+import logging
 import os
 import time
 from collections.abc import Generator
@@ -56,3 +57,10 @@ def k8s_cluster(request) -> Generator[KindCluster, None, None]:
     del os.environ["KUBECONFIG"]
     if not request.config.getoption("keep_cluster"):  # pragma: no cover
         kind_cluster.delete()
+
+
+@pytest.fixture(scope="session")
+def kubectl_api_cache(k8s_cluster):
+    """Ensure that kubectl has written its api cache to disk."""
+    logging.basicConfig(level=logging.DEBUG)
+    k8s_cluster.kubectl("get", "--raw", "/api/v1")

@@ -11,6 +11,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
+from kr8s._api import load_api_resources_from_kubectl
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -567,6 +568,14 @@ async def test_crd_caching(example_crd_spec):
     async with create_delete_crd(example_crd_spec) as example_crd:
         # Try to get the new CRD (which isn't in the cache, so the cache should be bypassed)
         [r async for r in api.get(example_crd.name)]
+
+
+async def test_loading_crds_from_kubectl(kubectl_api_cache):
+    api = await kr8s.asyncio.api()
+    assert not api.resource_kind_cache.loaded
+    load_api_resources_from_kubectl(api, cache_dir=None)
+    assert api.resource_kind_cache.loaded
+    assert len(api.resource_kind_cache.cache) > 10
 
 
 async def test_get_raw_basic() -> None:

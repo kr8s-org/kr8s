@@ -7,6 +7,7 @@ import contextlib
 import copy
 import json
 import logging
+import os
 import pathlib
 import re
 import ssl
@@ -51,6 +52,18 @@ def compute_discovery_cache_dir(parent_dir: pathlib.Path, host: str) -> pathlib.
     return parent_dir / safe_host
 
 
+def get_default_cache_dir() -> pathlib.Path:
+    """
+    Get the default cache directory for kubectl discovery cache.
+
+    Port from kubectl https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L303-L309
+    """
+    if os.environ.get("KUBECACHEDIR"):
+        return pathlib.Path(os.environ["KUBECACHEDIR"])
+    else:
+        return pathlib.Path.home() / ".kube" / "cache"
+
+
 def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = None):
     """
     Load API resources from kubectl's discovery cache.
@@ -60,12 +73,11 @@ def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = N
     You can load this information and skip sending many requests to the server.
     """
     if not cache_dir:
-        cache_dir_base = (
-            pathlib.Path(api.auth.kubeconfig.path).parent / "cache" / "discovery"
-        )
-        cache_dir = pathlib.Path(
-            compute_discovery_cache_dir(cache_dir_base, api.auth.server)
-        )
+        cache_dir = get_default_cache_dir()
+
+    cache_dir = pathlib.Path(
+        compute_discovery_cache_dir(cache_dir / "discovery", api.auth.server)
+    )
 
     logger.debug(f"Loading API resources from kubectl cache in {cache_dir}")
     if not (cache_dir / "servergroups.json").exists():
