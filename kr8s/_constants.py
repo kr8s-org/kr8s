@@ -3,4 +3,4 @@
 from packaging.version import parse as parse_version
 
 KUBERNETES_MINIMUM_SUPPORTED_VERSION = parse_version("1.28")
-KUBERNETES_MAXIMUM_SUPPORTED_VERSION = parse_version("1.34")
+KUBERNETES_MAXIMUM_SUPPORTED_VERSION = parse_version("1.35")
