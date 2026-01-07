@@ -50,9 +50,11 @@ jobs:
           model: llama3.2:3b
           prompt: |
             You are a helpful assistant that generates PR titles for Kubernetes version updates by summarising a git diff.
-            The title should be concise and to the point, and should not include any markdown formatting or quotes.
+            The title should be concise and to the point.
             The title should be in the present tense.
             Your response must be no more than 50 characters.
+            Do not use quotes in your response.
+            Do not use markdown formatting in your response.
 
             ```diff
             ${{ steps.diff.outputs.diff }}
