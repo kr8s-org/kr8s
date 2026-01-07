@@ -14,11 +14,8 @@ import ssl
 import threading
 import warnings
 import weakref
-from collections.abc import AsyncGenerator, Awaitable
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-)
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
 import anyio
 import httpx
@@ -65,7 +62,49 @@ def get_default_cache_dir() -> pathlib.Path:
         return pathlib.Path.home() / ".kube" / "cache"
 
 
-def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = None):
+class OnDiskResourceKindCache:
+    """Cache for API resources kinds on disk."""
+
+    def __init__(self, cache_dir: pathlib.Path):
+        self.cache_dir = cache_dir
+
+    @classmethod
+    def from_api(
+        cls, api: Api, kubectl_cache_dir: pathlib.Path | None = None
+    ) -> OnDiskResourceKindCache:
+        if not kubectl_cache_dir:
+            kubectl_cache_dir = get_default_cache_dir()
+
+        cache_dir = pathlib.Path(
+            compute_discovery_cache_dir(
+                kubectl_cache_dir / "discovery", api.auth.server
+            )
+        )
+        logger.debug(f"Loading API resources from kubectl cache in {cache_dir}")
+        if not cache_dir.exists():
+            logger.debug("Cache directory does not exist, creating")
+            cache_dir.mkdir(parents=True, exist_ok=True)
+
+        return cls(cache_dir)
+
+    def load_file(self, file: pathlib.Path) -> dict:
+        """Load a file from kubectl's discovery cache."""
+        with open(self.cache_dir / file, encoding="utf-8") as f:
+            return json.load(f)
+
+    def write_file(self, file: pathlib.Path, data: dict) -> None:
+        """Write a file to kubectl's discovery cache."""
+        with open(self.cache_dir / file, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def check_exists(self, file: pathlib.Path) -> bool:
+        return (self.cache_dir / file).exists()
+
+    def list_all_files(self, glob: str = "*.json") -> list[pathlib.Path]:
+        return list(self.cache_dir.rglob(glob))
+
+
+def load_api_resources_from_kubectl(_cache: OnDiskResourceKindCache):
     """
     Load API resources from kubectl's discovery cache.
 
@@ -73,27 +112,20 @@ def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = N
     Kubectl caches this information on disk.
     You can load this information and skip sending many requests to the server.
     """
-    if not cache_dir:
-        cache_dir = get_default_cache_dir()
-
-    cache_dir = pathlib.Path(
-        compute_discovery_cache_dir(cache_dir / "discovery", api.auth.server)
-    )
-
-    logger.debug(f"Loading API resources from kubectl cache in {cache_dir}")
-    if not (cache_dir / "servergroups.json").exists():
+    logger.debug(f"Loading API resources from kubectl cache in {_cache.cache_dir}")
+    if not _cache.check_exists(pathlib.Path("servergroups.json")):
         logger.warning(
-            f"Directory {cache_dir} does not contain `servergroups.json`, "
+            f"Directory {_cache.cache_dir} does not contain `servergroups.json`, "
             "this may not be a standard kubectl cache directory",
         )
 
     out = []
 
-    for file in cache_dir.rglob("serverresources.json"):
+    for file in _cache.list_all_files():
         try:
-            data = json.loads(file.read_text())
+            data = _cache.load_file(file)
             group_version = data["groupVersion"]
-            out.append(api.collect_api_resources(data, group_version))
+            out.append(Api.collect_api_resources(data, group_version))
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"Failed to load API resources from {file}: {e}")
             continue
@@ -104,7 +136,7 @@ def load_api_resources_from_kubectl(api: Api, cache_dir: pathlib.Path | None = N
             continue
 
     logger.debug(f"Loaded {len(out)} API resources from kubectl cache")
-    api.resource_kind_cache.set(out)  # type: ignore
+    return out
 
 
 class ResourceKindCache:
@@ -114,17 +146,17 @@ class ResourceKindCache:
 
     def __init__(
         self,
-        fetch: Callable[[], Awaitable[list[dict]]],
+        api: Api,
         cache: list[dict] | None = None,
     ):
-        self.fetch = fetch
+        self.api = api
         self.cache = [] if cache is None else cache
         self.loaded = cache is not None
 
     async def get(self) -> list[dict]:
         # TODO: break this up by resources
         if not self.loaded:
-            await self.set(await self.fetch())
+            await self.set(await self.api.async_api_resources_uncached())
 
         return self.cache
 
@@ -180,7 +212,7 @@ class Api:
         # TODO: make this injectable
         # TODO: fill with kubectl cache
         # TODO: fill from k8s
-        self.resource_kind_cache = ResourceKindCache(self.async_api_resources_uncached)
+        self.resource_kind_cache = ResourceKindCache(self)
 
     def __await__(self):
         async def f():
@@ -796,7 +828,8 @@ class Api:
                 resources.extend(self.collect_api_resources(resource, version))
         return resources
 
-    def collect_api_resources(self, resource, version):
+    @staticmethod
+    def collect_api_resources(resource, version):
         """Add an API resource to the list of resources."""
         return [
             {"version": version, **r}
