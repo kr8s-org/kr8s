@@ -14,9 +14,10 @@ import ssl
 import threading
 import warnings
 import weakref
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable
 from typing import (
     TYPE_CHECKING,
+    Callable,
 )
 
 import anyio
@@ -111,15 +112,23 @@ class ResourceKindCache:
 
     # TODO: Add TTL
 
-    def __init__(self, cache: list[dict] | None = None):
+    def __init__(
+        self,
+        fetch: Callable[[], Awaitable[list[dict]]],
+        cache: list[dict] | None = None,
+    ):
+        self.fetch = fetch
         self.cache = [] if cache is None else cache
         self.loaded = cache is not None
 
-    def get(self):
+    async def get(self) -> list[dict]:
         # TODO: break this up by resources
+        if not self.loaded:
+            await self.set(await self.fetch())
+
         return self.cache
 
-    def set(self, resources: list[dict]):
+    async def set(self, resources: list[dict]):
         self.loaded = True
         self.cache = resources
 
@@ -171,7 +180,7 @@ class Api:
         # TODO: make this injectable
         # TODO: fill with kubectl cache
         # TODO: fill from k8s
-        self.resource_kind_cache = ResourceKindCache()
+        self.resource_kind_cache = ResourceKindCache(self.async_api_resources_uncached)
 
     def __await__(self):
         async def f():
@@ -759,12 +768,7 @@ class Api:
         return await self.async_api_resources()
 
     async def async_api_resources(self) -> list[dict]:
-        if self.resource_kind_cache.loaded:
-            return self.resource_kind_cache.get()
-        else:
-            value = await self.async_api_resources_uncached()
-            self.resource_kind_cache.set(value)
-            return value
+        return await self.resource_kind_cache.get()
 
     async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""
