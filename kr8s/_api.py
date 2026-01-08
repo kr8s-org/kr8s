@@ -62,7 +62,7 @@ def get_default_cache_dir() -> pathlib.Path:
         return pathlib.Path.home() / ".kube" / "cache"
 
 
-class OnDiskResourceKindCache:
+class KubectlDiscoveryCache:
     """Cache for API resources kinds on disk."""
 
     def __init__(self, cache_dir: pathlib.Path):
@@ -71,7 +71,7 @@ class OnDiskResourceKindCache:
     @classmethod
     def from_api(
         cls, api: Api, kubectl_cache_dir: pathlib.Path | None = None
-    ) -> OnDiskResourceKindCache:
+    ) -> KubectlDiscoveryCache:
         if not kubectl_cache_dir:
             kubectl_cache_dir = get_default_cache_dir()
 
@@ -104,7 +104,7 @@ class OnDiskResourceKindCache:
         return list(self.cache_dir.rglob(glob))
 
 
-def load_api_resources_from_kubectl(_cache: OnDiskResourceKindCache):
+def load_api_resources_from_kubectl(_cache: KubectlDiscoveryCache):
     """
     Load API resources from kubectl's discovery cache.
 

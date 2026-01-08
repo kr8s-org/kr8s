@@ -11,7 +11,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
-from kr8s._api import OnDiskResourceKindCache, load_api_resources_from_kubectl
+from kr8s._api import KubectlDiscoveryCache, load_api_resources_from_kubectl
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -574,7 +574,7 @@ async def test_loading_crds_from_kubectl(kubectl_api_cache):
     api = await kr8s.asyncio.api()
     assert not api.resource_kind_cache.loaded
     await api.resource_kind_cache.set(
-        load_api_resources_from_kubectl(OnDiskResourceKindCache.from_api(api))
+        load_api_resources_from_kubectl(KubectlDiscoveryCache.from_api(api))
     )
     print(api.resource_kind_cache.set)
     assert api.resource_kind_cache.loaded
