@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, Kr8s Developers (See LICENSE for list)
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 from packaging.version import parse as parse_version
 
