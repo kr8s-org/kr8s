@@ -11,7 +11,6 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
-from kr8s import ApplyPatchOp
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -549,10 +548,11 @@ async def test_update_with_ssa(example_pod_spec, example_service_spec):
     pod = await Pod(example_pod_spec)
     service = await Service(example_service_spec)
     resources = [pod, service]
-    await kr8s.asyncio.apply(resources, ApplyPatchOp.SSA)
+    await kr8s.asyncio.apply(resources, server_side=True)
 
     pod.labels["foo"] = "bar"
-    await pod.apply(ApplyPatchOp.SSA)
+    await pod.apply(server_side=True)
+    assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
     assert pod.exists(), "Pod should exist after creation"
     assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
 
@@ -570,16 +570,16 @@ async def test_update_with_ssa_force(example_pod_spec, example_service_spec):
 
     other_api = await kr8s.asyncio.api(field_manager="other-manager")
     pod.api = other_api  # api param in helpers is ignored
-    await kr8s.asyncio.apply(resources, ApplyPatchOp.SSA)
+    await kr8s.asyncio.apply(resources, server_side=True)
     assert pod.exists(), "Pod should exist after creation"
 
     api = await kr8s.asyncio.api(field_manager="kr8s")
     pod.api = api  # api param in helpers is ignored
     with pytest.RaisesGroup(ServerError):
         pod.labels["my_field"] = "changed"
-        await kr8s.asyncio.apply([pod], ApplyPatchOp.SSA)
+        await kr8s.asyncio.apply([pod], server_side=True)
 
-    await kr8s.asyncio.apply([pod], ApplyPatchOp.SSA_FORCE)
+    await kr8s.asyncio.apply([pod], server_side=True, force_conflicts=True)
     assert pod.exists(), "Pod should exist after creation"
     assert (
         pod.labels["my_field"] == "changed"

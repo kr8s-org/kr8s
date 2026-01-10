@@ -29,7 +29,7 @@ else:
 
 import kr8s
 import kr8s.asyncio
-from kr8s._api import Api, ApplyPatchOp
+from kr8s._api import Api, ApplyOpTypes, _apply_op_content_type
 from kr8s._async_utils import as_sync_func, as_sync_generator
 from kr8s._data_utils import (
     dict_to_selector,
@@ -378,15 +378,21 @@ class APIObject:
         """Create this object in Kubernetes."""
         return await self.async_create()
 
-    async def async_apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
+    async def async_apply(
+        self, server_side: bool = False, force_conflicts: bool = False
+    ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
         assert self.api
         # Remove managedFields which must be nil when using server-side apply
         self.metadata.managedFields = None
 
         params = {"fieldManager": self.api.field_manager}
-        if op == ApplyPatchOp.SSA_FORCE:
+        if server_side:
+            params["fieldManager"] = self.api.field_manager
+        if force_conflicts:
             params["force"] = "true"
+
+        op_type: ApplyOpTypes = "ssa" if server_side else "strategic"
 
         try:
             async with self.api.call_api(
@@ -395,7 +401,7 @@ class APIObject:
                 url=f"{self.endpoint}/{self.name}",
                 namespace=self.namespace,
                 content=json.dumps(self.raw_template),
-                headers={"Content-Type": op.content_type()},
+                headers={"Content-Type": _apply_op_content_type(op_type)},
                 params=params,
             ) as resp:
                 self.raw = resp.json()
@@ -405,9 +411,11 @@ class APIObject:
             else:
                 raise
 
-    async def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC) -> None:
+    async def apply(
+        self, server_side: bool = False, force_conflicts: bool = False
+    ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
-        return await self.async_apply(op=op)
+        return await self.async_apply(server_side, force_conflicts)
 
     async def delete(
         self,
@@ -493,9 +501,9 @@ class APIObject:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if type == "json":
-            headers = {"Content-Type": "application/json-patch+json"}
+            headers = {"Content-Type": _apply_op_content_type(type)}
         else:
-            headers = {"Content-Type": "application/merge-patch+json"}
+            headers = {"Content-Type": _apply_op_content_type("merge")}
         if subresource:
             url = f"{url}/{subresource}"
         try:
@@ -997,8 +1005,10 @@ class APIObjectSyncMixin(APIObject):
     def create(self) -> None:  # type: ignore[override]
         return as_sync_func(self.async_create)()
 
-    def apply(self, op: ApplyPatchOp = ApplyPatchOp.STRATEGIC):
-        return as_sync_func(self.async_apply)(op=op)
+    def apply(self, server_side: bool = False, force_conflicts: bool = False):
+        return as_sync_func(self.async_apply)(
+            server_side=server_side, force_conflicts=force_conflicts
+        )
 
     def delete(  # type: ignore[override]
         self,
