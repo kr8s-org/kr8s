@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 import pathlib
 import re
 import sys
@@ -44,6 +45,8 @@ from kr8s._types import SpecType, SupportsKeysAndGetItem
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import LocalPortType
 from kr8s.portforward import PortForward as SyncPortForward
+
+logger = logging.getLogger(__name__)
 
 JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
 
@@ -386,9 +389,15 @@ class APIObject:
         # Remove managedFields which must be nil when using server-side apply
         self.metadata.managedFields = None
 
-        params = {"fieldManager": self.api.field_manager}
-        if server_side:
-            params["fieldManager"] = self.api.field_manager
+        params = {}
+        if self.api.field_manager:
+            field_manager = self.api.field_manager
+        elif server_side:
+            field_manager = "kr8s"
+        else:
+            field_manager = "kr8s-client-side-apply"
+        params["fieldManager"] = field_manager
+
         if force_conflicts:
             params["force"] = "true"
 
