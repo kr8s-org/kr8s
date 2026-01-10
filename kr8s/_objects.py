@@ -399,7 +399,12 @@ class APIObject:
         params["fieldManager"] = field_manager
 
         if force_conflicts:
-            params["force"] = "true"
+            if server_side:
+                params["force"] = "true"
+            else:
+                logger.warning(
+                    "force_conflicts=True is ignored when not using server-side apply"
+                )
 
         op_type: ApplyOpTypes = "ssa" if server_side else "strategic"
 
