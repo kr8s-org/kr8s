@@ -104,6 +104,36 @@ class KubectlDiscoveryCache:
         return list(self.cache_dir.rglob(glob))
 
 
+class KindFetcher:
+    """Fetch API resources from the Kubernetes API."""
+
+    def __init__(self, api: Api):
+        self.api = api
+
+    async def fetch_kind(self, group_version: str):
+        """Fetch an individual API version."""
+        async with self.api.call_api(
+            method="GET", version="", base="/apis", url=group_version
+        ) as response:
+            return response.json()
+
+    async def fetch_apis(self):
+        async with self.api.call_api(
+            method="GET", version="", base="/apis"
+        ) as response:
+            return response.json()
+
+    async def fetch_core_kinds(self, version):
+        async with self.call_api(
+            method="GET", version="", base="/api", url=version
+        ) as response:
+            return response.json()
+
+    async def fetch_core_versions(self):
+        async with self.call_api(method="GET", version="", base="/api") as response:
+            return response.json()
+
+
 def load_api_resources_from_kubectl(_cache: KubectlDiscoveryCache):
     """
     Load API resources from kubectl's discovery cache.
@@ -213,6 +243,7 @@ class Api:
         # TODO: fill with kubectl cache
         # TODO: fill from k8s
         self.resource_kind_cache = ResourceKindCache(self)
+        self.kind_fetcher = KindFetcher(self)
 
     def __await__(self):
         async def f():
@@ -805,26 +836,18 @@ class Api:
     async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""
         resources = []
-        async with self.call_api(method="GET", version="", base="/api") as response:
-            core_api_list = response.json()
+        core_api_list = await self.kind_fetcher.fetch_core_versions()
 
         for version in core_api_list["versions"]:
-            async with self.call_api(
-                method="GET", version="", base="/api", url=version
-            ) as response:
-                resource = response.json()
+            resource = await self.kind_fetcher.fetch_core_kinds(version)
             resources.extend(self.collect_api_resources(resource, version))
-        async with self.call_api(method="GET", version="", base="/apis") as response:
-            api_list = response.json()
+        api_list = await self.kind_fetcher.fetch_apis()
         for api in sorted(api_list["groups"], key=lambda d: d["name"]):
             for api_version in sort_versions(
                 api["versions"], key=lambda x: x["groupVersion"]
             ):
                 version = api_version["groupVersion"]
-                async with self.call_api(
-                    method="GET", version="", base="/apis", url=version
-                ) as response:
-                    resource = response.json()
+                resource = await self.kind_fetcher.fetch_kind(version)
                 resources.extend(self.collect_api_resources(resource, version))
         return resources
 
