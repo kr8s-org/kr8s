@@ -224,6 +224,34 @@ await pod.create()
 
 `````
 
+### Create or update a ConfigMap with `apply`
+
+Server-Side Apply allows you to create or update a resource without having to fetch the current state first. It also allows you to apply partial updates to a resource.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync: sync
+```python
+from kr8s.objects import ConfigMap
+
+cm = ConfigMap({"metadata": {"name": "my-configmap"}, "data": {"new-key": "new-value"}})
+cm.apply(server_side=True)
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import ConfigMap
+
+cm = await ConfigMap({"metadata": {"name": "my-configmap"}, "data": {"new-key": "new-value"}})
+await cm.apply(server_side=True)
+```
+````
+
+`````
+
 ### Cordon a Node
 
 Cordon a Node to mark it as unschedulable.
