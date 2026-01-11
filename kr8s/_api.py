@@ -14,6 +14,7 @@ import ssl
 import threading
 import warnings
 import weakref
+from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
@@ -94,7 +95,9 @@ class KubectlDiscoveryCache:
 
     def write_file(self, file: pathlib.Path, data: dict) -> None:
         """Write a file to kubectl's discovery cache."""
-        with open(self.cache_dir / file, "w", encoding="utf-8") as f:
+        cache_file = self.cache_dir / file
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(data, f)
 
     def check_exists(self, file: pathlib.Path) -> bool:
@@ -104,7 +107,27 @@ class KubectlDiscoveryCache:
         return list(self.cache_dir.rglob(glob))
 
 
-class KindFetcher:
+class KindFetcherABC(ABC):
+    """Abstract base class for fetching API resources from the Kubernetes API."""
+
+    @abstractmethod
+    async def fetch_kind(self, group_version: str):
+        """Fetch an individual API version. Result of the `/apis/{group_version}` endpoint."""
+
+    @abstractmethod
+    async def fetch_apis(self):
+        """Fetch all API versions. Result of the `/apis` endpoint."""
+
+    @abstractmethod
+    async def fetch_core_kinds(self, version):
+        """Fetch all core API versions. Result of the `/api/{version}` endpoint."""
+
+    @abstractmethod
+    async def fetch_core_versions(self):
+        """Fetch all core API versions. Result of the `/api` endpoint."""
+
+
+class KindFetcher(KindFetcherABC):
     """Fetch API resources from the Kubernetes API."""
 
     def __init__(self, api: Api):
@@ -124,14 +147,76 @@ class KindFetcher:
             return response.json()
 
     async def fetch_core_kinds(self, version):
-        async with self.call_api(
+        async with self.api.call_api(
             method="GET", version="", base="/api", url=version
         ) as response:
             return response.json()
 
     async def fetch_core_versions(self):
-        async with self.call_api(method="GET", version="", base="/api") as response:
+        async with self.api.call_api(method="GET", version="", base="/api") as response:
             return response.json()
+
+
+class KindFetcherDisk(KindFetcherABC):
+    """Fetch API resources from the Kubernetes API, reading from disk."""
+
+    def __init__(self, cache: KubectlDiscoveryCache):
+        self.cache = cache
+
+    async def fetch_kind(self, group_version: str):
+        return self.cache.load_file(pathlib.Path(group_version, "serverresources.json"))
+
+    async def fetch_apis(self):
+        return self.cache.load_file(pathlib.Path("serverresources.json"))
+
+    async def fetch_core_kinds(self, version):
+        return self.cache.load_file(pathlib.Path(version, "serverresources.json"))
+
+    async def fetch_core_versions(self):
+        raise NotImplementedError("/api is not cached")
+
+
+class KindFetcherCached(KindFetcherABC):
+    """Fetch API resources from the Kubernetes API, caching results."""
+
+    def __init__(
+        self, kind_fetcher: KindFetcher, cache: KindFetcherDisk, save_cache: bool = True
+    ):
+        self.kind_fetcher = kind_fetcher
+        self.cache = cache
+        self.save_cache = save_cache
+
+    def save_file(self, file: pathlib.Path, data):
+        if self.save_cache:
+            logger.debug("saving to discovery cache %s", file)
+            self.cache.cache.write_file(file, data)
+
+    async def fetch_kind(self, group_version: str):
+        try:
+            return await self.cache.fetch_kind(group_version)
+        except FileNotFoundError:
+            v = await self.kind_fetcher.fetch_kind(group_version)
+            self.save_file(pathlib.Path(group_version, "serverresources.json"), v)
+            return v
+
+    async def fetch_apis(self):
+        try:
+            return await self.cache.fetch_apis()
+        except FileNotFoundError:
+            v = await self.kind_fetcher.fetch_apis()
+            self.save_file(pathlib.Path("servergroups.json"), v)
+            return v
+
+    async def fetch_core_kinds(self, version):
+        try:
+            return await self.cache.fetch_core_kinds(version)
+        except FileNotFoundError:
+            v = await self.kind_fetcher.fetch_core_kinds(version)
+            self.save_file(pathlib.Path(version, "serverresources.json"), v)
+            return v
+
+    async def fetch_core_versions(self):
+        return await self.kind_fetcher.fetch_core_versions()
 
 
 def load_api_resources_from_kubectl(_cache: KubectlDiscoveryCache):
@@ -243,7 +328,11 @@ class Api:
         # TODO: fill with kubectl cache
         # TODO: fill from k8s
         self.resource_kind_cache = ResourceKindCache(self)
-        self.kind_fetcher = KindFetcher(self)
+        self.kind_fetcher = KindFetcherCached(
+            KindFetcher(self),
+            KindFetcherDisk(KubectlDiscoveryCache.from_api(self)),
+            save_cache=True,
+        )
 
     def __await__(self):
         async def f():
