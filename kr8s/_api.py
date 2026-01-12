@@ -157,43 +157,29 @@ class KindFetcher(KindFetcherABC):
             return response.json()
 
 
-class KindFetcherDisk(KindFetcherABC):
-    """Fetch API resources from the Kubernetes API, reading from disk."""
-
-    def __init__(self, cache: KubectlDiscoveryCache):
-        self.cache = cache
-
-    async def fetch_kind(self, group_version: str):
-        return self.cache.load_file(pathlib.Path(group_version, "serverresources.json"))
-
-    async def fetch_apis(self):
-        return self.cache.load_file(pathlib.Path("serverresources.json"))
-
-    async def fetch_core_kinds(self, version):
-        return self.cache.load_file(pathlib.Path(version, "serverresources.json"))
-
-    async def fetch_core_versions(self):
-        raise NotImplementedError("/api is not cached")
-
-
 class KindFetcherCached(KindFetcherABC):
     """Fetch API resources from the Kubernetes API, caching results."""
 
     def __init__(
-        self, kind_fetcher: KindFetcher, cache: KindFetcherDisk, save_cache: bool = True
+        self,
+        kind_fetcher: KindFetcher,
+        disk_cache: KubectlDiscoveryCache,
+        save_cache: bool = True,
     ):
         self.kind_fetcher = kind_fetcher
-        self.cache = cache
+        self.disk_cache = disk_cache
         self.save_cache = save_cache
 
     def save_file(self, file: pathlib.Path, data):
         if self.save_cache:
             logger.debug("saving to discovery cache %s", file)
-            self.cache.cache.write_file(file, data)
+            self.disk_cache.write_file(file, data)
 
     async def fetch_kind(self, group_version: str):
         try:
-            return await self.cache.fetch_kind(group_version)
+            return self.disk_cache.load_file(
+                pathlib.Path(group_version, "serverresources.json")
+            )
         except FileNotFoundError:
             v = await self.kind_fetcher.fetch_kind(group_version)
             self.save_file(pathlib.Path(group_version, "serverresources.json"), v)
@@ -201,7 +187,7 @@ class KindFetcherCached(KindFetcherABC):
 
     async def fetch_apis(self):
         try:
-            return await self.cache.fetch_apis()
+            return self.disk_cache.load_file(pathlib.Path("serverresources.json"))
         except FileNotFoundError:
             v = await self.kind_fetcher.fetch_apis()
             self.save_file(pathlib.Path("servergroups.json"), v)
@@ -209,7 +195,9 @@ class KindFetcherCached(KindFetcherABC):
 
     async def fetch_core_kinds(self, version):
         try:
-            return await self.cache.fetch_core_kinds(version)
+            return self.disk_cache.load_file(
+                pathlib.Path(version, "serverresources.json")
+            )
         except FileNotFoundError:
             v = await self.kind_fetcher.fetch_core_kinds(version)
             self.save_file(pathlib.Path(version, "serverresources.json"), v)
@@ -361,7 +349,7 @@ class Api:
         self.resource_kind_cache = ResourceKindCache(
             KindFetcherCached(
                 KindFetcher(self),
-                KindFetcherDisk(KubectlDiscoveryCache.from_api(self)),
+                KubectlDiscoveryCache.from_api(self),
                 save_cache=True,
             )
         )
