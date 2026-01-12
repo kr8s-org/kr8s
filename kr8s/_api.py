@@ -240,7 +240,7 @@ def load_api_resources_from_kubectl(_cache: KubectlDiscoveryCache):
         try:
             data = _cache.load_file(file)
             group_version = data["groupVersion"]
-            out.append(Api.collect_api_resources(data, group_version))
+            out.append(ResourceKindCache.collect_api_resources(data, group_version))
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"Failed to load API resources from {file}: {e}")
             continue
@@ -261,23 +261,54 @@ class ResourceKindCache:
 
     def __init__(
         self,
-        api: Api,
+        kind_fetcher: KindFetcherCached,
         cache: list[dict] | None = None,
     ):
-        self.api = api
+        self.kind_fetcher = kind_fetcher
         self.cache = [] if cache is None else cache
         self.loaded = cache is not None
 
     async def get(self) -> list[dict]:
         # TODO: break this up by resources
         if not self.loaded:
-            await self.set(await self.api.async_api_resources_uncached())
+            await self.get_uncached()
 
+        return self.cache
+
+    async def get_uncached(self) -> list[dict]:
+        await self.set(await self.async_api_resources_uncached())
         return self.cache
 
     async def set(self, resources: list[dict]):
         self.loaded = True
         self.cache = resources
+
+    @staticmethod
+    def collect_api_resources(resource, version):
+        """Add an API resource to the list of resources."""
+        return [
+            {"version": version, **r}
+            for r in resource["resources"]
+            if "/" not in r["name"]
+        ]
+
+    async def async_api_resources_uncached(self) -> list[dict]:
+        """Get the Kubernetes API resources."""
+        resources = []
+        core_api_list = await self.kind_fetcher.fetch_core_versions()
+
+        for version in core_api_list["versions"]:
+            resource = await self.kind_fetcher.fetch_core_kinds(version)
+            resources.extend(self.collect_api_resources(resource, version))
+        api_list = await self.kind_fetcher.fetch_apis()
+        for api in sorted(api_list["groups"], key=lambda d: d["name"]):
+            for api_version in sort_versions(
+                api["versions"], key=lambda x: x["groupVersion"]
+            ):
+                version = api_version["groupVersion"]
+                resource = await self.kind_fetcher.fetch_kind(version)
+                resources.extend(self.collect_api_resources(resource, version))
+        return resources
 
 
 class Api:
@@ -327,11 +358,12 @@ class Api:
         # TODO: make this injectable
         # TODO: fill with kubectl cache
         # TODO: fill from k8s
-        self.resource_kind_cache = ResourceKindCache(self)
-        self.kind_fetcher = KindFetcherCached(
-            KindFetcher(self),
-            KindFetcherDisk(KubectlDiscoveryCache.from_api(self)),
-            save_cache=True,
+        self.resource_kind_cache = ResourceKindCache(
+            KindFetcherCached(
+                KindFetcher(self),
+                KindFetcherDisk(KubectlDiscoveryCache.from_api(self)),
+                save_cache=True,
+            )
         )
 
     def __await__(self):
@@ -615,9 +647,9 @@ class Api:
         from ._objects import parse_kind
 
         if skip_cache:
-            resources = await self.async_api_resources_uncached()
+            resources = await self.resource_kind_cache.get_uncached()
         else:
-            resources = await self.async_api_resources()
+            resources = await self.resource_kind_cache.get()
         kind, group, version = parse_kind(kind)
         if group:
             version = f"{group}/{version}"
@@ -921,33 +953,6 @@ class Api:
 
     async def async_api_resources(self) -> list[dict]:
         return await self.resource_kind_cache.get()
-
-    async def async_api_resources_uncached(self) -> list[dict]:
-        """Get the Kubernetes API resources."""
-        resources = []
-        core_api_list = await self.kind_fetcher.fetch_core_versions()
-
-        for version in core_api_list["versions"]:
-            resource = await self.kind_fetcher.fetch_core_kinds(version)
-            resources.extend(self.collect_api_resources(resource, version))
-        api_list = await self.kind_fetcher.fetch_apis()
-        for api in sorted(api_list["groups"], key=lambda d: d["name"]):
-            for api_version in sort_versions(
-                api["versions"], key=lambda x: x["groupVersion"]
-            ):
-                version = api_version["groupVersion"]
-                resource = await self.kind_fetcher.fetch_kind(version)
-                resources.extend(self.collect_api_resources(resource, version))
-        return resources
-
-    @staticmethod
-    def collect_api_resources(resource, version):
-        """Add an API resource to the list of resources."""
-        return [
-            {"version": version, **r}
-            for r in resource["resources"]
-            if "/" not in r["name"]
-        ]
 
     async def api_versions(self) -> AsyncGenerator[str]:
         """Get the Kubernetes API versions."""
