@@ -248,7 +248,9 @@ class ResourceKindCache:
         return self.cache
 
     async def get_uncached(self) -> list[dict]:
-        await self.set(await self.kind_fetcher.async_api_resources_uncached())
+        uncached = copy.copy(self.kind_fetcher)
+        uncached.read_cache = False
+        await self.set(await uncached.async_api_resources())
         return self.cache
 
     async def set(self, resources: list[dict]):
