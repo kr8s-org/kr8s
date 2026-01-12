@@ -14,7 +14,6 @@ import ssl
 import threading
 import warnings
 import weakref
-from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
@@ -107,27 +106,7 @@ class KubectlDiscoveryCache:
         return list(self.cache_dir.rglob(glob))
 
 
-class KindFetcherABC(ABC):
-    """Abstract base class for fetching API resources from the Kubernetes API."""
-
-    @abstractmethod
-    async def fetch_kind(self, group_version: str):
-        """Fetch an individual API version. Result of the `/apis/{group_version}` endpoint."""
-
-    @abstractmethod
-    async def fetch_apis(self):
-        """Fetch all API versions. Result of the `/apis` endpoint."""
-
-    @abstractmethod
-    async def fetch_core_kinds(self, version):
-        """Fetch all core API versions. Result of the `/api/{version}` endpoint."""
-
-    @abstractmethod
-    async def fetch_core_versions(self):
-        """Fetch all core API versions. Result of the `/api` endpoint."""
-
-
-class KindFetcherCached(KindFetcherABC):
+class KindFetcherCached:
     """Fetch API resources from the Kubernetes API, caching results."""
 
     def __init__(
