@@ -239,7 +239,7 @@ class PortForward:
                     yield websocket
                     break
             except httpx_ws.HTTPXWSException as e:
-                if connection_attempts > 5:
+                if connection_attempts >= 5:
                     if (
                         isinstance(e, httpx_ws.WebSocketUpgradeError)
                         and hasattr(e, "response")
