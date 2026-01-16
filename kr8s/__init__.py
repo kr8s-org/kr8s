@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from functools import partial, update_wrapper
-from typing import cast
+from typing import Union, cast
 
 from . import asyncio, objects, portforward
 from ._api import ALL
@@ -86,7 +86,7 @@ class Api(_AsyncApi):
         **kwargs,
     ) -> Generator[objects.APIObject | dict]:
         yield from cast(
-            Generator[objects.APIObject | dict],
+            Generator[Union[objects.APIObject, dict]],
             _as_sync_generator(self.async_get)(
                 kind,
                 *names,
