@@ -922,18 +922,17 @@ class APIObject:
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
     @classmethod
-    async def list(cls, raw: bool = False, **kwargs) -> AsyncGenerator[Self | dict]:
+    async def list(cls, **kwargs) -> AsyncGenerator[Self | dict]:
         """List objects in Kubernetes.
 
         Args:
             api: An optional API object to use.
-            raw: If True, return raw dictionaries instead of APIObject instances, default False.
             **kwargs: Keyword arguments to pass to :func:`kr8s.get`.
 
         Returns:
             A list of objects or dictionaries (if raw=True).
         """
-        async for resource in cls.async_list(raw=raw, **kwargs):
+        async for resource in cls.async_list(**kwargs):
             yield resource
 
 
