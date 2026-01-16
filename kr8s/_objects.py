@@ -908,19 +908,21 @@ class APIObject:
         raise NotImplementedError("gen is not implemented for this object")
 
     @classmethod
-    async def async_list(cls, api: Api | None = None, **kwargs) -> AsyncGenerator[Self]:
+    async def async_list(
+        cls, api: Api | None = None, **kwargs
+    ) -> AsyncGenerator[Self | dict]:
         if api is None:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
             else:
                 api = await kr8s.asyncio.api(_asyncio=False)
         async for resource in api.async_get(kind=cls, **kwargs):
-            if isinstance(resource, cls):
+            if isinstance(resource, dict) or isinstance(resource, cls):
                 yield resource
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
     @classmethod
-    async def list(cls, **kwargs) -> AsyncGenerator[Self]:
+    async def list(cls, **kwargs) -> AsyncGenerator[Self | dict]:
         """List objects in Kubernetes.
 
         Args:
@@ -928,7 +930,7 @@ class APIObject:
             **kwargs: Keyword arguments to pass to :func:`kr8s.get`.
 
         Returns:
-            A list of objects.
+            A list of objects or dictionaries (if raw=True).
         """
         async for resource in cls.async_list(**kwargs):
             yield resource
@@ -1012,7 +1014,7 @@ class APIObjectSyncMixin(APIObject):
         return as_sync_func(self.async_adopt)(child)
 
     @classmethod
-    def list(cls, **kwargs) -> Generator[Self]:  # type: ignore[override]
+    def list(cls, **kwargs) -> Generator[Self | dict]:  # type: ignore[override]
         yield from as_sync_generator(cls.async_list)(**kwargs)
 
 

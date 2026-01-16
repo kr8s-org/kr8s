@@ -567,3 +567,98 @@ async def test_crd_caching(example_crd_spec):
     async with create_delete_crd(example_crd_spec) as example_crd:
         # Try to get the new CRD (which isn't in the cache, so the cache should be bypassed)
         [r async for r in api.get(example_crd.name)]
+
+
+async def test_get_raw_basic() -> None:
+    """Test getting resources with raw=True returns dictionaries, not APIObject instances."""
+    api = await kr8s.asyncio.api()
+    pods = [pod async for pod in api.get("pods", namespace="kube-system", raw=True)]
+    assert isinstance(pods, list)
+    assert len(pods) > 0
+    # Should be dictionaries, not Pod objects
+    assert isinstance(pods[0], dict)
+    assert "metadata" in pods[0]
+    assert "name" in pods[0]["metadata"]
+
+
+async def test_get_raw_false_default() -> None:
+    """Test that default behavior (without raw parameter) returns APIObject instances."""
+    api = await kr8s.asyncio.api()
+    pods = [pod async for pod in api.get("pods", namespace="kube-system")]
+    assert isinstance(pods, list)
+    assert len(pods) > 0
+    # Should be Pod objects, not dictionaries
+    assert isinstance(pods[0], Pod)
+    assert not isinstance(pods[0], dict)
+
+
+async def test_get_raw_with_as_object() -> None:
+    """Test that when both as_object and raw=True are specified, yields the raw dictionary."""
+    api = await kr8s.asyncio.api()
+    async for result in api.get(
+        "pods", namespace="kube-system", as_object=Table, raw=True
+    ):
+        # Should be a dictionary, not a Table object
+        assert isinstance(result, dict)
+        assert "kind" in result
+        assert result["kind"] == "Table"
+        # When as_object is specified, the API returns a single object (Table format)
+        break
+
+
+async def test_get_raw_with_label_selector() -> None:
+    """Test that label selectors work with raw=True."""
+    selector = {"component": "kube-apiserver"}
+    pods = [
+        pod
+        async for pod in kr8s.asyncio.get(
+            "pods", namespace="kube-system", label_selector=selector, raw=True
+        )
+    ]
+    # Should get dictionaries
+    for pod in pods:
+        assert isinstance(pod, dict)
+        assert "metadata" in pod
+        if "labels" in pod["metadata"]:
+            # If labels exist, verify the selector matches
+            assert pod["metadata"]["labels"].get("component") == "kube-apiserver"
+
+
+async def test_get_raw_with_field_selector() -> None:
+    """Test that field selectors work with raw=True."""
+    pods = [
+        pod
+        async for pod in kr8s.asyncio.get(
+            "pods",
+            namespace="kube-system",
+            field_selector="status.phase=Running",
+            raw=True,
+        )
+    ]
+    # Should get dictionaries
+    assert len(pods) > 0
+    for pod in pods:
+        assert isinstance(pod, dict)
+        assert pod["status"]["phase"] == "Running"
+
+
+def test_get_raw_sync() -> None:
+    """Test the sync version (kr8s.get()) with raw=True."""
+    pods = list(kr8s.get("pods", namespace="kube-system", raw=True))
+    assert isinstance(pods, list)
+    assert len(pods) > 0
+    # Should be dictionaries, not Pod objects
+    assert isinstance(pods[0], dict)
+    assert "metadata" in pods[0]
+    assert not isinstance(pods[0], SyncPod)
+
+
+async def test_list_raw() -> None:
+    """Test the APIObject.list() classmethod with raw=True returns dictionaries."""
+    pods = [pod async for pod in Pod.list(namespace="kube-system", raw=True)]
+    assert isinstance(pods, list)
+    assert len(pods) > 0
+    # Should be dictionaries, not Pod objects
+    assert isinstance(pods[0], dict)
+    assert "metadata" in pods[0]
+    assert not isinstance(pods[0], Pod)

@@ -222,3 +222,45 @@ for pod in pods:
 ````
 
 `````
+
+## List Pods as Raw Dictionaries
+
+For better performance when you don't need {py:class}`APIObject <kr8s.objects.APIObject>` methods, you can use `raw=True` to get raw dictionaries directly from the Kubernetes API. This is especially useful when processing large result sets or when you only need to extract simple metadata.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync: sync
+```python
+import kr8s
+
+# Get raw dictionaries instead of Pod objects
+for pod in kr8s.get("pods", namespace="kube-system", raw=True):
+    print(pod["metadata"]["name"], pod["status"]["phase"])
+
+# Also works with Pod.list()
+from kr8s.objects import Pod
+
+for pod in Pod.list(namespace="kube-system", raw=True):
+    print(pod["metadata"]["name"])
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+import kr8s
+
+# Get raw dictionaries instead of Pod objects
+async for pod in kr8s.asyncio.get("pods", namespace="kube-system", raw=True):
+    print(pod["metadata"]["name"], pod["status"]["phase"])
+
+# Also works with Pod.list()
+from kr8s.asyncio.objects import Pod
+
+async for pod in Pod.list(namespace="kube-system", raw=True):
+    print(pod["metadata"]["name"])
+```
+````
+
+`````
