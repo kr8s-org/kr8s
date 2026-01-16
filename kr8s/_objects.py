@@ -917,9 +917,7 @@ class APIObject:
             else:
                 api = await kr8s.asyncio.api(_asyncio=False)
         async for resource in api.async_get(kind=cls, raw=raw, **kwargs):
-            if raw and isinstance(resource, dict):
-                yield resource
-            elif isinstance(resource, cls):
+            if (raw and isinstance(resource, dict)) or isinstance(resource, cls):
                 yield resource
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
