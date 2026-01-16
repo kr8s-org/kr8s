@@ -1014,8 +1014,8 @@ class APIObjectSyncMixin(APIObject):
         return as_sync_func(self.async_adopt)(child)
 
     @classmethod
-    def list(cls, raw: bool = False, **kwargs) -> Generator[Self | dict]:  # type: ignore[override]
-        yield from as_sync_generator(cls.async_list)(raw=raw, **kwargs)
+    def list(cls, **kwargs) -> Generator[Self | dict]:  # type: ignore[override]
+        yield from as_sync_generator(cls.async_list)(**kwargs)
 
 
 ## v1 objects
