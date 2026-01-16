@@ -909,15 +909,15 @@ class APIObject:
 
     @classmethod
     async def async_list(
-        cls, api: Api | None = None, raw: bool = False, **kwargs
+        cls, api: Api | None = None, **kwargs
     ) -> AsyncGenerator[Self | dict]:
         if api is None:
             if cls._asyncio:
                 api = await kr8s.asyncio.api()
             else:
                 api = await kr8s.asyncio.api(_asyncio=False)
-        async for resource in api.async_get(kind=cls, raw=raw, **kwargs):
-            if (raw and isinstance(resource, dict)) or isinstance(resource, cls):
+        async for resource in api.async_get(kind=cls, **kwargs):
+            if isinstance(resource, dict) or isinstance(resource, cls):
                 yield resource
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
