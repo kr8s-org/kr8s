@@ -16,6 +16,7 @@ async def get(
     field_selector: Optional[Union[str, dict]] = None,
     as_object: Optional[type[APIObject]] = None,
     allow_unknown_type: bool = True,
+    raw: bool = False,
     api=None,
     _asyncio=True,
     **kwargs,
@@ -33,11 +34,12 @@ async def get(
         field_selector: The field selector to filter the resources by.
         as_object: The object to populate with the resource data.
         allow_unknown_type: Automatically create a class for the resource if none exists.
+        raw: If True, return raw dictionaries instead of APIObject instances, default False.
         api: The api to use to get the resource.
         **kwargs: Additional keyword arguments to pass to the `httpx` API call.
 
     Returns:
-        List[APIObject]: The Kubernetes resource objects.
+        List[APIObject]: The Kubernetes resource objects (or dicts if raw=True).
 
     Raises:
         ValueError: If the resource is not found.
@@ -52,6 +54,10 @@ async def get(
         >>> ings = await kr8s.asyncio.get("ingress.networking.k8s.io")     # Full group name
         >>> ings = await kr8s.asyncio.get("ingress.v1.networking.k8s.io")  # Full with explicit version
         >>> ings = await kr8s.asyncio.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+        >>>
+        >>> # Get raw dictionaries for better performance
+        >>> pods = [pod async for pod in kr8s.asyncio.get("pods", raw=True)]
+        >>> print(pods[0]["metadata"]["name"])
     """
     if api is None:
         api = await _api(_asyncio=_asyncio)
@@ -63,6 +69,7 @@ async def get(
         field_selector=field_selector,
         as_object=as_object,
         allow_unknown_type=allow_unknown_type,
+        raw=raw,
         **kwargs,
     ):
         yield resource

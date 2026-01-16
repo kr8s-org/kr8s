@@ -82,10 +82,11 @@ class Api(_AsyncApi):
         field_selector: str | dict | None = None,
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
+        raw: bool = False,
         **kwargs,
-    ) -> Generator[objects.APIObject]:
+    ) -> Generator[objects.APIObject | dict]:
         yield from cast(
-            Generator[objects.APIObject],
+            Generator[objects.APIObject | dict],
             _as_sync_generator(self.async_get)(
                 kind,
                 *names,
@@ -94,6 +95,7 @@ class Api(_AsyncApi):
                 field_selector=field_selector,
                 as_object=as_object,
                 allow_unknown_type=allow_unknown_type,
+                raw=raw,
                 **kwargs,
             ),
         )
@@ -137,6 +139,7 @@ def get(
     field_selector: str | dict | None = None,
     as_object: type | None = None,
     allow_unknown_type: bool = True,
+    raw: bool = False,
     api=None,
     **kwargs,
 ):
@@ -150,11 +153,12 @@ def get(
         field_selector: The field selector to filter the resources by
         as_object: The object to populate with the resource data
         allow_unknown_type: Whether to allow unknown types
+        raw: If True, return raw dictionaries instead of APIObject instances, default False
         api: The api to use to get the resource
         **kwargs: Additional arguments to pass to the API
 
     Returns:
-        The populated object
+        The populated object (or dict if raw=True)
 
     Raises:
         ValueError: If the resource is not found
@@ -169,6 +173,10 @@ def get(
         >>> ings = kr8s.get("ingress.networking.k8s.io")     # Full group name
         >>> ings = kr8s.get("ingress.v1.networking.k8s.io")  # Full with explicit version
         >>> ings = kr8s.get("ingress.networking.k8s.io/v1")  # Full with explicit version alt.
+        >>>
+        >>> # Get raw dictionaries for better performance
+        >>> pods = list(kr8s.get("pods", raw=True))
+        >>> print(pods[0]["metadata"]["name"])
     """
     return _as_sync_generator(_get)(
         kind,
@@ -178,6 +186,7 @@ def get(
         field_selector=field_selector,
         as_object=as_object,
         allow_unknown_type=allow_unknown_type,
+        raw=raw,
         api=api,
         _asyncio=False,
         **kwargs,

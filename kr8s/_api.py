@@ -474,8 +474,9 @@ class Api:
         field_selector: str | dict | None = None,
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
+        raw: bool = False,
         **kwargs,
-    ) -> AsyncGenerator[APIObject]:
+    ) -> AsyncGenerator[APIObject | dict]:
         """Get Kubernetes resources.
 
         Args:
@@ -486,6 +487,7 @@ class Api:
             field_selector: The field selector to filter the resources by.
             as_object: The object to return the resources as.
             allow_unknown_type: Automatically create a class for the resource if none exists, default True.
+            raw: If True, return raw dictionaries instead of APIObject instances, default False.
             **kwargs: Additional keyword arguments to pass to the API call.
 
         Returns:
@@ -499,6 +501,7 @@ class Api:
             field_selector=field_selector,
             as_object=as_object,
             allow_unknown_type=allow_unknown_type,
+            raw=raw,
             **kwargs,
         ):
             yield resource
@@ -512,8 +515,9 @@ class Api:
         field_selector: str | dict | None = None,
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
+        raw: bool = False,
         **kwargs,
-    ) -> AsyncGenerator[APIObject]:
+    ) -> AsyncGenerator[APIObject | dict]:
         names_list = [None] if not names else names
         for name in names_list:
             async for resource in self._async_get_single(
@@ -524,6 +528,7 @@ class Api:
                 field_selector=field_selector,
                 as_object=as_object,
                 allow_unknown_type=allow_unknown_type,
+                raw=raw,
                 **kwargs,
             ):
                 yield resource
@@ -537,8 +542,9 @@ class Api:
         field_selector: str | dict | None = None,
         as_object: type[APIObject] | None = None,
         allow_unknown_type: bool = True,
+        raw: bool = False,
         **kwargs,
-    ) -> AsyncGenerator[APIObject]:
+    ) -> AsyncGenerator[APIObject | dict]:
 
         if name is not None:
             # Normalized field_selector to a string
@@ -578,12 +584,18 @@ class Api:
                     and "kind" in resourcelist
                     and resourcelist["kind"] == as_object.kind
                 ):
-                    yield as_object(resourcelist, api=self)
+                    if raw:
+                        yield resourcelist
+                    else:
+                        yield as_object(resourcelist, api=self)
                 else:
                     if "items" in resourcelist:
                         for item in resourcelist["items"]:
                             if name is None or item["metadata"]["name"] == name:
-                                yield obj_cls(item, api=self)
+                                if raw:
+                                    yield item
+                                else:
+                                    yield obj_cls(item, api=self)
                 if (
                     "metadata" in resourcelist
                     and "continue" in resourcelist["metadata"]
