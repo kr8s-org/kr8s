@@ -601,6 +601,7 @@ async def test_get_raw_with_as_object() -> None:
         # Should be a dictionary, not a Table object
         assert isinstance(result, dict)
         assert "kind" in result
+        assert result["kind"] == "Table"
         # When as_object is specified, the API returns a single object (Table format)
         break
 
