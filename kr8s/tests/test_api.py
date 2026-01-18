@@ -465,10 +465,10 @@ async def test_get_dynamic_plurals(kind, ensure_gc):
     assert isinstance([resource async for resource in api.get(kind)], list)
 
 
-async def test_two_pods(ns):
+async def test_two_pods(ns, pause_image):
     gen_kwargs = {
         "generate_name": "example-",
-        "image": "gcr.io/google_containers/pause",
+        "image": pause_image,
         "namespace": ns,
     }
     pods = [await Pod.gen(**gen_kwargs), await Pod.gen(**gen_kwargs)]
