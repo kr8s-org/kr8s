@@ -88,27 +88,30 @@ class KubeAuth:
 
     async def ssl_context(self):
         async with self.__auth_lock:
-            if (
-                not self.client_key_file
-                and not self.client_cert_file
-                and not self.server_ca_file
-                and not self._insecure_skip_tls_verify
-            ):
-                # If no cert information is provided, fall back to default verification
-                return True
-            sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-            if self._insecure_skip_tls_verify:
-                sslcontext.check_hostname = False
-                sslcontext.verify_mode = ssl.CERT_NONE
-            if self.client_key_file and self.client_cert_file:
-                sslcontext.load_cert_chain(
-                    certfile=self.client_cert_file,
-                    keyfile=self.client_key_file,
-                    password=None,
-                )
-            if self.server_ca_file:
-                sslcontext.load_verify_locations(cafile=self.server_ca_file)
-            return sslcontext
+            return self._ssl_context()
+
+    def _ssl_context(self):
+        if (
+            not self.client_key_file
+            and not self.client_cert_file
+            and not self.server_ca_file
+            and not self._insecure_skip_tls_verify
+        ):
+            # If no cert information is provided, fall back to default verification
+            return True
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        if self._insecure_skip_tls_verify:
+            sslcontext.check_hostname = False
+            sslcontext.verify_mode = ssl.CERT_NONE
+        if self.client_key_file and self.client_cert_file:
+            sslcontext.load_cert_chain(
+                certfile=self.client_cert_file,
+                keyfile=self.client_key_file,
+                password=None,
+            )
+        if self.server_ca_file:
+            sslcontext.load_verify_locations(cafile=self.server_ca_file)
+        return sslcontext
 
     @property
     def namespace(self) -> str:

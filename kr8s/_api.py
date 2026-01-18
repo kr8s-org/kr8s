@@ -234,6 +234,24 @@ class Api:
         url: str = "",
         **kwargs,
     ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession]:
+        async with self.async_open_websocket(
+            version,
+            base,
+            namespace,
+            url,
+            **kwargs,
+        ) as websocket:
+            yield websocket
+
+    @contextlib.asynccontextmanager
+    async def async_open_websocket(
+        self,
+        version: str = "v1",
+        base: str = "",
+        namespace: str | None = None,
+        url: str = "",
+        **kwargs,
+    ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession]:
         """Open a websocket connection to a Kubernetes API endpoint."""
         if not self._session or self._session.is_closed:
             await self._create_session()

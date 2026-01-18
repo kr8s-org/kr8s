@@ -1146,10 +1146,15 @@ async def test_pod_exec_to_file(ubuntu_pod):
         assert b"invalid date" in tmp.read()
 
 
-@pytest.mark.xfail(reason="Exec protocol v5.channel.k8s.io not available")
-async def test_pod_exec_stdin(ubuntu_pod):
-    ex = await ubuntu_pod.exec(["cat"], stdin="foo")
-    assert b"foo" in ex.stdout
+async def test_pod_exec_stdin(kubernetes_version, ubuntu_pod):
+    if kubernetes_version < [1, 30]:
+        with pytest.raises(ExecError):
+            await ubuntu_pod.exec(["cat"], stdin="foo")
+    else:
+        ex = await ubuntu_pod.exec(["cat"], stdin="foo")
+        assert b"foo" == ex.stdout
+        assert ex.stderr == b""
+        assert ex.returncode == 0
 
 
 async def test_pod_exec_not_ready(ns):
