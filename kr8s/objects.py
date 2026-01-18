@@ -233,7 +233,7 @@ class Pod(APIObjectSyncMixin, _Pod):
 
     def exec(  # type: ignore[override]
         self,
-        command: list[str],
+        command: str | list[str],
         *,
         container: str | None = None,
         stdin: str | BinaryIO | None = None,

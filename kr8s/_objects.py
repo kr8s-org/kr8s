@@ -41,7 +41,9 @@ from kr8s._data_utils import (
 from kr8s._exceptions import NotFoundError, ServerError
 from kr8s._exec import CompletedExec, Exec
 from kr8s._types import SpecType, SupportsKeysAndGetItem
+from kr8s.asyncio.popen import Popen as AsyncPopen
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
+from kr8s.popen import Popen as SyncPopen
 from kr8s.portforward import LocalPortType
 from kr8s.portforward import PortForward as SyncPortForward
 
@@ -503,7 +505,7 @@ class APIObject:
 
     async def exec(
         self,
-        command: list[str],
+        command: str | list[str],
         *,
         container: str | None = None,
         stdin: str | BinaryIO | None = None,
@@ -527,7 +529,7 @@ class APIObject:
 
     async def async_exec(
         self,
-        command: list[str],
+        command: str | list[str],
         *,
         container: str | None = None,
         stdin: str | BinaryIO | None = None,
@@ -552,6 +554,121 @@ class APIObject:
             stderr=stderr,
             check=check,
             capture_output=capture_output,
+            timeout=timeout,
+        )
+
+    def popen(
+        self,
+        *command: str,
+        container: str | None = None,
+        tty: bool | None = None,
+        buffer: bool | None = None,
+        text: bool | None = None,
+        encoding: str | None = None,
+        errors: str | None = None,
+        stdin: bool | None = None,
+        stdout: bool | None = None,
+        stderr: bool | None = None,
+        stderr2out: bool | None = None,
+        timeout: int | None = None,
+    ) -> AsyncPopen | SyncPopen:
+        """Run a command in a container and return a subprocess.Popen like object.
+
+        Args:
+            command:
+                The remote command to executem, not executed within a shell.
+            container:
+                Optional container to execute the command in.
+            tty:
+                Enable tty mode for the exec call.
+            buffer:
+                Enable buffering stdout and stderr.
+            text:
+                Enable text mode, stdin, stdout, and stderr will be strings, rather than bytes.
+            encoding:
+                Text encoding format if text mode.
+            errors:
+                Text encoding error strictness if text mode.
+            stdin:
+                Redirect the standard input stream of the pod for this call.
+            stdout:
+                Redirect the standard output stream of the pod for this call.
+            stderr:
+                Redirect the standard error stream of the pod for this call.
+            stderr2out:
+                Redirect the standard error stream of the pod to stdout for this call.
+            timeout:
+                Timeout in seconds.
+
+        Returns:
+            A :class:`kr8s._exec.Popen` object.
+
+        Example:
+            >>> from kr8s.objects import Pod
+            >>> pod = Pod.get("my-pod")
+            >>> command = ["/bin/sh", "-c", "echo 'This message goes to stdout';echo 'This message goes to stderr' >&2"]
+            >>> popen = await pod.popen(command, text=True, stdout=True, stderr=True)
+            >>> stdout, stderr = await popen.communicate()
+            >>> print(F"STDOUT: {stdout}")
+            >>> print(f"STDERR: {stderr}")
+        """
+        if self._asyncio:
+            return self.async_popen(
+                *command,
+                container=container,
+                tty=tty,
+                text=text,
+                encoding=encoding,
+                errors=errors,
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                stderr2out=stderr2out,
+                timeout=timeout,
+            )
+        return SyncPopen(
+            self,
+            *command,
+            container=container,
+            tty=tty,
+            text=text,
+            encoding=encoding,
+            errors=errors,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            stderr2out=stderr2out,
+            timeout=timeout,
+        )
+
+    def async_popen(
+        self,
+        *command: str,
+        container: str | None = None,
+        tty: bool | None = None,
+        buffer: bool | None = None,
+        text: bool | None = None,
+        encoding: str | None = None,
+        errors: str | None = None,
+        stdin: bool | None = None,
+        stdout: bool | None = None,
+        stderr: bool | None = None,
+        stderr2out: bool | None = None,
+        timeout: int | None = None,
+    ) -> AsyncPopen:
+        return AsyncPopen(
+            self,
+            *command,
+            container=container,
+            tty=tty,
+            buffer=buffer,
+            text=text,
+            encoding=encoding,
+            errors=errors,
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            stderr2out=stderr2out,
             timeout=timeout,
         )
 
@@ -1396,10 +1513,10 @@ class Pod(APIObject):
 
     async def async_exec(
         self,
-        command: list[str],
+        command: str | list[str],
         *,
         container: str | None = None,
-        stdin: str | BinaryIO | None = None,
+        stdin: str | bytes | BinaryIO | None = None,
         stdout: BinaryIO | None = None,
         stderr: BinaryIO | None = None,
         check: bool = True,
@@ -1426,10 +1543,10 @@ class Pod(APIObject):
 
     async def exec(
         self,
-        command: list[str],
+        command: str | list[str],
         *,
         container: str | None = None,
-        stdin: str | BinaryIO | None = None,
+        stdin: str | bytes | BinaryIO | None = None,
         stdout: BinaryIO | None = None,
         stderr: BinaryIO | None = None,
         check: bool = True,
