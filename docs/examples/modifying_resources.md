@@ -1,5 +1,68 @@
 # Modifying Resources
 
+## Modify fields with Apply
+
+Apply changes to a resource using {py:func}`Resource.apply() <kr8s.objects.Resource.apply()>`. For example, updating the resource limits of a deployment.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync:
+```python
+from kr8s.objects import Deployment
+
+deploy = Deployment.get("my-deployment")
+deploy.apply({"spec": { "template": {"spec": {"containers": [{"resources": {"limits": {"memory": "5Gi"}}}]}}}})
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import Deployment
+
+deploy = await Deployment.get("my-deployment")
+await deploy.apply({"spec": { "template": {"spec": {"containers": [{"resources": {"limits": {"memory": "5Gi"}}}]}}}})
+```
+````
+
+`````
+
+## Manage specific fields with Server-Side Apply
+
+[Server-Side Apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) allows for fine-grained management of specific fields. 
+
+## Patch Resources
+
+Use {py:func}`Resource.patch() <kr8s.objects.Resource.patch()>` to patch a resource with a JSON 6902 patch. This is useful for making small changes to a resource, such as updating the image of a deployment.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync:
+
+```python
+import kr8s
+from kr8s.objects import Deployment
+
+deploy = Deployment.get("my-deployment")
+deploy.patch([{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "my-app:latest"}])
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+import kr8s
+from kr8s.asyncio.objects import Deployment
+
+deploy = await Deployment.get("my-deployment")
+await deploy.patch([{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "my-app:latest"}])
+```
+````
+
+`````
+
 ## Scale a Deployment
 
 Scale the {py:class}`Depoyment <kr8s.objects.Deployment>` `metrics-server` using {py:func}`Deployment.scale() <kr8s.objects.Deployment.scale()>`

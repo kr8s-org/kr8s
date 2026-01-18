@@ -130,6 +130,16 @@ class Api(_AsyncApi):
             cast(list[asyncio.objects.APIObject], resources)
         )
 
+    def apply(
+        self,
+        resources: list[objects.APIObject],  # type: ignore[override]
+        server_side: bool = False,
+        force_conflicts: bool = False,
+    ):
+        return _as_sync_func(self.async_apply)(
+            cast(list[asyncio.objects.APIObject], resources)
+        )
+
 
 def get(
     kind: str,
@@ -199,6 +209,8 @@ def api(
     serviceaccount: str | None = None,
     namespace: str | None = None,
     context: str | None = None,
+    *,
+    field_manager: str | None = None,
 ) -> Api:
     """Create a :class:`kr8s.Api` object for interacting with the Kubernetes API.
 
@@ -210,6 +222,7 @@ def api(
         serviceaccount: The path of a service account to use
         namespace: The namespace to use
         context: The context to use
+        field_manager: The field manager to use for server-side apply
 
     Returns:
         The API object
@@ -225,6 +238,7 @@ def api(
         serviceaccount=serviceaccount,
         namespace=namespace,
         context=context,
+        field_manager=field_manager,
         _asyncio=False,
     )
     assert isinstance(ret, Api)
@@ -251,6 +265,22 @@ def create(resources: list[type[APIObject]], api=None):
     api.create(cast(list[asyncio.objects.APIObject], resources))
 
 
+def apply(
+    resources: list[type[APIObject]],
+    server_side: bool = False,
+    force_conflicts: bool = False,
+    api=None,
+):
+    """Creates or updates resources in the Kubernetes cluster using server-side apply."""
+    if api is None:
+        api = _as_sync_func(_api)(_asyncio=False)
+    api.apply(
+        cast(list[asyncio.objects.APIObject], resources),
+        server_side=server_side,
+        force_conflicts=force_conflicts,
+    )
+
+
 version = _as_sync_func(partial(_k8s_version, _asyncio=False))
 update_wrapper(version, _k8s_version)
 watch = _as_sync_generator(partial(_watch, _asyncio=False))
@@ -266,6 +296,7 @@ __all__ = [
     "api_resources",
     "asyncio",
     "create",
+    "apply",
     "get",
     "objects",
     "portforward",
