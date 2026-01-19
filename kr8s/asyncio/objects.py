@@ -5,6 +5,7 @@
 This module provides classes that represent Kubernetes resources.
 These classes are used to interact with resources in the Kubernetes API server.
 """
+
 from kr8s._objects import (
     APIObject,
     Binding,
