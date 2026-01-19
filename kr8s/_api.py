@@ -40,7 +40,9 @@ logger = logging.getLogger(__name__)
 
 
 ApplyOpTypes = Literal["merge", "json", "strategic", "ssa"]
-ApplyValidateOption = Union[Literal["strict", "warn", "ignore"], bool]
+ValidateOption = Union[
+    Literal["strict", "warn", "ignore", "Strict", "Warn", "Ignore"], bool
+]
 
 
 def _apply_op_content_type(op: ApplyOpTypes) -> str:
@@ -748,14 +750,14 @@ class Api:
                 yield version["groupVersion"]
 
     async def async_create(
-        self, resources: list[APIObject], validate: ApplyValidateOption = "ignore"
+        self, resources: list[APIObject], validate: ValidateOption = "ignore"
     ):
         async with anyio.create_task_group() as tg:
             for resource in resources:
                 tg.start_soon(resource.async_create, validate)
 
     async def create(
-        self, resources: list[APIObject], validate: ApplyValidateOption = "ignore"
+        self, resources: list[APIObject], validate: ValidateOption = "ignore"
     ):
         return await self.async_create(resources)
 
@@ -764,7 +766,7 @@ class Api:
         resources: list[APIObject],
         server_side: bool = False,
         force_conflicts: bool = False,
-        validate: ApplyValidateOption = "strict",
+        validate: ValidateOption = "strict",
     ):
         """Use server-side apply to create or update resources."""
         async with anyio.create_task_group() as tg:
@@ -778,7 +780,7 @@ class Api:
         resources: list[APIObject],
         server_side: bool = False,
         force_conflicts: bool = False,
-        validate: ApplyValidateOption = "strict",
+        validate: ValidateOption = "strict",
     ):
         """Use server-side apply to create or update resources."""
         return await self.async_apply(resources, server_side, force_conflicts, validate)

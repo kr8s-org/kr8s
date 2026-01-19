@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 
 import kr8s.asyncio
-from kr8s import ApplyValidateOption
+from kr8s import ValidateOption
 from kr8s.asyncio.objects import objects_from_files
 
 console = Console()
@@ -34,7 +34,7 @@ async def create(
         "-f",
         help="Filename, directory, or URL to files identifying the resources to create",
     ),
-    validate: ApplyValidateOption = typer.Option(
+    validate: ValidateOption = typer.Option(
         "strict",
         "--validate",
         help="Must be one of strict, warn, ignore."

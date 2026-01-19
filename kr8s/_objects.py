@@ -31,7 +31,7 @@ else:
 
 import kr8s
 import kr8s.asyncio
-from kr8s._api import Api, ApplyOpTypes, ApplyValidateOption, _apply_op_content_type
+from kr8s._api import Api, ApplyOpTypes, ValidateOption, _apply_op_content_type
 from kr8s._async_utils import as_sync_func, as_sync_generator
 from kr8s._data_utils import (
     dict_to_selector,
@@ -366,7 +366,7 @@ class APIObject:
             )
         return False
 
-    async def async_create(self, validate: ApplyValidateOption = "ignore") -> None:
+    async def async_create(self, validate: ValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
         assert self.api
 
@@ -382,7 +382,7 @@ class APIObject:
             self.raw = resp.json()
             self._warn_server_response(resp)
 
-    async def create(self, validate: ApplyValidateOption = "ignore") -> None:
+    async def create(self, validate: ValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
         return await self.async_create(validate=validate)
 
@@ -390,7 +390,7 @@ class APIObject:
         self,
         server_side: bool = False,
         force_conflicts: bool = False,
-        validate: ApplyValidateOption = "strict",
+        validate: ValidateOption = "strict",
     ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
         assert self.api
@@ -445,9 +445,7 @@ class APIObject:
             for warning in warnings.split(","):
                 logger.warning(warning)
 
-    def _field_validation_header(
-        self, validate: Literal["strict", "warn", "ignore"] | bool
-    ) -> str:
+    def _field_validation_header(self, validate: ValidateOption | bool) -> str:
         if isinstance(validate, str):
             field_validation_header = validate.capitalize()
         else:
@@ -458,7 +456,7 @@ class APIObject:
         self,
         server_side: bool = False,
         force_conflicts: bool = False,
-        validate: ApplyValidateOption = "strict",
+        validate: ValidateOption = "strict",
     ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
         return await self.async_apply(server_side, force_conflicts, validate)
@@ -540,7 +538,7 @@ class APIObject:
     async def patch(
         self,
         patch,
-        validate: ApplyValidateOption = "ignore",
+        validate: ValidateOption = "ignore",
         *,
         subresource=None,
         type=None,
@@ -553,7 +551,7 @@ class APIObject:
     async def async_patch(
         self,
         patch: dict | list,
-        validate: ApplyValidateOption = "ignore",
+        validate: ValidateOption = "ignore",
         *,
         subresource=None,
         type=None,
@@ -1067,16 +1065,14 @@ class APIObjectSyncMixin(APIObject):
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
         return as_sync_func(self.async_exists)(ensure=ensure)
 
-    def create(
-        self, validate: ApplyValidateOption = "ignore"
-    ):  # type: ignore[override]
+    def create(self, validate: ValidateOption = "ignore"):  # type: ignore[override]
         return as_sync_func(self.async_create)(validate=validate)
 
     def apply(
         self,
         server_side: bool = False,
         force_conflicts: bool = False,
-        validate: ApplyValidateOption = "strict",
+        validate: ValidateOption = "strict",
     ):
         return as_sync_func(self.async_apply)(
             server_side=server_side, force_conflicts=force_conflicts, validate=validate
