@@ -402,6 +402,12 @@ class APIObject:
             field_manager = "kr8s-client-side-apply"
         params["fieldManager"] = field_manager
 
+        # validate
+        if isinstance(validate, str):
+            params["validate"] = validate.capitalize()
+        else:
+            params["validate"] = "Strict" if validate else "Ignore"
+
         if force_conflicts:
             if server_side:
                 params["force"] = "true"
