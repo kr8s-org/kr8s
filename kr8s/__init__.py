@@ -15,7 +15,7 @@ from functools import partial, update_wrapper
 from typing import Union, cast
 
 from . import asyncio, objects, portforward
-from ._api import ALL
+from ._api import ALL, ApplyValidateOption
 from ._api import Api as _AsyncApi
 from ._async_utils import as_sync_func as _as_sync_func
 from ._async_utils import as_sync_generator as _as_sync_generator
@@ -135,9 +135,13 @@ class Api(_AsyncApi):
         resources: list[objects.APIObject],  # type: ignore[override]
         server_side: bool = False,
         force_conflicts: bool = False,
+        validate: ApplyValidateOption = "strict",
     ):
         return _as_sync_func(self.async_apply)(
-            cast(list[asyncio.objects.APIObject], resources)
+            cast(list[asyncio.objects.APIObject], resources),
+            server_side,
+            force_conflicts,
+            validate,
         )
 
 
@@ -269,6 +273,7 @@ def apply(
     resources: list[type[APIObject]],
     server_side: bool = False,
     force_conflicts: bool = False,
+    validate: ApplyValidateOption = "strict",
     api=None,
 ):
     """Creates or updates resources in the Kubernetes cluster using server-side apply."""
@@ -278,6 +283,7 @@ def apply(
         cast(list[asyncio.objects.APIObject], resources),
         server_side=server_side,
         force_conflicts=force_conflicts,
+        validate=validate,
     )
 
 

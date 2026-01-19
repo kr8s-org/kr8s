@@ -12,7 +12,7 @@ import threading
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Union
 
 import anyio
 import httpx
@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 ApplyOpTypes = Literal["merge", "json", "strategic", "ssa"]
+ApplyValidateOption = Union[Literal["strict", "warn", "ignore"], bool]
 
 
 def _apply_op_content_type(op: ApplyOpTypes) -> str:
@@ -759,20 +760,24 @@ class Api:
         resources: list[APIObject],
         server_side: bool = False,
         force_conflicts: bool = False,
+        validate: ApplyValidateOption = "strict",
     ):
         """Use server-side apply to create or update resources."""
         async with anyio.create_task_group() as tg:
             for resource in resources:
-                tg.start_soon(resource.async_apply, server_side, force_conflicts)
+                tg.start_soon(
+                    resource.async_apply, server_side, force_conflicts, validate
+                )
 
     async def apply(
         self,
         resources: list[APIObject],
         server_side: bool = False,
         force_conflicts: bool = False,
+        validate: ApplyValidateOption = "strict",
     ):
         """Use server-side apply to create or update resources."""
-        return await self.async_apply(resources, server_side, force_conflicts)
+        return await self.async_apply(resources, server_side, force_conflicts, validate)
 
     @property
     def __version__(self) -> str:

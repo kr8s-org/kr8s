@@ -30,7 +30,7 @@ else:
 
 import kr8s
 import kr8s.asyncio
-from kr8s._api import Api, ApplyOpTypes, _apply_op_content_type
+from kr8s._api import Api, ApplyOpTypes, ApplyValidateOption, _apply_op_content_type
 from kr8s._async_utils import as_sync_func, as_sync_generator
 from kr8s._data_utils import (
     dict_to_selector,
@@ -382,7 +382,10 @@ class APIObject:
         return await self.async_create()
 
     async def async_apply(
-        self, server_side: bool = False, force_conflicts: bool = False
+        self,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ApplyValidateOption = "strict",
     ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
         assert self.api
@@ -390,6 +393,7 @@ class APIObject:
         self.metadata.managedFields = None
 
         params = {}
+        # fieldManager
         if self.api.field_manager:
             field_manager = self.api.field_manager
         elif server_side:
@@ -426,10 +430,13 @@ class APIObject:
                 raise
 
     async def apply(
-        self, server_side: bool = False, force_conflicts: bool = False
+        self,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ApplyValidateOption = "strict",
     ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
-        return await self.async_apply(server_side, force_conflicts)
+        return await self.async_apply(server_side, force_conflicts, validate)
 
     async def delete(
         self,
@@ -1019,9 +1026,14 @@ class APIObjectSyncMixin(APIObject):
     def create(self) -> None:  # type: ignore[override]
         return as_sync_func(self.async_create)()
 
-    def apply(self, server_side: bool = False, force_conflicts: bool = False):
+    def apply(
+        self,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ApplyValidateOption = "strict",
+    ):
         return as_sync_func(self.async_apply)(
-            server_side=server_side, force_conflicts=force_conflicts
+            server_side=server_side, force_conflicts=force_conflicts, validate=validate
         )
 
     def delete(  # type: ignore[override]

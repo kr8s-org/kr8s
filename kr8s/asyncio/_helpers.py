@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from typing import Optional, Union
 
-from kr8s._api import Api
+from kr8s._api import Api, ApplyValidateOption
 from kr8s._objects import APIObject
 
 from ._api import api as _api
@@ -125,6 +125,7 @@ async def apply(
     resources: list[APIObject],
     server_side: bool = False,
     force_conflicts: bool = False,
+    validate: ApplyValidateOption = "strict",
     api=None,
     _asyncio=True,
 ) -> None:
@@ -132,7 +133,10 @@ async def apply(
     if api is None:
         api = await _api(_asyncio=_asyncio)
     return await api.async_apply(
-        resources, server_side=server_side, force_conflicts=force_conflicts
+        resources,
+        server_side=server_side,
+        force_conflicts=force_conflicts,
+        validate=validate,
     )
 
 
