@@ -537,12 +537,26 @@ class APIObject:
                 ) from e
             raise e
 
-    async def patch(self, patch, *, subresource=None, type=None) -> None:
+    async def patch(
+        self,
+        patch,
+        validate: ApplyValidateOption = "ignore",
+        *,
+        subresource=None,
+        type=None,
+    ) -> None:
         """Patch this object in Kubernetes."""
-        await self.async_patch(patch, subresource=subresource, type=type)
+        await self.async_patch(
+            patch, validate=validate, subresource=subresource, type=type
+        )
 
     async def async_patch(
-        self, patch: dict | list, *, subresource=None, type=None
+        self,
+        patch: dict | list,
+        validate: ApplyValidateOption = "ignore",
+        *,
+        subresource=None,
+        type=None,
     ) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
@@ -550,6 +564,9 @@ class APIObject:
             headers = {"Content-Type": _apply_op_content_type(type)}
         else:
             headers = {"Content-Type": _apply_op_content_type("merge")}
+
+        params = {"fieldValidation": self._field_validation_header(validate)}
+
         if subresource:
             url = f"{url}/{subresource}"
         try:
@@ -561,8 +578,10 @@ class APIObject:
                 namespace=self.namespace,
                 content=json.dumps(patch),
                 headers=headers,
+                params=params,
             ) as resp:
                 self.raw = resp.json()
+                self._warn_server_response(resp)
         except ServerError as e:
             if e.response and e.response.status_code == 404:
                 raise NotFoundError(
