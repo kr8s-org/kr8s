@@ -747,12 +747,16 @@ class Api:
             for version in group["versions"]:
                 yield version["groupVersion"]
 
-    async def async_create(self, resources: list[APIObject]):
+    async def async_create(
+        self, resources: list[APIObject], validate: ApplyValidateOption = "ignore"
+    ):
         async with anyio.create_task_group() as tg:
             for resource in resources:
-                tg.start_soon(resource.async_create)
+                tg.start_soon(resource.async_create, validate)
 
-    async def create(self, resources: list[APIObject]):
+    async def create(
+        self, resources: list[APIObject], validate: ApplyValidateOption = "ignore"
+    ):
         return await self.async_create(resources)
 
     async def async_apply(

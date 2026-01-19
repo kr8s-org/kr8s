@@ -5,6 +5,7 @@ import typer
 from rich.console import Console
 
 import kr8s.asyncio
+from kr8s import ApplyValidateOption
 from kr8s.asyncio.objects import objects_from_files
 
 console = Console()
@@ -23,7 +24,6 @@ console = Console()
 # TODO -l, --selector=''
 # TODO --show-managed-fields='false'
 # TODO --template=''
-# TODO --validate='true'
 # TODO --windows-line-endings='false'
 
 
@@ -34,6 +34,14 @@ async def create(
         "-f",
         help="Filename, directory, or URL to files identifying the resources to create",
     ),
+    validate: ApplyValidateOption = typer.Option(
+        "strict",
+        "--validate",
+        help="Must be one of strict, warn, ignore."
+        ' "strict" will perform server side validation.'
+        ' "warn" will warn about unknown or duplicate fields without blocking the request.'
+        ' "ignore" will not perform any schema validation.',
+    ),
 ):
     api = await kr8s.asyncio.api()
     try:
@@ -43,7 +51,7 @@ async def create(
         raise typer.Exit(1)
     for obj in objs:
         try:
-            await obj.create()
+            await obj.create(validate=validate)
         except Exception as e:
             console.print(f"[red]Error creating {obj}[/red]: {e}")
             raise typer.Exit(1)

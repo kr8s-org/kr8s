@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import logging
 import queue
 import threading
 import warnings
@@ -544,7 +545,7 @@ async def test_update_with_apply(example_pod_spec, example_service_spec):
     await pod.delete()
 
 
-async def test_update_with_ssa(example_pod_spec, example_service_spec):
+async def test_apply_update_with_ssa(example_pod_spec, example_service_spec):
     pod = await Pod(example_pod_spec)
     service = await Service(example_service_spec)
     resources = [pod, service]
@@ -557,7 +558,7 @@ async def test_update_with_ssa(example_pod_spec, example_service_spec):
     assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
 
 
-async def test_update_with_ssa_force(example_pod_spec, example_service_spec):
+async def test_apply_update_with_ssa_force(example_pod_spec, example_service_spec):
     """
     SSA has semantics about modifying fields owned by other managers.
 
@@ -590,6 +591,38 @@ async def test_apply_creates_if_not_exists(example_pod_spec):
     pod = await Pod(example_pod_spec)
     await pod.apply()
     assert pod.exists(), "Pod should exist after creation"
+
+
+async def test_apply_validate_strict(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    pod["my_field"] = "value"
+    with pytest.raises(ServerError):
+        await pod.apply(validate="strict")
+
+
+async def test_apply_validate_warn(example_pod_spec, caplog: pytest.LogCaptureFixture):
+    caplog.set_level(logging.WARNING)
+    pod = await Pod(example_pod_spec)
+    pod["my_field0"] = "value"
+    pod["my_field1"] = "value"
+    await pod.apply(validate="warn")
+    assert any(
+        r"unknown field \"my_field0\"" in record.msg for record in caplog.records
+    )
+    assert any(
+        r"unknown field \"my_field1\"" in record.msg for record in caplog.records
+    )
+
+
+async def test_apply_validate_ignore(
+    example_pod_spec, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level(logging.WARNING)
+    pod = await Pod(example_pod_spec)
+    pod["my_field0"] = "value"
+    pod["my_field1"] = "value"
+    await pod.apply(validate="ignore")
+    assert all(r"unknown field" not in record.msg for record in caplog.records)
 
 
 @pytest.mark.parametrize(

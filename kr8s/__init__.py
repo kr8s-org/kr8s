@@ -125,9 +125,13 @@ class Api(_AsyncApi):
     def api_versions(self) -> Generator[str]:  # type: ignore[override]
         yield from _as_sync_generator(self.async_api_versions)()
 
-    def create(self, resources: list[objects.APIObject]):  # type: ignore[override]
+    def create(
+        self,
+        resources: list[objects.APIObject],  # type: ignore[override]
+        validate: ApplyValidateOption = "ignore",
+    ):
         return _as_sync_func(self.async_create)(
-            cast(list[asyncio.objects.APIObject], resources)
+            cast(list[asyncio.objects.APIObject], resources), validate
         )
 
     def apply(

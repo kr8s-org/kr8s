@@ -22,6 +22,7 @@ import httpx
 import jsonpath
 import yaml
 from box import Box
+from httpx import Response
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -365,21 +366,25 @@ class APIObject:
             )
         return False
 
-    async def async_create(self) -> None:
+    async def async_create(self, validate: ApplyValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
         assert self.api
+
+        params = {"fieldValidation": self._field_validation_header(validate)}
         async with self.api.call_api(
             "POST",
             version=self.version,
             url=self.endpoint,
             namespace=self.namespace,
             content=json.dumps(self.raw_template),
+            params=params,
         ) as resp:
             self.raw = resp.json()
+            self._warn_server_response(resp)
 
-    async def create(self) -> None:
+    async def create(self, validate: ApplyValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
-        return await self.async_create()
+        return await self.async_create(validate=validate)
 
     async def async_apply(
         self,
@@ -403,10 +408,7 @@ class APIObject:
         params["fieldManager"] = field_manager
 
         # validate
-        if isinstance(validate, str):
-            params["validate"] = validate.capitalize()
-        else:
-            params["validate"] = "Strict" if validate else "Ignore"
+        params["fieldValidation"] = self._field_validation_header(validate)
 
         if force_conflicts:
             if server_side:
@@ -429,11 +431,28 @@ class APIObject:
                 params=params,
             ) as resp:
                 self.raw = resp.json()
+                self._warn_server_response(resp)
         except ServerError as e:
             if e.response and e.response.status_code == 404:
-                await self.async_create()
+                await self.async_create(validate=validate)
             else:
                 raise
+
+    def _warn_server_response(self, resp: Response):
+        """Log warnings from the Kubernetes server response."""
+        warnings = resp.headers.get("Warning")
+        if warnings:
+            for warning in warnings.split(","):
+                logger.warning(warning)
+
+    def _field_validation_header(
+        self, validate: Literal["strict", "warn", "ignore"] | bool
+    ) -> str:
+        if isinstance(validate, str):
+            field_validation_header = validate.capitalize()
+        else:
+            field_validation_header = "Strict" if validate else "Ignore"
+        return field_validation_header
 
     async def apply(
         self,
@@ -1029,8 +1048,10 @@ class APIObjectSyncMixin(APIObject):
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
         return as_sync_func(self.async_exists)(ensure=ensure)
 
-    def create(self) -> None:  # type: ignore[override]
-        return as_sync_func(self.async_create)()
+    def create(
+        self, validate: ApplyValidateOption = "ignore"
+    ):  # type: ignore[override]
+        return as_sync_func(self.async_create)(validate=validate)
 
     def apply(
         self,
