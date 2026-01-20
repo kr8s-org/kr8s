@@ -4,6 +4,7 @@
 
 This module provides a class for managing a port forward connection to a Kubernetes Pod or Service.
 """
+
 # Disable missing docstrings, these are inherited from the async version of the objects
 # ruff: noqa: D102, D105
 from __future__ import annotations
