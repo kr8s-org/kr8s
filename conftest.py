@@ -60,7 +60,8 @@ def k8s_cluster(request) -> Generator[KindCluster, None, None]:
 
 
 @pytest.fixture(scope="session")
-def kubectl_api_cache(k8s_cluster):
+def kubectl_api_cache(k8s_cluster) -> Generator[KindCluster, None, None]:
     """Ensure that kubectl has written its api cache to disk."""
     logging.basicConfig(level=logging.DEBUG)
     k8s_cluster.kubectl("get", "--raw", "/api/v1")
+    yield k8s_cluster
