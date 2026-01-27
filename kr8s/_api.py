@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import copy
+import functools
 import json
 import logging
 import ssl
@@ -754,7 +755,9 @@ class Api:
     ):
         async with anyio.create_task_group() as tg:
             for resource in resources:
-                tg.start_soon(resource.async_create, validate)
+                tg.start_soon(
+                    functools.partial(resource.async_create, validate=validate)
+                )
 
     async def create(
         self, resources: list[APIObject], *, validate: ValidateOption = "ignore"
@@ -773,7 +776,12 @@ class Api:
         async with anyio.create_task_group() as tg:
             for resource in resources:
                 tg.start_soon(
-                    resource.async_apply, server_side, force_conflicts, validate
+                    functools.partial(
+                        resource.async_apply,
+                        server_side=server_side,
+                        force_conflicts=force_conflicts,
+                        validate=validate,
+                    )
                 )
 
     async def apply(
