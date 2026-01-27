@@ -15,7 +15,7 @@ import threading
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Any, Callable, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import anyio
 import httpx
@@ -121,34 +121,25 @@ class KindFetcherCached:
         self.save_cache = save_cache
         self.read_cache = read_cache
 
-    async def get(self, file: pathlib.Path, fetch: Callable):
-        v = None
+    def _read(self, file: pathlib.Path) -> dict | None:
         if self.read_cache and self.disk_cache.check_exists(file):
             try:
-                v = self.disk_cache.load_file(file)
+                return self.disk_cache.load_file(file)
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to json decode cache file {file}", exc_info=e)
-                v = None
+                return None
             except Exception as e:  # reading from cache is never fatal
                 logger.warning(f"Could not read cache file {file}", exc_info=e)
-                v = None
-        if not v:
-            v = await fetch()
+                return None
+        return None
+
+    def _save(self, file: pathlib.Path, v: dict):
         if self.save_cache:
             logger.debug("saving to discovery cache %s", file)
             try:
                 self.disk_cache.write_file(file, v)
             except Exception as e:  # writing to cache is never fatal
                 logger.warning(f"Could not write cache file {file}", exc_info=e)
-
-        return v
-
-    def _call_api(self, call: Callable):
-        async def _call():
-            async with call() as response:
-                return response.json()
-
-        return _call
 
     @staticmethod
     def _transform_for_legacy(resource: dict):
@@ -220,21 +211,34 @@ class KindFetcherCached:
         It removes logic for handling legacy formats,
         since the new API version is available in all versions of kubernetes supported by kr8s.
         """
-        aggregate_discover_accept = {
-            "Accept": "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json"  # noqa: E501
-        }
-        async with self.api.call_api(
-            method="GET", version="", base="/api", headers=aggregate_discover_accept
-        ) as response:
-            groups = response.json()
-        async with self.api.call_api(
-            method="GET", version="", base="/apis", headers=aggregate_discover_accept
-        ) as response:
-            api_groups = response.json()
+        # try to load everything from cache.
+        # refetching the cache will refresh everything,
+        # so we check whether we need to refresh any of them
+        servergroups = self._read(pathlib.Path("servergroups.json"))
+        if servergroups:
+
+            any_need_refreshing = False
+            resources_o = []
+            for group in servergroups["groups"]:
+                for version in group["versions"]:
+                    resources = self._read(
+                        pathlib.Path(
+                            group["name"], version["version"], "serverresources.json"
+                        )
+                    )
+                    if not resources:
+                        any_need_refreshing = True
+                        break
+                    else:
+                        resources_o.append(resources)
+
+            if not any_need_refreshing:
+                return resources_o
+
+        all_items = await self._do_aggregate_discovery()
 
         # servergroups.json
         groups_o: list[KindFetcherCached.Group] = []
-        all_items = [*groups["items"], *api_groups["items"]]
         for group in all_items:
 
             group_name = group.get("metadata").get("name", "")
@@ -255,17 +259,13 @@ class KindFetcherCached:
             groups_o.append(group_o)
 
         servergroups = {"kind": "APIGroupList", "apiVersion": "v1", "groups": groups_o}
-        if self.save_cache:
-            self.disk_cache.write_file(pathlib.Path("servergroups.json"), servergroups)
+        self._save(pathlib.Path("servergroups.json"), servergroups)
 
         # serverresources.json
         resources_o = []
         for group in all_items:
             group_name = group.get("metadata").get("name", "")
             for version in group["versions"]:
-                cache_path = pathlib.Path(
-                    group_name, version["version"], "serverresources.json"
-                )
                 v = {
                     "kind": "APIResourceList",
                     "apiVersion": "v1",
@@ -274,11 +274,30 @@ class KindFetcherCached:
                         version.get("resources", [])
                     ),
                 }
-                if self.save_cache:
-                    self.disk_cache.write_file(cache_path, v)
+                self._save(
+                    pathlib.Path(
+                        group_name, version["version"], "serverresources.json"
+                    ),
+                    v,
+                )
                 resources_o.append(v)
 
         return resources_o
+
+    async def _do_aggregate_discovery(self) -> list[Any]:
+        aggregate_discover_accept = {
+            "Accept": "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json"  # noqa: E501
+        }
+        async with self.api.call_api(
+            method="GET", version="", base="/api", headers=aggregate_discover_accept
+        ) as response:
+            groups = response.json()
+        async with self.api.call_api(
+            method="GET", version="", base="/apis", headers=aggregate_discover_accept
+        ) as response:
+            api_groups = response.json()
+        all_items = [*groups["items"], *api_groups["items"]]
+        return all_items
 
     @staticmethod
     def _group_version_string(group_name, version) -> Any:
