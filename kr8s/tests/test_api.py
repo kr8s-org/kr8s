@@ -356,9 +356,10 @@ async def test_api_resources_cache(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level("INFO")
     api = await kr8s.asyncio.api()
     await api.api_resources()
-    assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
+    assert caplog.text.count('/apis "HTTP/1.1 200 OK"') == 1
+    # try again, should not hit the server
     await api.api_resources()
-    assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
+    assert caplog.text.count('/apis "HTTP/1.1 200 OK"') == 1
 
 
 async def test_api_timeout() -> None:
@@ -581,7 +582,7 @@ async def test_loading_crds_from_kubectl(kubectl_api_cache):
         api=FakeApi(), disk_cache=KubectlDiscoveryCache.from_api(api), save_cache=False
     )
 
-    result = await fetcher.fetch_apis()
+    result = await fetcher.async_api_resources()
     assert len(result) > 0
 
 
@@ -598,8 +599,36 @@ async def test_loading_crds_from_api(kubectl_api_cache):
         api=api, disk_cache=FakeKubectlCache(), save_cache=False
     )
 
-    result = await fetcher.fetch_apis()
+    result = await fetcher.async_api_resources()
     assert len(result) > 0
+
+
+def _compare_kubectl_cache(kubectl, result, path: pathlib.Path = pathlib.Path("/")):
+    try:
+        if isinstance(kubectl, dict):
+            for k, v in kubectl.items():
+                if k == "storageVersionHash":
+                    # storageVersionHash is not sent with aggregated discovery,
+                    # so newer versions of kubectl do not have this field.
+                    # pytest-kind ships with kubectl 1.25.3, which does not use aggregated discovery.
+                    continue
+
+                _compare_kubectl_cache(v, result[k], path / k)
+        elif isinstance(kubectl, list):
+            assert len(kubectl) == len(result)
+            for i, (kubectl_item, result_item) in enumerate(zip(kubectl, result)):
+                _compare_kubectl_cache(kubectl_item, result_item, path / str(i))
+        else:
+            if path.name == "singularName":
+                # singularName for subResources is sometimes set to "" or to the parent resource,
+                # depending on the version of kubectl
+                assert result == kubectl or "" == kubectl
+            else:
+                assert result == kubectl
+    except AssertionError as e:
+        raise AssertionError(
+            f"Failed to validate kubectl cache, item at internalpath={path}"
+        ) from e
 
 
 async def test_saving_to_discovery_cache(kubectl_api_cache):
@@ -615,7 +644,7 @@ async def test_saving_to_discovery_cache(kubectl_api_cache):
             return False
 
         def write_file(self, file: pathlib.Path, data: dict):
-            self.written_files[file.name] = data
+            self.written_files[file] = data
 
     api = await kr8s.asyncio.api()
     real_cache = KubectlDiscoveryCache.from_api(api)
@@ -628,27 +657,18 @@ async def test_saving_to_discovery_cache(kubectl_api_cache):
     assert len(fetcher.disk_cache.written_files) > 0
 
     for filename, file in fake_cache.written_files.items():
-        if filename == "serverresources.json":
-            # the aggregated discovery API doesn't separately cache this endpoint
-            continue
-
-        if filename == "servergroups.json":
-            # the client hits both the "/api" and "/apis" endpoints and combines them here.
-            # TODO: this will lead to a broken cache for kubectl
-            real_tgt = real_cache.load_file(filename)
-            real_tgt["groups"] = [e for e in real_tgt["groups"] if e["name"] != ""]
-            assert real_tgt == file
-            continue
-
         try:
-            assert real_cache.load_file(filename) == file
+            # assert file == real_cache.load_file(filename)
+            _compare_kubectl_cache(real_cache.load_file(filename), file)
+
         except AssertionError as e:
+            real_file = real_cache.cache_dir / filename
             raise AssertionError(
-                f"Failed to validate written cache file file={filename}"
+                f"Failed to validate written cache file file={filename} real={real_file}"
             ) from e
         except FileNotFoundError:
             raise AssertionError(
-                f"Failed to find written cache file file={filename}, files={real_cache.list_all_files()}"
+                f"Failed to find cache file written by kubectl file={filename}, files={real_cache.list_all_files()}"
             )
 
 

@@ -133,8 +133,7 @@ class KindFetcherCached:
                 logger.warning(f"Could not read cache file {file}", exc_info=e)
                 v = None
         if not v:
-            async with fetch() as response:
-                v = response.json()
+            v = await fetch()
         if self.save_cache:
             logger.debug("saving to discovery cache %s", file)
             try:
@@ -144,37 +143,151 @@ class KindFetcherCached:
 
         return v
 
-    async def fetch_kind(self, group_version: str):
-        return await self.get(
-            pathlib.Path(group_version, "serverresources.json"),
-            lambda: self.api.call_api(
-                method="GET", version="", base="/apis", url=group_version
-            ),
-        )
+    def _call_api(self, call: Callable):
+        async def _call():
+            async with call() as response:
+                return response.json()
 
-    async def fetch_apis(self):
-        return await self.get(
-            pathlib.Path("servergroups.json"),
-            lambda: self.api.call_api(method="GET", version="", base="/apis"),
-        )
-
-    async def fetch_core_kinds(self, version):
-        return await self.get(
-            pathlib.Path(version, "serverresources.json"),
-            lambda: self.api.call_api(
-                method="GET", version="", base="/api", url=version
-            ),
-        )
-
-    async def fetch_core_versions(self):
-        async with self.api.call_api(method="GET", version="", base="/api") as response:
-            return response.json()
+        return _call
 
     @staticmethod
-    def collect_api_resources(resource, version):
+    def _transform_for_legacy(resource: dict):
+        """Transform the format from aggregated discovery to the legacy format for caching."""
+        response_kind = resource.get("responseKind") or {}
+        scope = resource.get("scope")
+
+        v = {
+            "name": resource.get("resource", ""),
+            "singularName": resource.get("singularResource", ""),
+            "namespaced": scope == "Namespaced",
+            "kind": response_kind.get("kind", ""),
+            "verbs": resource.get("verbs") or [],
+        }
+        if "shortNames" in resource:
+            v["shortNames"] = resource["shortNames"]
+        if "categories" in resource:
+            v["categories"] = resource["categories"]
+        if "storageVersionHash" in resource:
+            v["storageVersionHash"] = resource["storageVersionHash"]
+
+        return v
+
+    @staticmethod
+    def _munch_subresource(r, srs):
+        o = []
+        for sr in srs:
+            v = {
+                "name": r["name"] + "/" + sr["subresource"],
+                "singularName": r["singularName"],
+                "namespaced": r["namespaced"],
+                "kind": sr["responseKind"]["kind"],
+                "verbs": sr["verbs"],
+            }
+            if "group" in sr["responseKind"] and sr["responseKind"]["group"]:
+                v["group"] = sr["responseKind"]["group"]
+            if "version" in sr["responseKind"] and sr["responseKind"]["version"]:
+                v["version"] = sr["responseKind"]["version"]
+            if "storageVersionHash" in sr:
+                v["storageVersionHash"] = sr["storageVersionHash"]
+            o.append(v)
+        return o
+
+    @staticmethod
+    def _munch_resources(rs: list[dict]):
+        o = []
+        for r in rs:
+            v = KindFetcherCached._transform_for_legacy(r)
+            o.append(v)
+            o.extend(KindFetcherCached._munch_subresource(v, r.get("subresources", [])))
+        return o
+
+    async def _groups_and_maybe_resources(self):
+        """
+        Port of kubernetes DiscoveryClient GroupsAndMaybeResources for equivalency in the cache.
+
+        This endpoint aggregates both the "/api" and "/apis" endpoints in the client and combines them here.
+        It removes logic for handling legacy formats,
+        since the new API version is available in all versions of kubernetes supported by kr8s.
+        """
+        aggregate_discover_accept = {
+            "Accept": "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json"  # noqa: E501
+        }
+        async with self.api.call_api(
+            method="GET", version="", base="/api", headers=aggregate_discover_accept
+        ) as response:
+            groups = response.json()
+        async with self.api.call_api(
+            method="GET", version="", base="/apis", headers=aggregate_discover_accept
+        ) as response:
+            api_groups = response.json()
+
+        # servergroups.json
+        groups_o = []
+        all_items = [*groups["items"], *api_groups["items"]]
+        for group in all_items:
+
+            group_name = group.get("metadata").get("name", "")
+            group_o = {
+                "name": group_name,
+                "versions": [],
+                "preferredVersion": None,
+            }
+            for version in group["versions"]:
+                group_version_string = (
+                    group_name + "/" + version["version"]
+                    if group_name
+                    else version["version"]
+                )
+
+                version = {
+                    "groupVersion": group_version_string,
+                    "version": version["version"],
+                }
+                group_o["versions"].append(version)
+
+                preferred_version = group_o.get("preferredVersion", {})
+                if not preferred_version:
+                    group_o["preferredVersion"] = version
+
+            groups_o.append(group_o)
+
+        sergergroups = {"kind": "APIGroupList", "apiVersion": "v1", "groups": groups_o}
+        if self.save_cache:
+            self.disk_cache.write_file(pathlib.Path("servergroups.json"), sergergroups)
+
+        # serverresources.json
+        resources_o = []
+        for group in all_items:
+            group_name = group.get("metadata").get("name", "")
+            for version in group["versions"]:
+                cache_path = pathlib.Path(
+                    group.get("metadata").get("name", ""),
+                    version["version"],
+                    "serverresources.json",
+                )
+                group_version_string = (
+                    group_name + "/" + version["version"]
+                    if group_name
+                    else version["version"]
+                )
+
+                v = {
+                    "kind": "APIResourceList",
+                    "apiVersion": "v1",
+                    "groupVersion": group_version_string,
+                    "resources": self._munch_resources(version.get("resources", [])),
+                }
+                if self.save_cache:
+                    self.disk_cache.write_file(cache_path, v)
+                resources_o.append(v)
+
+        return resources_o
+
+    @staticmethod
+    def collect_api_resources(resource):
         """Add an API resource to the list of resources."""
         return [
-            {"version": version, **r}
+            {"version": resource["groupVersion"], **r}
             for r in resource["resources"]
             if "/" not in r["name"]
         ]
@@ -182,19 +295,11 @@ class KindFetcherCached:
     async def async_api_resources(self) -> list[dict]:
         """Get the Kubernetes API resources."""
         resources = []
-        core_api_list = await self.fetch_core_versions()
 
-        for version in core_api_list["versions"]:
-            resource = await self.fetch_core_kinds(version)
-            resources.extend(self.collect_api_resources(resource, version))
-        api_list = await self.fetch_apis()
-        for api in sorted(api_list["groups"], key=lambda d: d["name"]):
-            for api_version in sort_versions(
-                api["versions"], key=lambda x: x["groupVersion"]
-            ):
-                version = api_version["groupVersion"]
-                resource = await self.fetch_kind(version)
-                resources.extend(self.collect_api_resources(resource, version))
+        for resource in sort_versions(
+            await self._groups_and_maybe_resources(), key=lambda x: x["groupVersion"]
+        ):
+            resources.extend(self.collect_api_resources(resource))
         return resources
 
 
