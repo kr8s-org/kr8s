@@ -126,15 +126,22 @@ class KindFetcherCached:
         if self.read_cache and self.disk_cache.check_exists(file):
             try:
                 v = self.disk_cache.load_file(file)
-            except Exception:
-                # TODO: narrow scope and log
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to json decode cache file {file}", exc_info=e)
+                v = None
+            except Exception as e:  # reading from cache is never fatal
+                logger.warning(f"Could not read cache file {file}", exc_info=e)
                 v = None
         if not v:
             async with fetch() as response:
                 v = response.json()
         if self.save_cache:
             logger.debug("saving to discovery cache %s", file)
-            self.disk_cache.write_file(file, v)
+            try:
+                self.disk_cache.write_file(file, v)
+            except Exception as e:  # writing to cache is never fatal
+                logger.warning(f"Could not write cache file {file}", exc_info=e)
+
         return v
 
     async def fetch_kind(self, group_version: str):
@@ -189,41 +196,6 @@ class KindFetcherCached:
                 resource = await self.fetch_kind(version)
                 resources.extend(self.collect_api_resources(resource, version))
         return resources
-
-
-def load_api_resources_from_kubectl(_cache: KubectlDiscoveryCache):
-    """
-    Load API resources from kubectl's discovery cache.
-
-    Kubernetes clients need to look up what resources are available on the server.
-    Kubectl caches this information on disk.
-    You can load this information and skip sending many requests to the server.
-    """
-    logger.debug(f"Loading API resources from kubectl cache in {_cache.cache_dir}")
-    if not _cache.check_exists(pathlib.Path("servergroups.json")):
-        logger.warning(
-            f"Directory {_cache.cache_dir} does not contain `servergroups.json`, "
-            "this may not be a standard kubectl cache directory",
-        )
-
-    out = []
-
-    for file in _cache.list_all_files():
-        try:
-            data = _cache.load_file(file)
-            group_version = data["groupVersion"]
-            out.append(KindFetcherCached.collect_api_resources(data, group_version))
-        except (json.JSONDecodeError, OSError) as e:
-            logger.warning(f"Failed to load API resources from {file}: {e}")
-            continue
-        except KeyError as e:
-            logger.warning(
-                f"Invalid API resources file {file}, expected key 'groupVersion': {e}"
-            )
-            continue
-
-    logger.debug(f"Loaded {len(out)} API resources from kubectl cache")
-    return out
 
 
 class ResourceKindCache:
