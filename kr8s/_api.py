@@ -338,7 +338,8 @@ class Api:
             parts.append(version)
         if namespace:
             parts.extend(["namespaces", namespace])
-        parts.append(url)
+        if url:
+            parts.append(url)
         return "/".join(parts)
 
     @contextlib.asynccontextmanager
