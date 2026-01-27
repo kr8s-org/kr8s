@@ -72,6 +72,7 @@ class KubectlDiscoveryCache:
     def from_api(
         cls, api: Api, kubectl_cache_dir: pathlib.Path | None = None
     ) -> KubectlDiscoveryCache:
+        """Select the correct cache directory for a kr8s API instance."""
         if not kubectl_cache_dir:
             kubectl_cache_dir = get_default_cache_dir()
 
@@ -100,9 +101,11 @@ class KubectlDiscoveryCache:
             json.dump(data, f)
 
     def check_exists(self, file: pathlib.Path) -> bool:
+        """Check if the file is in the discovery cache."""
         return (self.cache_dir / file).exists()
 
     def list_all_files(self, glob: str = "*.json") -> list[pathlib.Path]:
+        """List all files in the discovery cache, useful for debugging."""
         return list(self.cache_dir.rglob(glob))
 
 
@@ -122,6 +125,7 @@ class KindFetcherCached:
         self.read_cache = read_cache
 
     def _read(self, file: pathlib.Path) -> dict | None:
+        """Read from the cache if permitted and possible."""
         if self.read_cache and self.disk_cache.check_exists(file):
             try:
                 return self.disk_cache.load_file(file)
@@ -134,6 +138,7 @@ class KindFetcherCached:
         return None
 
     def _save(self, file: pathlib.Path, v: dict):
+        """Save to the cache if permitted."""
         if self.save_cache:
             logger.debug("saving to discovery cache %s", file)
             try:
@@ -170,6 +175,7 @@ class KindFetcherCached:
 
     @staticmethod
     def _transform_subresource(resource, subresource):
+        """Transform the format from aggregated discovery to the legacy format for caching."""
         value = {
             "name": resource["name"] + "/" + subresource["subresource"],
             "singularName": resource["singularName"],
@@ -193,6 +199,7 @@ class KindFetcherCached:
 
     @staticmethod
     def _transform_resources(rs: list[dict]):
+        """Transform the format from aggregated discovery to the legacy format for caching."""
         o = []
         for r in rs:
             v = KindFetcherCached._transform_for_legacy(r)
@@ -235,7 +242,7 @@ class KindFetcherCached:
             if not any_need_refreshing:
                 return resources_o
 
-        all_items = await self._do_aggregate_discovery()
+        all_items = await self._fetch_aggregate_discovery()
 
         # servergroups.json
         groups_o: list[KindFetcherCached.Group] = []
@@ -284,7 +291,8 @@ class KindFetcherCached:
 
         return resources_o
 
-    async def _do_aggregate_discovery(self) -> list[Any]:
+    async def _fetch_aggregate_discovery(self) -> list[Any]:
+        """Fetch the lists of resources and APIs using Kubernetes aggregated discovery."""
         aggregate_discover_accept = {
             "Accept": "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json"  # noqa: E501
         }
@@ -301,12 +309,13 @@ class KindFetcherCached:
 
     @staticmethod
     def _group_version_string(group_name, version) -> Any:
-        return (
-            group_name + "/" + version["version"] if group_name else version["version"]
-        )
+        if group_name:
+            return group_name + "/" + version["version"]
+        else:
+            return version["version"]
 
     @staticmethod
-    def collect_api_resources(resource):
+    def format_api_resources(resource):
         """Add an API resource to the list of resources."""
         return [
             {"version": resource["groupVersion"], **r}
@@ -321,7 +330,7 @@ class KindFetcherCached:
         for resource in sort_versions(
             await self._groups_and_maybe_resources(), key=lambda x: x["groupVersion"]
         ):
-            resources.extend(self.collect_api_resources(resource))
+            resources.extend(self.format_api_resources(resource))
         return resources
 
 
@@ -340,7 +349,6 @@ class ResourceKindCache:
         self.loaded = cache is not None
 
     async def get(self) -> list[dict]:
-        # TODO: break this up by resources
         if not self.loaded:
             await self.get_uncached()
 
@@ -402,7 +410,6 @@ class Api:
         Api._instances[thread_loop_id][key] = self
 
         # TODO: make this injectable
-        # TODO: fill from k8s
         self.resource_kind_cache = ResourceKindCache(
             KindFetcherCached(
                 self,
