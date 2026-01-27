@@ -15,7 +15,7 @@ import threading
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypedDict
 
 import anyio
 import httpx
@@ -172,33 +172,44 @@ class KindFetcherCached:
 
         return v
 
-    @staticmethod
-    def _munch_subresource(r, srs):
-        o = []
-        for sr in srs:
-            v = {
-                "name": r["name"] + "/" + sr["subresource"],
-                "singularName": r["singularName"],
-                "namespaced": r["namespaced"],
-                "kind": sr["responseKind"]["kind"],
-                "verbs": sr["verbs"],
-            }
-            if "group" in sr["responseKind"] and sr["responseKind"]["group"]:
-                v["group"] = sr["responseKind"]["group"]
-            if "version" in sr["responseKind"] and sr["responseKind"]["version"]:
-                v["version"] = sr["responseKind"]["version"]
-            if "storageVersionHash" in sr:
-                v["storageVersionHash"] = sr["storageVersionHash"]
-            o.append(v)
-        return o
+    class Group(TypedDict):
+        name: str
+        versions: list[dict]
+        preferredVersion: dict
 
     @staticmethod
-    def _munch_resources(rs: list[dict]):
+    def _transform_subresource(resource, subresource):
+        value = {
+            "name": resource["name"] + "/" + subresource["subresource"],
+            "singularName": resource["singularName"],
+            "namespaced": resource["namespaced"],
+            "kind": subresource["responseKind"]["kind"],
+            "verbs": subresource["verbs"],
+        }
+        if (
+            "group" in subresource["responseKind"]
+            and subresource["responseKind"]["group"]
+        ):
+            value["group"] = subresource["responseKind"]["group"]
+        if (
+            "version" in subresource["responseKind"]
+            and subresource["responseKind"]["version"]
+        ):
+            value["version"] = subresource["responseKind"]["version"]
+        if "storageVersionHash" in subresource:
+            value["storageVersionHash"] = subresource["storageVersionHash"]
+        return value
+
+    @staticmethod
+    def _transform_resources(rs: list[dict]):
         o = []
         for r in rs:
             v = KindFetcherCached._transform_for_legacy(r)
             o.append(v)
-            o.extend(KindFetcherCached._munch_subresource(v, r.get("subresources", [])))
+            o.extend(
+                KindFetcherCached._transform_subresource(v, subresource)
+                for subresource in r.get("subresources", [])
+            )
         return o
 
     async def _groups_and_maybe_resources(self):
@@ -222,38 +233,30 @@ class KindFetcherCached:
             api_groups = response.json()
 
         # servergroups.json
-        groups_o = []
+        groups_o: list[KindFetcherCached.Group] = []
         all_items = [*groups["items"], *api_groups["items"]]
         for group in all_items:
 
             group_name = group.get("metadata").get("name", "")
-            group_o = {
-                "name": group_name,
-                "versions": [],
-                "preferredVersion": None,
-            }
+            versions = []
             for version in group["versions"]:
-                group_version_string = (
-                    group_name + "/" + version["version"]
-                    if group_name
-                    else version["version"]
+                versions.append(
+                    {
+                        "groupVersion": self._group_version_string(group_name, version),
+                        "version": version["version"],
+                    }
                 )
 
-                version = {
-                    "groupVersion": group_version_string,
-                    "version": version["version"],
-                }
-                group_o["versions"].append(version)
-
-                preferred_version = group_o.get("preferredVersion", {})
-                if not preferred_version:
-                    group_o["preferredVersion"] = version
-
+            group_o: KindFetcherCached.Group = {
+                "name": group_name,
+                "versions": versions,
+                "preferredVersion": versions[0] if versions else {},
+            }
             groups_o.append(group_o)
 
-        sergergroups = {"kind": "APIGroupList", "apiVersion": "v1", "groups": groups_o}
+        servergroups = {"kind": "APIGroupList", "apiVersion": "v1", "groups": groups_o}
         if self.save_cache:
-            self.disk_cache.write_file(pathlib.Path("servergroups.json"), sergergroups)
+            self.disk_cache.write_file(pathlib.Path("servergroups.json"), servergroups)
 
         # serverresources.json
         resources_o = []
@@ -261,27 +264,27 @@ class KindFetcherCached:
             group_name = group.get("metadata").get("name", "")
             for version in group["versions"]:
                 cache_path = pathlib.Path(
-                    group.get("metadata").get("name", ""),
-                    version["version"],
-                    "serverresources.json",
+                    group_name, version["version"], "serverresources.json"
                 )
-                group_version_string = (
-                    group_name + "/" + version["version"]
-                    if group_name
-                    else version["version"]
-                )
-
                 v = {
                     "kind": "APIResourceList",
                     "apiVersion": "v1",
-                    "groupVersion": group_version_string,
-                    "resources": self._munch_resources(version.get("resources", [])),
+                    "groupVersion": self._group_version_string(group_name, version),
+                    "resources": self._transform_resources(
+                        version.get("resources", [])
+                    ),
                 }
                 if self.save_cache:
                     self.disk_cache.write_file(cache_path, v)
                 resources_o.append(v)
 
         return resources_o
+
+    @staticmethod
+    def _group_version_string(group_name, version) -> Any:
+        return (
+            group_name + "/" + version["version"] if group_name else version["version"]
+        )
 
     @staticmethod
     def collect_api_resources(resource):
