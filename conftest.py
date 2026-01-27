@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import gc
-import logging
 import os
+import tempfile
 import time
 from collections.abc import Generator
 from pathlib import Path
@@ -59,9 +59,14 @@ def k8s_cluster(request) -> Generator[KindCluster, None, None]:
         kind_cluster.delete()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def kubectl_api_cache(k8s_cluster) -> Generator[KindCluster, None, None]:
-    """Ensure that kubectl has written its api cache to disk."""
-    logging.basicConfig(level=logging.DEBUG)
-    k8s_cluster.kubectl("get", "--raw", "/api/v1")
+    """Ensure that kubectl has written its api cache to disk in an isolated cache directory."""
+    cache_dir = tempfile.mkdtemp()
+    os.environ["KUBECACHEDIR"] = cache_dir
+    Path(cache_dir).mkdir(parents=True, exist_ok=True)
+
+    k8s_cluster.kubectl("get", "pods")
     yield k8s_cluster
+
+    del os.environ["KUBECACHEDIR"]
