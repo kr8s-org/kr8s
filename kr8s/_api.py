@@ -7,19 +7,19 @@ import contextlib
 import copy
 import json
 import logging
+import os
+import pathlib
+import re
 import ssl
 import threading
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
-from typing import (
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import anyio
 import httpx
 import httpx_ws
-from cachetools import TTLCache  # type: ignore
 from cryptography import x509
 from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
@@ -31,7 +31,6 @@ from ._constants import (
 )
 from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
-from ._vendored.asyncache import cached  # type: ignore
 from ._version import __version__
 
 if TYPE_CHECKING:
@@ -39,6 +38,331 @@ if TYPE_CHECKING:
 
 ALL = "all"
 logger = logging.getLogger(__name__)
+
+
+overly_cautious_illegal_file_characters = re.compile(r"[^\w/.]")
+
+
+def compute_discovery_cache_dir(parent_dir: pathlib.Path, host: str) -> pathlib.Path:
+    """Port of kubectl's discovery cache dir."""
+    schemeless_host = host.replace("https://", "", 1).replace("http://", "", 1)
+    safe_host = re.sub(overly_cautious_illegal_file_characters, "_", schemeless_host)
+    return parent_dir / safe_host
+
+
+def get_default_cache_dir() -> pathlib.Path:
+    """
+    Get the default cache directory for kubectl discovery cache.
+
+    Port from kubectl https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L303-L309
+    """
+    if os.environ.get("KUBECACHEDIR"):
+        return pathlib.Path(os.environ["KUBECACHEDIR"])
+    else:
+        return pathlib.Path.home() / ".kube" / "cache"
+
+
+class KubectlDiscoveryCache:
+    """Cache for API resources kinds on disk."""
+
+    def __init__(self, cache_dir: pathlib.Path):
+        self.cache_dir = cache_dir
+
+    @classmethod
+    def from_api(
+        cls, api: Api, kubectl_cache_dir: pathlib.Path | None = None
+    ) -> KubectlDiscoveryCache:
+        """Select the correct cache directory for a kr8s API instance."""
+        if not kubectl_cache_dir:
+            kubectl_cache_dir = get_default_cache_dir()
+
+        cache_dir = pathlib.Path(
+            compute_discovery_cache_dir(
+                kubectl_cache_dir / "discovery", api.auth.server
+            )
+        )
+        logger.debug(f"Loading API resources from kubectl cache in {cache_dir}")
+        if not cache_dir.exists():
+            logger.debug("Cache directory does not exist, creating")
+            cache_dir.mkdir(parents=True, exist_ok=True)
+
+        return cls(cache_dir)
+
+    def load_file(self, file: pathlib.Path) -> dict:
+        """Load a file from kubectl's discovery cache."""
+        with open(self.cache_dir / file, encoding="utf-8") as f:
+            return json.load(f)
+
+    def write_file(self, file: pathlib.Path, data: dict) -> None:
+        """Write a file to kubectl's discovery cache."""
+        cache_file = self.cache_dir / file
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def check_exists(self, file: pathlib.Path) -> bool:
+        """Check if the file is in the discovery cache."""
+        return (self.cache_dir / file).exists()
+
+    def list_all_files(self, glob: str = "*.json") -> list[pathlib.Path]:
+        """List all files in the discovery cache, useful for debugging."""
+        return list(self.cache_dir.rglob(glob))
+
+
+class KindFetcherCached:
+    """Fetch API resources from the Kubernetes API, caching results."""
+
+    def __init__(
+        self,
+        api: Api,
+        disk_cache: KubectlDiscoveryCache,
+        save_cache: bool = True,
+        read_cache: bool = True,
+    ):
+        self.api = api
+        self.disk_cache = disk_cache
+        self.save_cache = save_cache
+        self.read_cache = read_cache
+
+    def _read(self, file: pathlib.Path) -> dict | None:
+        """Read from the cache if permitted and possible."""
+        if self.read_cache and self.disk_cache.check_exists(file):
+            try:
+                return self.disk_cache.load_file(file)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to json decode cache file {file}", exc_info=e)
+                return None
+            except Exception as e:  # reading from cache is never fatal
+                logger.warning(f"Could not read cache file {file}", exc_info=e)
+                return None
+        return None
+
+    def _save(self, file: pathlib.Path, v: dict):
+        """Save to the cache if permitted."""
+        if self.save_cache:
+            logger.debug("saving to discovery cache %s", file)
+            try:
+                self.disk_cache.write_file(file, v)
+            except Exception as e:  # writing to cache is never fatal
+                logger.warning(f"Could not write cache file {file}", exc_info=e)
+
+    @staticmethod
+    def _transform_for_legacy(resource: dict):
+        """Transform the format from aggregated discovery to the legacy format for caching."""
+        response_kind = resource.get("responseKind") or {}
+        scope = resource.get("scope")
+
+        v = {
+            "name": resource.get("resource", ""),
+            "singularName": resource.get("singularResource", ""),
+            "namespaced": scope == "Namespaced",
+            "kind": response_kind.get("kind", ""),
+            "verbs": resource.get("verbs") or [],
+        }
+        if "shortNames" in resource:
+            v["shortNames"] = resource["shortNames"]
+        if "categories" in resource:
+            v["categories"] = resource["categories"]
+        if "storageVersionHash" in resource:
+            v["storageVersionHash"] = resource["storageVersionHash"]
+
+        return v
+
+    class Group(TypedDict):
+        name: str
+        versions: list[dict]
+        preferredVersion: dict
+
+    @staticmethod
+    def _transform_subresource(resource, subresource):
+        """Transform the format from aggregated discovery to the legacy format for caching."""
+        value = {
+            "name": resource["name"] + "/" + subresource["subresource"],
+            "singularName": resource["singularName"],
+            "namespaced": resource["namespaced"],
+            "kind": subresource["responseKind"]["kind"],
+            "verbs": subresource["verbs"],
+        }
+        if (
+            "group" in subresource["responseKind"]
+            and subresource["responseKind"]["group"]
+        ):
+            value["group"] = subresource["responseKind"]["group"]
+        if (
+            "version" in subresource["responseKind"]
+            and subresource["responseKind"]["version"]
+        ):
+            value["version"] = subresource["responseKind"]["version"]
+        if "storageVersionHash" in subresource:
+            value["storageVersionHash"] = subresource["storageVersionHash"]
+        return value
+
+    @staticmethod
+    def _transform_resources(rs: list[dict]):
+        """Transform the format from aggregated discovery to the legacy format for caching."""
+        o = []
+        for r in rs:
+            v = KindFetcherCached._transform_for_legacy(r)
+            o.append(v)
+            o.extend(
+                KindFetcherCached._transform_subresource(v, subresource)
+                for subresource in r.get("subresources", [])
+            )
+        return o
+
+    async def _groups_and_maybe_resources(self):
+        """
+        Port of kubernetes DiscoveryClient GroupsAndMaybeResources for equivalency in the cache.
+
+        This endpoint aggregates both the "/api" and "/apis" endpoints in the client and combines them here.
+        It removes logic for handling legacy formats,
+        since the new API version is available in all versions of kubernetes supported by kr8s.
+        """
+        # try to load everything from cache.
+        # refetching the cache will refresh everything,
+        # so we check whether we need to refresh any of them
+        servergroups = self._read(pathlib.Path("servergroups.json"))
+        if servergroups:
+
+            any_need_refreshing = False
+            resources_o = []
+            for group in servergroups["groups"]:
+                for version in group["versions"]:
+                    resources = self._read(
+                        pathlib.Path(
+                            group["name"], version["version"], "serverresources.json"
+                        )
+                    )
+                    if not resources:
+                        any_need_refreshing = True
+                        break
+                    else:
+                        resources_o.append(resources)
+
+            if not any_need_refreshing:
+                return resources_o
+
+        all_items = await self._fetch_aggregate_discovery()
+
+        # servergroups.json
+        groups_o: list[KindFetcherCached.Group] = []
+        for group in all_items:
+
+            group_name = group.get("metadata").get("name", "")
+            versions = []
+            for version in group["versions"]:
+                versions.append(
+                    {
+                        "groupVersion": self._group_version_string(group_name, version),
+                        "version": version["version"],
+                    }
+                )
+
+            group_o: KindFetcherCached.Group = {
+                "name": group_name,
+                "versions": versions,
+                "preferredVersion": versions[0] if versions else {},
+            }
+            groups_o.append(group_o)
+
+        servergroups = {"kind": "APIGroupList", "apiVersion": "v1", "groups": groups_o}
+        self._save(pathlib.Path("servergroups.json"), servergroups)
+
+        # serverresources.json
+        resources_o = []
+        for group in all_items:
+            group_name = group.get("metadata").get("name", "")
+            for version in group["versions"]:
+                v = {
+                    "kind": "APIResourceList",
+                    "apiVersion": "v1",
+                    "groupVersion": self._group_version_string(group_name, version),
+                    "resources": self._transform_resources(
+                        version.get("resources", [])
+                    ),
+                }
+                self._save(
+                    pathlib.Path(
+                        group_name, version["version"], "serverresources.json"
+                    ),
+                    v,
+                )
+                resources_o.append(v)
+
+        return resources_o
+
+    async def _fetch_aggregate_discovery(self) -> list[Any]:
+        """Fetch the lists of resources and APIs using Kubernetes aggregated discovery."""
+        aggregate_discover_accept = {
+            "Accept": "application/json;g=apidiscovery.k8s.io;v=v2;as=APIGroupDiscoveryList,application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList,application/json"  # noqa: E501
+        }
+        async with self.api.call_api(
+            method="GET", version="", base="/api", headers=aggregate_discover_accept
+        ) as response:
+            groups = response.json()
+        async with self.api.call_api(
+            method="GET", version="", base="/apis", headers=aggregate_discover_accept
+        ) as response:
+            api_groups = response.json()
+        all_items = [*groups["items"], *api_groups["items"]]
+        return all_items
+
+    @staticmethod
+    def _group_version_string(group_name, version) -> Any:
+        if group_name:
+            return group_name + "/" + version["version"]
+        else:
+            return version["version"]
+
+    @staticmethod
+    def format_api_resources(resource):
+        """Add an API resource to the list of resources."""
+        return [
+            {"version": resource["groupVersion"], **r}
+            for r in resource["resources"]
+            if "/" not in r["name"]
+        ]
+
+    async def async_api_resources(self) -> list[dict]:
+        """Get the Kubernetes API resources."""
+        resources = []
+
+        for resource in sort_versions(
+            await self._groups_and_maybe_resources(), key=lambda x: x["groupVersion"]
+        ):
+            resources.extend(self.format_api_resources(resource))
+        return resources
+
+
+class ResourceKindCache:
+    """Cache for API resources kinds."""
+
+    # TODO: Add TTL
+
+    def __init__(
+        self,
+        kind_fetcher: KindFetcherCached,
+        cache: list[dict] | None = None,
+    ):
+        self.kind_fetcher = kind_fetcher
+        self.cache = [] if cache is None else cache
+        self.loaded = cache is not None
+
+    async def get(self) -> list[dict]:
+        if not self.loaded:
+            await self.get_uncached()
+
+        return self.cache
+
+    async def get_uncached(self) -> list[dict]:
+        uncached = copy.copy(self.kind_fetcher)
+        uncached.read_cache = False
+        await self.set(await uncached.async_api_resources())
+        return self.cache
+
+    async def set(self, resources: list[dict]):
+        self.loaded = True
+        self.cache = resources
 
 
 class Api:
@@ -84,6 +408,15 @@ class Api:
             Api._instances[thread_loop_id] = weakref.WeakValueDictionary()
         key = hash_kwargs(kwargs)
         Api._instances[thread_loop_id][key] = self
+
+        # TODO: make this injectable
+        self.resource_kind_cache = ResourceKindCache(
+            KindFetcherCached(
+                self,
+                KubectlDiscoveryCache.from_api(self),
+                save_cache=True,
+            )
+        )
 
     def __await__(self):
         async def f():
@@ -139,7 +472,8 @@ class Api:
             parts.append(version)
         if namespace:
             parts.extend(["namespaces", namespace])
-        parts.append(url)
+        if url:
+            parts.append(url)
         return "/".join(parts)
 
     @contextlib.asynccontextmanager
@@ -366,9 +700,9 @@ class Api:
         from ._objects import parse_kind
 
         if skip_cache:
-            resources = await self.async_api_resources_uncached()
+            resources = await self.resource_kind_cache.get_uncached()
         else:
-            resources = await self.async_api_resources()
+            resources = await self.resource_kind_cache.get()
         kind, group, version = parse_kind(kind)
         if group:
             version = f"{group}/{version}"
@@ -670,49 +1004,8 @@ class Api:
         """Get the Kubernetes API resources."""
         return await self.async_api_resources()
 
-    # Cache for 6 hours because kubectl does
-    # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
-    @cached(TTLCache(1, 60 * 60 * 6))
     async def async_api_resources(self) -> list[dict]:
-        return await self.async_api_resources_uncached()
-
-    async def async_api_resources_uncached(self) -> list[dict]:
-        """Get the Kubernetes API resources."""
-        resources = []
-        async with self.call_api(method="GET", version="", base="/api") as response:
-            core_api_list = response.json()
-
-        for version in core_api_list["versions"]:
-            async with self.call_api(
-                method="GET", version="", base="/api", url=version
-            ) as response:
-                resource = response.json()
-            resources.extend(
-                [
-                    {"version": version, **r}
-                    for r in resource["resources"]
-                    if "/" not in r["name"]
-                ]
-            )
-        async with self.call_api(method="GET", version="", base="/apis") as response:
-            api_list = response.json()
-        for api in sorted(api_list["groups"], key=lambda d: d["name"]):
-            for api_version in sort_versions(
-                api["versions"], key=lambda x: x["groupVersion"]
-            ):
-                version = api_version["groupVersion"]
-                async with self.call_api(
-                    method="GET", version="", base="/apis", url=version
-                ) as response:
-                    resource = response.json()
-                resources.extend(
-                    [
-                        {"version": version, **r}
-                        for r in resource["resources"]
-                        if "/" not in r["name"]
-                    ]
-                )
-        return resources
+        return await self.resource_kind_cache.get()
 
     async def api_versions(self) -> AsyncGenerator[str]:
         """Get the Kubernetes API versions."""

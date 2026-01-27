@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import pathlib
 import queue
 import threading
 import warnings
@@ -11,6 +12,7 @@ import pytest
 
 import kr8s
 import kr8s.asyncio
+from kr8s._api import KindFetcherCached, KubectlDiscoveryCache
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -354,9 +356,10 @@ async def test_api_resources_cache(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level("INFO")
     api = await kr8s.asyncio.api()
     await api.api_resources()
-    assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
+    assert caplog.text.count('/apis "HTTP/1.1 200 OK"') == 1
+    # try again, should not hit the server
     await api.api_resources()
-    assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
+    assert caplog.text.count('/apis "HTTP/1.1 200 OK"') == 1
 
 
 async def test_api_timeout() -> None:
@@ -567,6 +570,106 @@ async def test_crd_caching(example_crd_spec):
     async with create_delete_crd(example_crd_spec) as example_crd:
         # Try to get the new CRD (which isn't in the cache, so the cache should be bypassed)
         [r async for r in api.get(example_crd.name)]
+
+
+async def test_loading_crds_from_kubectl(kubectl_api_cache):
+    class FakeApi:
+        """Fake API class ensures we never contact the server"""
+
+    api = await kr8s.asyncio.api()
+
+    fetcher = KindFetcherCached(
+        api=FakeApi(), disk_cache=KubectlDiscoveryCache.from_api(api), save_cache=False
+    )
+
+    result = await fetcher.async_api_resources()
+    assert len(result) > 0
+
+
+async def test_loading_crds_from_api(kubectl_api_cache):
+    class FakeKubectlCache:
+        """Fake kubectl cache class ensures we never read from disk"""
+
+        def check_exists(self, file: pathlib.Path):
+            return False
+
+    api = await kr8s.asyncio.api()
+
+    fetcher = KindFetcherCached(
+        api=api, disk_cache=FakeKubectlCache(), save_cache=False
+    )
+
+    result = await fetcher.async_api_resources()
+    assert len(result) > 0
+
+
+def _compare_kubectl_cache(kubectl, result, path: pathlib.Path = pathlib.Path("/")):
+    try:
+        if isinstance(kubectl, dict):
+            for k, v in kubectl.items():
+                if k == "storageVersionHash":
+                    # storageVersionHash is not sent with aggregated discovery,
+                    # so newer versions of kubectl do not have this field.
+                    # pytest-kind ships with kubectl 1.25.3, which does not use aggregated discovery.
+                    continue
+
+                _compare_kubectl_cache(v, result[k], path / k)
+        elif isinstance(kubectl, list):
+            assert len(kubectl) == len(result)
+            for i, (kubectl_item, result_item) in enumerate(zip(kubectl, result)):
+                _compare_kubectl_cache(kubectl_item, result_item, path / str(i))
+        else:
+            if path.name == "singularName":
+                # singularName for subResources is sometimes set to "" or to the parent resource,
+                # depending on the version of kubectl
+                assert result == kubectl or "" == kubectl
+            else:
+                assert result == kubectl
+    except AssertionError as e:
+        raise AssertionError(
+            f"Failed to validate kubectl cache, item at internalpath={path}"
+        ) from e
+
+
+async def test_saving_to_discovery_cache(kubectl_api_cache):
+    """Test that the files we would write match the files kubectl wrote"""
+
+    class FakeKubectlDiscoveryCache:
+        """Fake kubectl class allows us to store the written cache for verification."""
+
+        def __init__(self):
+            self.written_files = {}
+
+        def check_exists(self, file: pathlib.Path):
+            return False
+
+        def write_file(self, file: pathlib.Path, data: dict):
+            self.written_files[file] = data
+
+    api = await kr8s.asyncio.api()
+    real_cache = KubectlDiscoveryCache.from_api(api)
+
+    fake_cache = FakeKubectlDiscoveryCache()
+    fetcher = KindFetcherCached(api=api, disk_cache=fake_cache, save_cache=True)
+
+    result = await fetcher.async_api_resources()
+    assert len(result) > 0
+    assert len(fetcher.disk_cache.written_files) > 0
+
+    for filename, file in fake_cache.written_files.items():
+        try:
+            # assert file == real_cache.load_file(filename)
+            _compare_kubectl_cache(real_cache.load_file(filename), file)
+
+        except AssertionError as e:
+            real_file = real_cache.cache_dir / filename
+            raise AssertionError(
+                f"Failed to validate written cache file file={filename} real={real_file}"
+            ) from e
+        except FileNotFoundError:
+            raise AssertionError(
+                f"Failed to find cache file written by kubectl file={filename}, files={real_cache.list_all_files()}"
+            )
 
 
 async def test_get_raw_basic() -> None:
