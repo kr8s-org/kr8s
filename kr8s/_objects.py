@@ -366,7 +366,7 @@ class APIObject:
             )
         return False
 
-    async def async_create(self, validate: ValidateOption = "ignore") -> None:
+    async def async_create(self, *, validate: ValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
         assert self.api
 
@@ -382,12 +382,13 @@ class APIObject:
             self.raw = resp.json()
             self._warn_server_response(resp)
 
-    async def create(self, validate: ValidateOption = "ignore") -> None:
+    async def create(self, *, validate: ValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
         return await self.async_create(validate=validate)
 
     async def async_apply(
         self,
+        *,
         server_side: bool = False,
         force_conflicts: bool = False,
         validate: ValidateOption = "strict",
@@ -454,12 +455,15 @@ class APIObject:
 
     async def apply(
         self,
+        *,
         server_side: bool = False,
         force_conflicts: bool = False,
         validate: ValidateOption = "strict",
     ) -> None:
         """Create or update this object in Kubernetes using server-side apply."""
-        return await self.async_apply(server_side, force_conflicts, validate)
+        return await self.async_apply(
+            server_side=server_side, force_conflicts=force_conflicts, validate=validate
+        )
 
     async def delete(
         self,
@@ -538,8 +542,8 @@ class APIObject:
     async def patch(
         self,
         patch,
-        validate: ValidateOption = "ignore",
         *,
+        validate: ValidateOption = "ignore",
         subresource=None,
         type=None,
     ) -> None:
@@ -551,8 +555,8 @@ class APIObject:
     async def async_patch(
         self,
         patch: dict | list,
-        validate: ValidateOption = "ignore",
         *,
+        validate: ValidateOption = "ignore",
         subresource=None,
         type=None,
     ) -> None:
@@ -1065,11 +1069,12 @@ class APIObjectSyncMixin(APIObject):
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
         return as_sync_func(self.async_exists)(ensure=ensure)
 
-    def create(self, validate: ValidateOption = "ignore"):  # type: ignore[override]
+    def create(self, *, validate: ValidateOption = "ignore"):  # type: ignore[override]
         return as_sync_func(self.async_create)(validate=validate)
 
     def apply(
         self,
+        *,
         server_side: bool = False,
         force_conflicts: bool = False,
         validate: ValidateOption = "strict",

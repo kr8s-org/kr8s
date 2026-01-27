@@ -123,11 +123,12 @@ async def create(resources: list[APIObject], api=None, _asyncio=True):
 
 async def apply(
     resources: list[APIObject],
+    api=None,
+    _asyncio=True,
+    *,
     server_side: bool = False,
     force_conflicts: bool = False,
     validate: ValidateOption = "strict",
-    api=None,
-    _asyncio=True,
 ) -> None:
     """Create or update resources in the Kubernetes cluster using server-side apply."""
     if api is None:

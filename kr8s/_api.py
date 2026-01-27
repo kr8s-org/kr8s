@@ -750,20 +750,21 @@ class Api:
                 yield version["groupVersion"]
 
     async def async_create(
-        self, resources: list[APIObject], validate: ValidateOption = "ignore"
+        self, resources: list[APIObject], *, validate: ValidateOption = "ignore"
     ):
         async with anyio.create_task_group() as tg:
             for resource in resources:
                 tg.start_soon(resource.async_create, validate)
 
     async def create(
-        self, resources: list[APIObject], validate: ValidateOption = "ignore"
+        self, resources: list[APIObject], *, validate: ValidateOption = "ignore"
     ):
         return await self.async_create(resources)
 
     async def async_apply(
         self,
         resources: list[APIObject],
+        *,
         server_side: bool = False,
         force_conflicts: bool = False,
         validate: ValidateOption = "strict",
@@ -778,12 +779,18 @@ class Api:
     async def apply(
         self,
         resources: list[APIObject],
+        *,
         server_side: bool = False,
         force_conflicts: bool = False,
         validate: ValidateOption = "strict",
     ):
         """Use server-side apply to create or update resources."""
-        return await self.async_apply(resources, server_side, force_conflicts, validate)
+        return await self.async_apply(
+            resources,
+            server_side=server_side,
+            force_conflicts=force_conflicts,
+            validate=validate,
+        )
 
     @property
     def __version__(self) -> str:

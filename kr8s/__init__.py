@@ -128,24 +128,26 @@ class Api(_AsyncApi):
     def create(
         self,
         resources: list[objects.APIObject],  # type: ignore[override]
+        *,
         validate: ValidateOption = "ignore",
     ):
         return _as_sync_func(self.async_create)(
-            cast(list[asyncio.objects.APIObject], resources), validate
+            cast(list[asyncio.objects.APIObject], resources), validate=validate
         )
 
     def apply(
         self,
         resources: list[objects.APIObject],  # type: ignore[override]
+        *,
         server_side: bool = False,
         force_conflicts: bool = False,
         validate: ValidateOption = "strict",
     ):
         return _as_sync_func(self.async_apply)(
             cast(list[asyncio.objects.APIObject], resources),
-            server_side,
-            force_conflicts,
-            validate,
+            server_side=server_side,
+            force_conflicts=force_conflicts,
+            validate=validate,
         )
 
 
@@ -275,6 +277,7 @@ def create(resources: list[type[APIObject]], api=None):
 
 def apply(
     resources: list[type[APIObject]],
+    *,
     server_side: bool = False,
     force_conflicts: bool = False,
     validate: ValidateOption = "strict",
