@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 import pathlib
 import re
 import sys
@@ -21,6 +22,7 @@ import httpx
 import jsonpath
 import yaml
 from box import Box
+from httpx import Response
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -29,7 +31,7 @@ else:
 
 import kr8s
 import kr8s.asyncio
-from kr8s._api import Api
+from kr8s._api import Api, ApplyOpTypes, ValidateOption, _apply_op_content_type
 from kr8s._async_utils import as_sync_func, as_sync_generator
 from kr8s._data_utils import (
     dict_to_selector,
@@ -44,6 +46,8 @@ from kr8s._types import SpecType, SupportsKeysAndGetItem
 from kr8s.asyncio.portforward import PortForward as AsyncPortForward
 from kr8s.portforward import LocalPortType
 from kr8s.portforward import PortForward as SyncPortForward
+
+logger = logging.getLogger(__name__)
 
 JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
 
@@ -362,21 +366,104 @@ class APIObject:
             )
         return False
 
-    async def async_create(self) -> None:
+    async def async_create(self, *, validate: ValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
         assert self.api
+
+        params = {"fieldValidation": self._field_validation_header(validate)}
         async with self.api.call_api(
             "POST",
             version=self.version,
             url=self.endpoint,
             namespace=self.namespace,
             content=json.dumps(self.raw_template),
+            params=params,
         ) as resp:
             self.raw = resp.json()
+            self._warn_server_response(resp)
 
-    async def create(self) -> None:
+    async def create(self, *, validate: ValidateOption = "ignore") -> None:
         """Create this object in Kubernetes."""
-        return await self.async_create()
+        return await self.async_create(validate=validate)
+
+    async def async_apply(
+        self,
+        *,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ValidateOption = "strict",
+    ) -> None:
+        """Create or update this object in Kubernetes using server-side apply."""
+        assert self.api
+        # Remove managedFields which must be nil when using server-side apply
+        self.metadata.managedFields = None
+
+        params = {}
+        # fieldManager
+        if self.api.field_manager:
+            field_manager = self.api.field_manager
+        elif server_side:
+            field_manager = "kr8s"
+        else:
+            field_manager = "kr8s-client-side-apply"
+        params["fieldManager"] = field_manager
+
+        # validate
+        params["fieldValidation"] = self._field_validation_header(validate)
+
+        if force_conflicts:
+            if server_side:
+                params["force"] = "true"
+            else:
+                logger.warning(
+                    "force_conflicts=True is ignored when not using server-side apply"
+                )
+
+        op_type: ApplyOpTypes = "ssa" if server_side else "strategic"
+
+        try:
+            async with self.api.call_api(
+                "PATCH",
+                version=self.version,
+                url=f"{self.endpoint}/{self.name}",
+                namespace=self.namespace,
+                content=json.dumps(self.raw_template),
+                headers={"Content-Type": _apply_op_content_type(op_type)},
+                params=params,
+            ) as resp:
+                self.raw = resp.json()
+                self._warn_server_response(resp)
+        except ServerError as e:
+            if e.response and e.response.status_code == 404:
+                await self.async_create(validate=validate)
+            else:
+                raise
+
+    def _warn_server_response(self, resp: Response):
+        """Log warnings from the Kubernetes server response."""
+        warnings = resp.headers.get("Warning")
+        if warnings:
+            for warning in warnings.split(","):
+                logger.warning(warning)
+
+    def _field_validation_header(self, validate: ValidateOption | bool) -> str:
+        if isinstance(validate, str):
+            field_validation_header = validate.capitalize()
+        else:
+            field_validation_header = "Strict" if validate else "Ignore"
+        return field_validation_header
+
+    async def apply(
+        self,
+        *,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ValidateOption = "strict",
+    ) -> None:
+        """Create or update this object in Kubernetes using server-side apply."""
+        return await self.async_apply(
+            server_side=server_side, force_conflicts=force_conflicts, validate=validate
+        )
 
     async def delete(
         self,
@@ -452,19 +539,36 @@ class APIObject:
                 ) from e
             raise e
 
-    async def patch(self, patch, *, subresource=None, type=None) -> None:
+    async def patch(
+        self,
+        patch,
+        *,
+        validate: ValidateOption = "ignore",
+        subresource=None,
+        type=None,
+    ) -> None:
         """Patch this object in Kubernetes."""
-        await self.async_patch(patch, subresource=subresource, type=type)
+        await self.async_patch(
+            patch, validate=validate, subresource=subresource, type=type
+        )
 
     async def async_patch(
-        self, patch: dict | list, *, subresource=None, type=None
+        self,
+        patch: dict | list,
+        *,
+        validate: ValidateOption = "ignore",
+        subresource=None,
+        type=None,
     ) -> None:
         """Patch this object in Kubernetes."""
         url = f"{self.endpoint}/{self.name}"
         if type == "json":
-            headers = {"Content-Type": "application/json-patch+json"}
+            headers = {"Content-Type": _apply_op_content_type(type)}
         else:
-            headers = {"Content-Type": "application/merge-patch+json"}
+            headers = {"Content-Type": _apply_op_content_type("merge")}
+
+        params = {"fieldValidation": self._field_validation_header(validate)}
+
         if subresource:
             url = f"{url}/{subresource}"
         try:
@@ -476,8 +580,10 @@ class APIObject:
                 namespace=self.namespace,
                 content=json.dumps(patch),
                 headers=headers,
+                params=params,
             ) as resp:
                 self.raw = resp.json()
+                self._warn_server_response(resp)
         except ServerError as e:
             if e.response and e.response.status_code == 404:
                 raise NotFoundError(
@@ -963,8 +1069,19 @@ class APIObjectSyncMixin(APIObject):
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
         return as_sync_func(self.async_exists)(ensure=ensure)
 
-    def create(self) -> None:  # type: ignore[override]
-        return as_sync_func(self.async_create)()
+    def create(self, *, validate: ValidateOption = "ignore"):  # type: ignore[override]
+        return as_sync_func(self.async_create)(validate=validate)
+
+    def apply(
+        self,
+        *,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ValidateOption = "strict",
+    ):
+        return as_sync_func(self.async_apply)(
+            server_side=server_side, force_conflicts=force_conflicts, validate=validate
+        )
 
     def delete(  # type: ignore[override]
         self,
