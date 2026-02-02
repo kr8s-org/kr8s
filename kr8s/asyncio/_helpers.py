@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from typing import Optional, Union
 
-from kr8s._api import Api
+from kr8s._api import Api, ValidateOption
 from kr8s._objects import APIObject
 
 from ._api import api as _api
@@ -121,7 +121,28 @@ async def create(resources: list[APIObject], api=None, _asyncio=True):
     return await api.async_create(resources)
 
 
+async def apply(
+    resources: list[APIObject],
+    api=None,
+    _asyncio=True,
+    *,
+    server_side: bool = False,
+    force_conflicts: bool = False,
+    validate: ValidateOption = "strict",
+) -> None:
+    """Create or update resources in the Kubernetes cluster using server-side apply."""
+    if api is None:
+        api = await _api(_asyncio=_asyncio)
+    return await api.async_apply(
+        resources,
+        server_side=server_side,
+        force_conflicts=force_conflicts,
+        validate=validate,
+    )
+
+
 create.__doc__ = Api.create.__doc__
+apply.__doc__ = Api.apply.__doc__
 get.__doc__ = Api.get.__doc__
 version.__doc__ = Api.version.__doc__
 watch.__doc__ = Api.watch.__doc__
