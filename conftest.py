@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import gc
 import os
+import tempfile
 import time
 from collections.abc import Generator
 from pathlib import Path
@@ -56,3 +57,16 @@ def k8s_cluster(request) -> Generator[KindCluster, None, None]:
     del os.environ["KUBECONFIG"]
     if not request.config.getoption("keep_cluster"):  # pragma: no cover
         kind_cluster.delete()
+
+
+@pytest.fixture(scope="function")
+def kubectl_api_cache(k8s_cluster) -> Generator[KindCluster, None, None]:
+    """Ensure that kubectl has written its api cache to disk in an isolated cache directory."""
+    cache_dir = tempfile.mkdtemp()
+    os.environ["KUBECACHEDIR"] = cache_dir
+    Path(cache_dir).mkdir(parents=True, exist_ok=True)
+
+    k8s_cluster.kubectl("get", "pods")
+    yield k8s_cluster
+
+    del os.environ["KUBECACHEDIR"]
