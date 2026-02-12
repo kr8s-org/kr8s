@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import copy
+import functools
 import json
 import logging
 import ssl
@@ -12,9 +13,7 @@ import threading
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
-from typing import (
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Literal, Union
 
 import anyio
 import httpx
@@ -39,6 +38,22 @@ if TYPE_CHECKING:
 
 ALL = "all"
 logger = logging.getLogger(__name__)
+
+
+ApplyOpTypes = Literal["merge", "json", "strategic", "ssa"]
+ValidateOption = Union[
+    Literal["strict", "warn", "ignore", "Strict", "Warn", "Ignore"], bool
+]
+
+
+def _apply_op_content_type(op: ApplyOpTypes) -> str:
+    content_types = {
+        "merge": "application/merge-patch+json",
+        "json": "application/json-patch+json",
+        "strategic": "application/strategic-merge-patch+json",
+        "ssa": "application/apply-patch+yaml",
+    }
+    return content_types[op]
 
 
 class Api:
@@ -67,6 +82,10 @@ class Api:
         self._serviceaccount = kwargs.get("serviceaccount")
         self._session: httpx.AsyncClient | None = None
         self._timeout = None
+        self.field_manager = kwargs.get(
+            "field_manager", None
+        )  # used in Server Side Apply
+
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,
@@ -731,13 +750,55 @@ class Api:
             for version in group["versions"]:
                 yield version["groupVersion"]
 
-    async def async_create(self, resources: list[APIObject]):
+    async def async_create(
+        self, resources: list[APIObject], *, validate: ValidateOption = "ignore"
+    ):
         async with anyio.create_task_group() as tg:
             for resource in resources:
-                tg.start_soon(resource.async_create)
+                tg.start_soon(
+                    functools.partial(resource.async_create, validate=validate)
+                )
 
-    async def create(self, resources: list[APIObject]):
+    async def create(
+        self, resources: list[APIObject], *, validate: ValidateOption = "ignore"
+    ):
         return await self.async_create(resources)
+
+    async def async_apply(
+        self,
+        resources: list[APIObject],
+        *,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ValidateOption = "strict",
+    ):
+        """Use server-side apply to create or update resources."""
+        async with anyio.create_task_group() as tg:
+            for resource in resources:
+                tg.start_soon(
+                    functools.partial(
+                        resource.async_apply,
+                        server_side=server_side,
+                        force_conflicts=force_conflicts,
+                        validate=validate,
+                    )
+                )
+
+    async def apply(
+        self,
+        resources: list[APIObject],
+        *,
+        server_side: bool = False,
+        force_conflicts: bool = False,
+        validate: ValidateOption = "strict",
+    ):
+        """Use server-side apply to create or update resources."""
+        return await self.async_apply(
+            resources,
+            server_side=server_side,
+            force_conflicts=force_conflicts,
+            validate=validate,
+        )
 
     @property
     def __version__(self) -> str:
