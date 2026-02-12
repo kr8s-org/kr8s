@@ -121,7 +121,7 @@ Create or update resources with `apply`, just like `kubectl apply`.
 from kr8s.objects import ConfigMap
 
 cm = ConfigMap({"metadata": {"name": "my-configmap"}, "data": {"key": "value"}})
-cm.apply(server_side=True)
+cm.apply()
 ```
 
 ### Cordon a Node

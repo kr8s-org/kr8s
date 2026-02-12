@@ -48,9 +48,9 @@ await pod.create()
 
 `````
 
-## Create or Update a Resource with Server-Side Apply
+## Create or Update a Resource
 
-[Server-Side Apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) is a Kubernetes feature that allows you to create or update resources. They also support partial updates, so applying a partial update will only update the fields you specify.
+Create or update a resource by calling {py:meth}`Resource.apply() <kr8s.objects.Resource.apply()>`.
 
 `````{tab-set}
 
@@ -60,7 +60,7 @@ await pod.create()
 from kr8s.objects import Ingress
 
 ingress = Ingress(...)
-ingress.apply(server_side=True)
+ingress.apply()
 ```
 ````
 
@@ -70,12 +70,11 @@ ingress.apply(server_side=True)
 from kr8s.asyncio.objects import Ingress
 
 ingress = Ingress(...)
-await ingress.apply(server_side=True)
+await ingress.apply()
 ```
 ````
 
 `````
-
 
 ## Create a Pod and wait for it to be ready
 
