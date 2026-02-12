@@ -30,7 +30,31 @@ await deploy.apply({"spec": { "template": {"spec": {"containers": [{"resources":
 
 ## Manage specific fields with Server-Side Apply
 
-[Server-Side Apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) allows for fine-grained management of specific fields. 
+[Server-Side Apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) allows for fine-grained management of specific fields.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync:
+```python
+from kr8s.objects import Deployment
+
+deploy = Deployment({"metadata": {"name": "my-deployment"}, "spec": {"template": {"spec": {"containers": [{"name": "alpine", "resources": {"limits": {"memory": "5Gi"}}}]}}}})
+deploy.apply(server_side=True)
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import Deployment
+
+deploy = await Deployment({"metadata": {"name": "my-deployment"}, "spec": {"template": {"spec": {"containers": [{"name": "alpine", "resources": {"limits": {"memory": "5Gi"}}}]}}}})
+await deploy.apply(server_side=True)
+```
+````
+
+`````
 
 ## Patch Resources
 
