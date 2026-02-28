@@ -2,5 +2,5 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from packaging.version import parse as parse_version
 
-KUBERNETES_MINIMUM_SUPPORTED_VERSION = parse_version("1.28")
+KUBERNETES_MINIMUM_SUPPORTED_VERSION = parse_version("1.29")
 KUBERNETES_MAXIMUM_SUPPORTED_VERSION = parse_version("1.35")
