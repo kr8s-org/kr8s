@@ -276,8 +276,8 @@ class KubeAuth:
         if not os.path.isdir(self._serviceaccount):
             return
         self.server = self._format_server_address(
-            os.environ["KUBERNETES_SERVICE_HOST"],
-            os.environ["KUBERNETES_SERVICE_PORT"],
+            os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc"),
+            os.environ.get("KUBERNETES_SERVICE_PORT", "443"),
         )
         async with await anyio.open_file(
             os.path.join(self._serviceaccount, "token")
