@@ -201,7 +201,7 @@ def k8s_token(k8s_cluster):
 
 
 @pytest.fixture
-def serviceaccount(k8s_cluster, k8s_token):
+def serviceaccount(k8s_cluster, k8s_token, ns):
     # Load kubeconfig
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
 
@@ -221,9 +221,8 @@ def serviceaccount(k8s_cluster, k8s_token):
                 kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
             ).decode()
         )
-        namespace = "default"
         (tempdir / "token").write_text(k8s_token)
-        (tempdir / "namespace").write_text(namespace)
+        (tempdir / "namespace").write_text(ns)
         yield str(tempdir)
 
 
