@@ -36,3 +36,36 @@ def set_env(**environ: str) -> Generator[None, None, None]:
     finally:
         os.environ.clear()
         os.environ.update(old_environ)
+
+
+@contextlib.contextmanager
+def unset_env(*environ: str) -> Generator[None, None, None]:
+    """Temporarily unsets the process environment variables.
+
+    This context manager allows you to temporarily unset the process environment variables
+    within a specific scope. It saves the current environment variables, removes the specified
+    ones, and restores the original environment variables when the scope is exited.
+
+    Args:
+        *environ: Names of the environment variables to unset.
+
+    Yields:
+        None
+
+    Examples:
+        >>> with unset_env("PLUGINS_DIR"):
+        ...     "PLUGINS_DIR" in os.environ
+        False
+
+        >>> "PLUGINS_DIR" in os.environ
+        True
+
+    """
+    old_environ = dict(os.environ)
+    for var in environ:
+        os.environ.pop(var, None)
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(old_environ)

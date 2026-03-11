@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import base64
+import os
 import ssl
 import sys
 import tempfile
@@ -14,7 +15,7 @@ import kr8s
 from kr8s._async_utils import anext
 from kr8s._auth import KubeAuth
 from kr8s._config import KubeConfig
-from kr8s._testutils import set_env
+from kr8s._testutils import set_env, unset_env
 
 HERE = Path(__file__).parent.resolve()
 
@@ -274,6 +275,36 @@ async def test_service_account(serviceaccount, k8s_token):
     assert api.auth.token == "foo"
 
     (serviceaccount / "token").write_text(k8s_token)
+
+
+async def test_service_account_dns_fallback_no_env_vars(serviceaccount, k8s_token):
+    """When KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT are not set,
+    _load_service_account should fall back to kubernetes.default.svc:443."""
+    with unset_env("KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT"):
+        auth = KubeAuth(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+        await auth._load_service_account()
+
+    assert auth.server == "https://kubernetes.default.svc:443"
+    assert auth.token == k8s_token
+
+
+async def test_service_account_dns_fallback_only_host_set(serviceaccount):
+    """When only KUBERNETES_SERVICE_HOST is set, port should default to 443."""
+    with unset_env("KUBERNETES_SERVICE_PORT"):
+        auth = KubeAuth(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+        await auth._load_service_account()
+
+    assert auth.server.endswith(":443")
+
+
+async def test_service_account_dns_fallback_only_port_set(serviceaccount):
+    """When only KUBERNETES_SERVICE_PORT is set, host should default to kubernetes.default.svc."""
+    with unset_env("KUBERNETES_SERVICE_HOST"):
+        auth = KubeAuth(serviceaccount=serviceaccount, kubeconfig="/no/file/here")
+        await auth._load_service_account()
+
+    port = os.environ["KUBERNETES_SERVICE_PORT"]
+    assert auth.server == f"https://kubernetes.default.svc:{port}"
 
 
 async def test_service_account_with_kubeconfig_namespace(serviceaccount):
