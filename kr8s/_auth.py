@@ -287,7 +287,8 @@ class KubeAuth:
             if old_token != self.token:
                 logger.debug("Found new token")
         self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
-        if self.namespace is None:
+        # Skip the namespace getter to check if the value is still the default
+        if self._namespace is None:
             async with await anyio.open_file(
                 os.path.join(self._serviceaccount, "namespace")
             ) as f:
