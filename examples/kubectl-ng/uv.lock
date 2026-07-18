@@ -479,7 +479,7 @@ wheels = [
 
 [[package]]
 name = "kr8s"
-version = "0.20.14"
+version = "0.20.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -494,9 +494,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/66/90689a4d960c4fb245d9baf43d9648fe93cd957ddb7f12ce2c12f7ff9700/kr8s-0.20.14.tar.gz", hash = "sha256:e9f859359de0a9c511ee83b119bd1d2a928ee15d59daaf9fc2f11bd37c2bd67b", size = 2838630, upload-time = "2025-12-01T15:37:41.151Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/55/ca9ff53d97413a0dca36c30da80750415350876aa23ea8a762a0b06c6d1f/kr8s-0.20.15.tar.gz", hash = "sha256:484d5206bbebd48f8cc00dd3ed749d4419294d2f08cd50c6232114cf62ed6d3a", size = 2839774, upload-time = "2026-01-16T15:23:42.645Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/fc/7d15dd15dc6fada3cae8baa1ae65fe07f9d5ee03d20353a0fef08067cfba/kr8s-0.20.14-py3-none-any.whl", hash = "sha256:33384c0d2e261e95e8f146415dc72f9b255e6632dfe746540790332560184546", size = 86660, upload-time = "2025-12-01T15:37:39.757Z" },
+    { url = "https://files.pythonhosted.org/packages/59/08/4247abe88116c1e59dd9b62992d8a69b7178f4046c85cca03eda7e3d87e3/kr8s-0.20.15-py3-none-any.whl", hash = "sha256:eacc6eb72b6354d932a1e22c0cb698c88adbd815c36164c24c2232a69dfabe40", size = 87670, upload-time = "2026-01-16T15:23:40.593Z" },
 ]
 
 [[package]]
@@ -522,7 +522,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "kr8s", specifier = "==0.20.14" },
+    { name = "kr8s", specifier = "==0.20.15" },
     { name = "rich", specifier = ">=13.3.2" },
     { name = "typer", specifier = ">=0.12" },
 ]

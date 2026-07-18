@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import base64
 import os
@@ -20,8 +20,13 @@ HERE = Path(__file__).parent.resolve()
 DEFAULT_LABELS = {"created-by": "kr8s-tests"}
 
 
+@pytest.fixture(scope="session")
+def pause_image():
+    return "registry.k8s.io/pause:3.9"
+
+
 @pytest.fixture
-async def example_pod_spec(ns):
+async def example_pod_spec(ns, pause_image):
     name = "example-" + uuid.uuid4().hex[:10]
     return {
         "apiVersion": "v1",
@@ -32,14 +37,12 @@ async def example_pod_spec(ns):
             "labels": {"hello": "world", **DEFAULT_LABELS},
             "annotations": {"foo": "bar"},
         },
-        "spec": {
-            "containers": [{"name": "pause", "image": "gcr.io/google_containers/pause"}]
-        },
+        "spec": {"containers": [{"name": "pause", "image": pause_image}]},
     }
 
 
 @pytest.fixture
-async def bad_pod_spec(ns):
+async def bad_pod_spec(ns, pause_image):
     name = "example-" + uuid.uuid4().hex[:10]
     return {
         "apiVersion": "v1",
@@ -52,7 +55,7 @@ async def bad_pod_spec(ns):
             "containers": [
                 {
                     "name1": "pause",  # This is bad
-                    "image": "gcr.io/google_containers/pause",
+                    "image": pause_image,
                 }
             ]
         },
@@ -79,7 +82,7 @@ async def example_service_spec(ns):
 
 
 @pytest.fixture
-async def example_deployment_spec(ns):
+async def example_deployment_spec(ns, pause_image):
     name = "example-" + uuid.uuid4().hex[:10]
     return {
         "apiVersion": "apps/v1",
@@ -99,7 +102,7 @@ async def example_deployment_spec(ns):
                     "containers": [
                         {
                             "name": "pause",
-                            "image": "gcr.io/google_containers/pause",
+                            "image": pause_image,
                         }
                     ]
                 },
@@ -198,7 +201,7 @@ def k8s_token(k8s_cluster):
 
 
 @pytest.fixture
-def serviceaccount(k8s_cluster, k8s_token):
+def serviceaccount(k8s_cluster, k8s_token, ns):
     # Load kubeconfig
     kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
 
@@ -218,9 +221,8 @@ def serviceaccount(k8s_cluster, k8s_token):
                 kubeconfig["clusters"][0]["cluster"]["certificate-authority-data"]
             ).decode()
         )
-        namespace = "default"
         (tempdir / "token").write_text(k8s_token)
-        (tempdir / "namespace").write_text(namespace)
+        (tempdir / "namespace").write_text(ns)
         yield str(tempdir)
 
 

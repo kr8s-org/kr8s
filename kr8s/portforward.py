@@ -1,9 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024-2025, Kr8s Developers (See LICENSE for list)
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 """Objects for managing a port forward connection.
 
 This module provides a class for managing a port forward connection to a Kubernetes Pod or Service.
 """
+
 # Disable missing docstrings, these are inherited from the async version of the objects
 # ruff: noqa: D102, D105
 from __future__ import annotations

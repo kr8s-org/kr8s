@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2025, Kr8s Developers (See LICENSE for list)
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 import base64
 import ipaddress
@@ -276,8 +276,8 @@ class KubeAuth:
         if not os.path.isdir(self._serviceaccount):
             return
         self.server = self._format_server_address(
-            os.environ["KUBERNETES_SERVICE_HOST"],
-            os.environ["KUBERNETES_SERVICE_PORT"],
+            os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc"),
+            os.environ.get("KUBERNETES_SERVICE_PORT", "443"),
         )
         async with await anyio.open_file(
             os.path.join(self._serviceaccount, "token")
@@ -287,7 +287,8 @@ class KubeAuth:
             if old_token != self.token:
                 logger.debug("Found new token")
         self.server_ca_file = os.path.join(self._serviceaccount, "ca.crt")
-        if self.namespace is None:
+        # Skip the namespace getter to check if the value is still the default
+        if self._namespace is None:
             async with await anyio.open_file(
                 os.path.join(self._serviceaccount, "namespace")
             ) as f:
