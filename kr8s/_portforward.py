@@ -12,9 +12,10 @@ from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, Literal, Union
 
 import anyio
+import httpx
 import httpx_ws
 
-from ._exceptions import ConnectionClosedError
+from ._exceptions import ConnectionClosedError, ServerError
 from ._types import APIObjectWithPods
 
 LocalPortType = Union[Literal["match", "auto"], int, None]
@@ -239,7 +240,17 @@ class PortForward:
                     break
             except httpx_ws.HTTPXWSException as e:
                 self.pod = None
+                connection_attempts += 1
                 if connection_attempts > 5:
+                    if (
+                        isinstance(e, httpx_ws.WebSocketUpgradeError)
+                        and e.response.status_code in (401, 403)
+                    ):
+                        error_message = f"Permission denied: {e.response.status_code}"
+                        with suppress(httpx.StreamClosed, httpx.ResponseNotRead):
+                            await e.response.aread()
+                            error_message = e.response.text
+                        raise ServerError(error_message, response=e.response) from e
                     raise ConnectionClosedError("Unable to connect to Pod") from e
                 await anyio.sleep(0.1 * connection_attempts)
 
