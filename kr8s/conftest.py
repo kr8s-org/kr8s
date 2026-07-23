@@ -21,7 +21,7 @@ DEFAULT_LABELS = {"created-by": "kr8s-tests"}
 
 
 @pytest.fixture(scope="session")
-def pause_image():
+def pause_image() -> str:
     return "registry.k8s.io/pause:3.9"
 
 

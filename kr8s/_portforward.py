@@ -224,7 +224,7 @@ class PortForward:
                 self.pod = await self._select_pod()
             try:
                 assert self.pod.api
-                async with self.pod.api.open_websocket(
+                async with self.pod.api.async_open_websocket(
                     version=self.pod.version,
                     url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
                     namespace=self.pod.namespace,
@@ -239,6 +239,7 @@ class PortForward:
                     break
             except httpx_ws.HTTPXWSException as e:
                 self.pod = None
+                connection_attempts += 1
                 if connection_attempts > 5:
                     raise ConnectionClosedError("Unable to connect to Pod") from e
                 await anyio.sleep(0.1 * connection_attempts)

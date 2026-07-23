@@ -11,9 +11,13 @@ Both APIs are functionally identical with the same objects, method signatures an
 # ruff: noqa: D102
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Generator
 from functools import partial, update_wrapper
 from typing import Union, cast
+
+import httpx
+import httpx_ws
 
 from . import asyncio, objects, portforward
 from ._api import ALL
@@ -130,6 +134,46 @@ class Api(_AsyncApi):
         return _as_sync_func(self.async_create)(
             cast(list[asyncio.objects.APIObject], resources)
         )
+
+    @contextlib.contextmanager
+    def open_websocket(  # type: ignore[override]
+        self,
+        version: str = "v1",
+        base: str = "",
+        namespace: str | None = None,
+        url: str = "",
+        **kwargs,
+    ) -> Generator[httpx_ws.WebSocketSession]:
+        """Open a websocket connection to a Kubernetes API endpoint."""
+        headers = {"User-Agent": self.__version__, "content-type": "application/json"}
+        if self.auth.token:
+            headers["Authorization"] = f"Bearer {self.auth.token}"
+        session = httpx.Client(
+            base_url=self.auth.server,
+            headers=headers,
+            verify=self.auth._ssl_context(),
+            timeout=self._timeout,
+            follow_redirects=True,
+            proxy=self.auth.proxy,
+        )
+        url = self._construct_url(version, base, namespace, url)
+        kwargs.update(url=url)
+        if self.auth.tls_server_name:
+            kwargs["extensions"] = {"sni_hostname": self.auth.tls_server_name}
+        auth_attempts = 0
+        while True:
+            try:
+                with httpx_ws.connect_ws(client=session, **kwargs) as response:
+                    yield response
+            except httpx_ws.WebSocketDisconnect as e:
+                if e.code and e.code != 1000:
+                    if e.code in (401, 403) and auth_attempts < 3:
+                        auth_attempts += 1
+                        # await self.auth.reauthenticate()
+                        continue
+                    else:
+                        raise
+            break
 
 
 def get(
