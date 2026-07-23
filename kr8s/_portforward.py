@@ -242,10 +242,9 @@ class PortForward:
                 self.pod = None
                 connection_attempts += 1
                 if connection_attempts > 5:
-                    if (
-                        isinstance(e, httpx_ws.WebSocketUpgradeError)
-                        and e.response.status_code in (401, 403)
-                    ):
+                    if isinstance(
+                        e, httpx_ws.WebSocketUpgradeError
+                    ) and e.response.status_code in (401, 403):
                         error_message = f"Permission denied: {e.response.status_code}"
                         with suppress(httpx.StreamClosed, httpx.ResponseNotRead):
                             await e.response.aread()
