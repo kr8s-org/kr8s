@@ -7,7 +7,7 @@ At the top level, `kr8s` provides a synchronous API that wraps the asynchronous 
 Both APIs are functionally identical with the same objects, method signatures and return values.
 """
 
-# Disable missing docstrings, these are inherited from the async version of the objects
+# Disable missing docstrings because they are inherited from the async object versions
 # ruff: noqa: D102
 from __future__ import annotations
 
