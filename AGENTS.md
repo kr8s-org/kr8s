@@ -64,6 +64,10 @@ pip install uv
 uv sync --dev
 ```
 
+When using git worktrees, create them under a `.worktrees/` directory in the
+project root (e.g. `git worktree add .worktrees/my-feature`). This directory is
+gitignored so worktrees are never tracked in version control.
+
 Common tasks are defined via [`taskipy`](https://github.com/taskipy/taskipy) in
 `pyproject.toml`:
 
