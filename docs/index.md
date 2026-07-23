@@ -224,6 +224,32 @@ await pod.create()
 
 `````
 
+### Create or update a ConfigMap with `apply`
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync: sync
+```python
+from kr8s.objects import ConfigMap
+
+cm = ConfigMap({"metadata": {"name": "my-configmap"}, "data": {"new-key": "new-value"}})
+cm.apply()
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import ConfigMap
+
+cm = await ConfigMap({"metadata": {"name": "my-configmap"}, "data": {"new-key": "new-value"}})
+await cm.apply()
+```
+````
+
+`````
+
 ### Cordon a Node
 
 Cordon a Node to mark it as unschedulable.

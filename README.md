@@ -113,6 +113,17 @@ pod = Pod.gen(name="example-1", image="nginx:latest")
 pod.create()
 ```
 
+### Create or Update a ConfigMap
+
+Create or update resources with `apply`, just like `kubectl apply`.
+
+```python
+from kr8s.objects import ConfigMap
+
+cm = ConfigMap({"metadata": {"name": "my-configmap"}, "data": {"key": "value"}})
+cm.apply()
+```
+
 ### Cordon a Node
 
 Cordon a Node to mark it as unschedulable.

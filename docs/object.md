@@ -68,13 +68,16 @@ print(pod.annotations)
 
 ## Methods
 
-Objects also have helper methods like {py:func}`.patch() <kr8s.objects.APIObject.patch()>`, {py:func}`.exists() <kr8s.objects.APIObject.exists()>`, {py:func}`.refresh() <kr8s.objects.APIObject.refresh()>` and {py:func}`.delete() <kr8s.objects.APIObject.delete()>` for interacting with Kubernetes resources.
+Objects also have helper methods like {py:func}`.apply() <kr8s.objects.APIObject.apply()>`, {py:func}`.patch() <kr8s.objects.APIObject.patch()>`, {py:func}`.exists() <kr8s.objects.APIObject.exists()>`, {py:func}`.refresh() <kr8s.objects.APIObject.refresh()>` and {py:func}`.delete() <kr8s.objects.APIObject.delete()>` for interacting with Kubernetes resources.
 
 `````{tab-set}
 
 ````{tab-item} Sync
 :sync: sync
 ```python
+# Create or update the Pod
+pod.apply()
+
 # Patch the Pod
 pod.patch({"metadata": {"labels": {"foo": "bar"}}})
 
@@ -93,6 +96,9 @@ pod.delete()
 ````{tab-item} Async
 :sync: async
 ```python
+# Create or update the Pod
+await pod.apply()
+
 # Patch the Pod
 await pod.patch({"metadata": {"labels": {"foo": "bar"}}})
 

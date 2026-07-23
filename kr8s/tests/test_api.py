@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import logging
 import queue
 import threading
 import warnings
@@ -16,7 +17,7 @@ from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
     KUBERNETES_MINIMUM_SUPPORTED_VERSION,
 )
-from kr8s._exceptions import APITimeoutError
+from kr8s._exceptions import APITimeoutError, ServerError
 from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
@@ -516,6 +517,112 @@ def test_create_sync(example_pod_spec, example_service_spec):
     assert service.exists(), "Service should exist after creation"
     pod.delete()
     service.delete()
+
+
+async def test_create_with_apply(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.apply(resources)
+    assert pod.exists(), "Pod should exist after creation"
+    assert service.exists(), "Service should exist after creation"
+    await pod.delete()
+    await service.delete()
+
+
+async def test_update_with_apply(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.create(resources)
+    pod.labels["foo"] = "bar"
+    await kr8s.asyncio.apply([pod])
+    assert pod.labels["foo"] == "bar", "Apply should send updated resource"
+    updated_pod = await Pod.get(pod.name, namespace=pod.namespace)
+    assert (
+        updated_pod.labels["foo"] == "bar"
+    ), "Pod we got by re-fetching should have updated labels"
+    await pod.delete()
+
+
+async def test_apply_update_with_ssa(example_pod_spec, example_service_spec):
+    pod = await Pod(example_pod_spec)
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+    await kr8s.asyncio.apply(resources, server_side=True)
+
+    pod.labels["foo"] = "bar"
+    await pod.apply(server_side=True)
+    assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
+    assert pod.exists(), "Pod should exist after creation"
+    assert pod.labels["foo"] == "bar", "SSA update should send updated resource"
+
+
+async def test_apply_update_with_ssa_force(example_pod_spec, example_service_spec):
+    """
+    SSA has semantics about modifying fields owned by other managers.
+
+    We would need to use the force option to override this.
+    """
+    pod = await Pod(example_pod_spec)
+    pod.labels["my_field"] = "other-manager"
+    service = await Service(example_service_spec)
+    resources = [pod, service]
+
+    other_api = await kr8s.asyncio.api(field_manager="other-manager")
+    pod.api = other_api  # api param in helpers is ignored
+    await kr8s.asyncio.apply(resources, server_side=True)
+    assert pod.exists(), "Pod should exist after creation"
+
+    api = await kr8s.asyncio.api(field_manager="kr8s")
+    pod.api = api  # api param in helpers is ignored
+    with pytest.RaisesGroup(ServerError):
+        pod.labels["my_field"] = "changed"
+        await kr8s.asyncio.apply([pod], server_side=True)
+
+    await kr8s.asyncio.apply([pod], server_side=True, force_conflicts=True)
+    assert pod.exists(), "Pod should exist after creation"
+    assert (
+        pod.labels["my_field"] == "changed"
+    ), "SSA update should send updated resource"
+
+
+async def test_apply_creates_if_not_exists(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    await pod.apply()
+    assert pod.exists(), "Pod should exist after creation"
+
+
+async def test_apply_validate_strict(example_pod_spec):
+    pod = await Pod(example_pod_spec)
+    pod["my_field"] = "value"
+    with pytest.raises(ServerError):
+        await pod.apply(validate="strict")
+
+
+async def test_apply_validate_warn(example_pod_spec, caplog: pytest.LogCaptureFixture):
+    caplog.set_level(logging.WARNING)
+    pod = await Pod(example_pod_spec)
+    pod["my_field0"] = "value"
+    pod["my_field1"] = "value"
+    await pod.apply(validate="warn")
+    assert any(
+        r"unknown field \"my_field0\"" in record.msg for record in caplog.records
+    )
+    assert any(
+        r"unknown field \"my_field1\"" in record.msg for record in caplog.records
+    )
+
+
+async def test_apply_validate_ignore(
+    example_pod_spec, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level(logging.WARNING)
+    pod = await Pod(example_pod_spec)
+    pod["my_field0"] = "value"
+    pod["my_field1"] = "value"
+    await pod.apply(validate="ignore")
+    assert all(r"unknown field" not in record.msg for record in caplog.records)
 
 
 @pytest.mark.parametrize(

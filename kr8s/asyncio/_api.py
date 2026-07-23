@@ -15,6 +15,8 @@ async def api(
     namespace: Optional[str] = None,
     context: Optional[str] = None,
     _asyncio: bool = True,
+    *,
+    field_manager: Optional[str] = None,
 ) -> _AsyncApi:
     """Create a `kr8s.asyncio.Api` object for interacting with the Kubernetes API.
 
@@ -26,6 +28,7 @@ async def api(
         serviceaccount: The path of a service account to use
         namespace: The namespace to use
         context: The context to use
+        field_manager: The field manager to use for server-side apply operations
 
     Returns:
         kr8s.asyncio.Api: The API object
@@ -70,4 +73,5 @@ async def api(
         serviceaccount=serviceaccount,
         namespace=namespace,
         context=context,
+        field_manager=field_manager,
     )

@@ -48,6 +48,34 @@ await pod.create()
 
 `````
 
+## Create or Update a Resource
+
+Create or update a resource by calling {py:meth}`Resource.apply() <kr8s.objects.Resource.apply()>`.
+
+`````{tab-set}
+
+````{tab-item} Sync
+:sync:
+```python
+from kr8s.objects import Ingress
+
+ingress = Ingress(...)
+ingress.apply()
+```
+````
+
+````{tab-item} Async
+:sync: async
+```python
+from kr8s.asyncio.objects import Ingress
+
+ingress = Ingress(...)
+await ingress.apply()
+```
+````
+
+`````
+
 ## Create a Pod and wait for it to be ready
 
 Create a new {py:class}`Pod <kr8s.objects.Pod>` and wait for it to be ready. There are two common patterns for implementing this.
@@ -272,7 +300,7 @@ spec:
     targetPort: http-web-svc
 ```
 
-Then with `kr8s` we can load this file and create an object for each resource. Then use objetc methods to create them.
+Then with `kr8s` we can load this file and create an object for each resource. Then use object methods to create them.
 
 `````{tab-set}
 
@@ -284,7 +312,14 @@ from kr8s.objects import objects_from_files
 
 resources = objects_from_files("manifest.yaml")
 
+# use one of the following to create the resources:
+# 1. create the resources for the first time
 kr8s.create(resources)
+# 2. create or update the resources like with kubectl apply
+kr8s.apply(resources)
+# 3. create or update the resources like with kubectl apply, using Server-Side Apply.
+#    Optionally, use force_conflicts to override other field-managers 
+kr8s.apply(resources, server_side=True, force_conflicts=True)
 ```
 ````
 
@@ -296,7 +331,14 @@ from kr8s.asyncio.objects import objects_from_files
 
 resources = await objects_from_files("manifest.yaml")
 
+# use one of the following to create the resources:
+# 1. create the resources for the first time
 await kr8s.asyncio.create(resources)
+# 2. create or update the resources like with kubectl apply
+await kr8s.asyncio.apply(resources)
+# 3. create or update the resources like with kubectl apply, using Server-Side Apply.
+#    Optionally, use force_conflicts to override other field-managers 
+await kr8s.asyncio.apply(resources, server_side=True, force_conflicts=True)
 ```
 ````
 
