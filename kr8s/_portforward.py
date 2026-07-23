@@ -239,10 +239,11 @@ class PortForward:
                     yield websocket
                     break
             except httpx_ws.HTTPXWSException as e:
-                if connection_attempts >= 5:
+                self.pod = None
+                connection_attempts += 1
+                if connection_attempts > 5:
                     if (
                         isinstance(e, httpx_ws.WebSocketUpgradeError)
-                        and hasattr(e, "response")
                         and e.response.status_code in (401, 403)
                     ):
                         error_message = f"Permission denied: {e.response.status_code}"
@@ -250,9 +251,6 @@ class PortForward:
                             await e.response.aread()
                             error_message = e.response.text
                         raise ServerError(error_message, response=e.response) from e
-                self.pod = None
-                connection_attempts += 1
-                if connection_attempts > 5:
                     raise ConnectionClosedError("Unable to connect to Pod") from e
                 await anyio.sleep(0.1 * connection_attempts)
 

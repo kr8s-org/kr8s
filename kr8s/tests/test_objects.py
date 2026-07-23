@@ -16,6 +16,7 @@ import pytest
 import yaml
 
 import kr8s
+from kr8s._api import Api
 from kr8s._async_utils import anext
 from kr8s._exceptions import NotFoundError
 from kr8s._exec import CompletedExec, ExecError
@@ -1490,7 +1491,7 @@ async def test_portforward_invalid_token(k8s_cluster):
 
     # Initialize a new API with the invalid kubeconfig
     # We mock _check_version because the invalid token will cause it to fail
-    with mock.patch("kr8s._api.Api._check_version", new_callable=mock.AsyncMock):
+    with mock.patch.object(Api, "_check_version", new_callable=mock.AsyncMock):
         api_invalid = await kr8s.asyncio.api(kubeconfig=kubeconfig_data)
 
     # Create a Pod object bound to this invalid API
