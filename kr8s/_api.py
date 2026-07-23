@@ -8,10 +8,13 @@ import copy
 import json
 import logging
 import ssl
+import sys
 import threading
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
+from contextlib import contextmanager
+from importlib.metadata import version as metadata_version
 from typing import (
     TYPE_CHECKING,
 )
@@ -37,8 +40,24 @@ from ._version import __version__
 if TYPE_CHECKING:
     from ._objects import APIObject
 
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup
+
 ALL = "all"
 logger = logging.getLogger(__name__)
+_HTTPX_WS_VERSION = parse_version(metadata_version("httpx-ws"))
+
+
+@contextmanager
+def _httpx_ws_exception_fixer():
+    try:
+        yield
+    except BaseException as exc:
+        if _HTTPX_WS_VERSION < parse_version("0.9"):
+            raise
+        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+            exc = exc.exceptions[0]
+        raise exc
 
 
 class Api:
@@ -244,10 +263,11 @@ class Api:
         auth_attempts = 0
         while True:
             try:
-                async with httpx_ws.aconnect_ws(
-                    client=self._session, **kwargs
-                ) as response:
-                    yield response
+                with _httpx_ws_exception_fixer():
+                    async with httpx_ws.aconnect_ws(
+                        client=self._session, **kwargs
+                    ) as response:
+                        yield response
             except httpx_ws.WebSocketDisconnect as e:
                 if e.code and e.code != 1000:
                     if e.code in (401, 403) and auth_attempts < 3:

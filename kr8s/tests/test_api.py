@@ -1,13 +1,16 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import importlib
 import queue
+import sys
 import threading
 import warnings
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import anyio
 import pytest
+from packaging.version import parse as parse_version
 
 import kr8s
 import kr8s.asyncio
@@ -16,10 +19,28 @@ from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
     KUBERNETES_MINIMUM_SUPPORTED_VERSION,
 )
-from kr8s._exceptions import APITimeoutError
+from kr8s._exceptions import APITimeoutError, ExecError
 from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
+
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup
+
+
+@pytest.mark.parametrize("httpx_ws_version, unwrap", [("0.8", False), ("0.9", True)])
+def test_httpx_ws_exceptions(httpx_ws_version, unwrap):
+    api_module = importlib.import_module("kr8s._api")
+    error = ExecError("command failed")
+    exception_group = BaseExceptionGroup("websocket errors", [error])
+    expected = error if unwrap else exception_group
+
+    with patch.object(api_module, "_HTTPX_WS_VERSION", parse_version(httpx_ws_version)):
+        with pytest.raises(type(expected)) as exc_info:
+            with api_module._httpx_ws_exception_fixer():
+                raise exception_group
+
+    assert exc_info.value is expected
 
 
 @pytest.fixture
@@ -525,7 +546,7 @@ def test_create_sync(example_pod_spec, example_service_spec):
         "v1.27.0",
         "1.27.0-eks-113cf36",
         "v1.27.0-eks-113cf36",
-        f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor+1}",
+        f"{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.major}.{KUBERNETES_MAXIMUM_SUPPORTED_VERSION.minor + 1}",
         "asdkjhaskdjhasd",
     ],
 )
