@@ -137,6 +137,28 @@ The hooks (see `.pre-commit-config.yaml`) are:
 - New resource kinds go in `kr8s/_objects.py` and must be exported from both
   `kr8s/objects.py` (sync) and `kr8s/asyncio/objects.py` (async) `__all__`.
 
+## Issues
+
+When opening a GitHub issue, **always fill in the appropriate template.** Read
+the template file and complete every required field rather than posting a
+free-form body.
+
+Keep issues **concise** — include only the information needed to reproduce the
+problem (for bugs) or to explain the value of the change (for feature requests).
+Link and cross-reference any supporting material (logs, related issues/PRs,
+docs) rather than pasting it inline. Brevity is key.
+
+Issue templates are GitHub form templates (YAML) — map their fields into the
+body you submit (e.g. via `gh issue create`), including the required `project`
+choice (`kr8s` or `kubectl-ng`):
+
+- Bug reports — `.github/ISSUE_TEMPLATE/bug-report.yml`
+  (required: which project, "What happened?"; optional: "Anything else?").
+- Feature requests — `.github/ISSUE_TEMPLATE/feature-request.yml`
+  (required: which project, "What do you need?").
+- General coding questions are directed to Stack Overflow (`#kr8s` tag), not the
+  issue tracker — see `.github/ISSUE_TEMPLATE/config.yml`.
+
 ## Versioning & releasing
 
 - Versioning follows [EffVer](https://jacobtomlinson.dev/effver); tags are
