@@ -101,6 +101,9 @@ Key testing facts:
   (`kr8s/conftest.py`); use it to avoid cross-test collisions.
 - Useful fixtures: `example_pod_spec`, `example_deployment_spec`,
   `example_service_spec`, `example_crd_spec`, `serviceaccount`, `k8s_cluster`.
+- Prefer standard-library `unittest.mock` (`Mock`, `AsyncMock`, `patch`, and
+  `patch.object`) for test doubles and temporary replacements. Avoid pytest's
+  `monkeypatch` when `unittest.mock` can express the same behavior.
 - Set `KUBERNETES_VERSION` to test against a specific k8s version. CI runs a
   matrix of Python 3.9–3.14 and multiple Kubernetes versions.
 - Test/`conftest.py`/`examples`/`docs`/`ci` code is exempt from docstring (`D`),
