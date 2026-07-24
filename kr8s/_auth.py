@@ -155,9 +155,9 @@ class KubeAuth:
             self._context = self.kubeconfig.contexts[0]["context"]
             self.active_context = self.kubeconfig.contexts[0]["name"]
 
-        # Load configuration options from the context
+        # Use the selected context's namespace, not current_namespace
         if self._namespace is None:
-            self._namespace = self.kubeconfig.current_namespace
+            self._namespace = self._context.get("namespace", "default")
 
         # If no cluster is found in the context, assume it's a service account
         if not self._context["cluster"]:

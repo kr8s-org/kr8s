@@ -205,6 +205,25 @@ async def test_kubeconfig_context(kubeconfig_with_second_context):
     assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
+@pytest.fixture
+async def kubeconfig_without_current_context(k8s_cluster):
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    context_name = kubeconfig["contexts"][0]["name"]
+    kubeconfig.pop("current-context", None)
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        yield f.name, context_name
+
+
+async def test_kubeconfig_context_no_current_context(kubeconfig_without_current_context):
+    kubeconfig_path, context_name = kubeconfig_without_current_context
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
+    assert api.auth.active_context == context_name
+    assert api.auth.namespace == "default"
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
+
+
 async def test_default_service_account(k8s_cluster):
     api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     assert (
