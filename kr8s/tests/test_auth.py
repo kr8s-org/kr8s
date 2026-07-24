@@ -216,7 +216,9 @@ async def kubeconfig_without_current_context(k8s_cluster):
         yield f.name, context_name
 
 
-async def test_kubeconfig_context_no_current_context(kubeconfig_without_current_context):
+async def test_kubeconfig_context_no_current_context(
+    kubeconfig_without_current_context,
+):
     kubeconfig_path, context_name = kubeconfig_without_current_context
     api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
     assert api.auth.active_context == context_name
