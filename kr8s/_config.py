@@ -109,7 +109,11 @@ class KubeConfigSet(KubeConfigMixin):
     @property
     def current_namespace(self) -> str:
         """Return the current namespace from the current context."""
-        return self.get_context(self.current_context).get("namespace", "default")
+        try:
+            current_context = self.current_context
+        except KeyError:
+            return "default"
+        return self.get_context(current_context).get("namespace", "default")
 
     async def use_namespace(self, namespace: str) -> None:
         for config in self._configs:
@@ -265,7 +269,11 @@ class KubeConfig(KubeConfigMixin):
 
     @property
     def current_namespace(self) -> str:
-        return self.get_context(self.current_context).get("namespace", "default")
+        try:
+            current_context = self.current_context
+        except KeyError:
+            return "default"
+        return self.get_context(current_context).get("namespace", "default")
 
     async def use_namespace(self, namespace: str) -> None:
         for context in self._raw["contexts"]:
