@@ -32,6 +32,7 @@ from ._exceptions import (
     ServerError,
 )
 from ._objects import APIObject
+from ._types import PathType
 from .asyncio import (
     api as _api,
 )
@@ -196,7 +197,7 @@ def get(
 
 def api(
     url: str | None = None,
-    kubeconfig: str | None = None,
+    kubeconfig: PathType | None = None,
     serviceaccount: str | None = None,
     namespace: str | None = None,
     context: str | None = None,
