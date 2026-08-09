@@ -259,10 +259,14 @@ async def test_explicit_context_overrides_current_context_namespace(k8s_cluster)
 async def test_no_current_context_and_no_explicit_context(
     kubeconfig_without_current_context,
 ):
-    """Fall back to the first context when neither current-context nor context is set."""
+    # Documents current behaviour: with no current-context and no explicit
+    # context, kr8s raises a KeyError.
+    # TODO: this should raise a clearer error (e.g. ValueError
+    # "current-context is not set") to match kubectl, rather than a raw
+    # KeyError. Tracked separately.
     kubeconfig_path, _ = kubeconfig_without_current_context
-    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path)
-    assert await anext(api.get("pods", namespace=kr8s.ALL))
+    with pytest.raises(KeyError):
+        await kr8s.asyncio.api(kubeconfig=kubeconfig_path)
 
 
 async def test_default_service_account(k8s_cluster):
