@@ -6,11 +6,12 @@ from typing import Optional
 
 from kr8s._api import Api as _AsyncApi
 from kr8s._api import hash_kwargs
+from kr8s._types import PathType
 
 
 async def api(
     url: Optional[str] = None,
-    kubeconfig: Optional[str] = None,
+    kubeconfig: Optional[PathType] = None,
     serviceaccount: Optional[str] = None,
     namespace: Optional[str] = None,
     context: Optional[str] = None,
