@@ -226,6 +226,45 @@ async def test_kubeconfig_context_no_current_context(
     assert await anext(api.get("pods", namespace=kr8s.ALL))
 
 
+async def test_explicit_context_namespace_without_current_context(
+    kubeconfig_without_current_context,
+):
+    """The explicit context's namespace is used when current-context is unset."""
+    kubeconfig_path, context_name = kubeconfig_without_current_context
+    with open(kubeconfig_path) as f:
+        kubeconfig = yaml.safe_load(f)
+    kubeconfig["contexts"][0]["context"]["namespace"] = "kube-system"
+    with open(kubeconfig_path, "w") as f:
+        yaml.safe_dump(kubeconfig, f)
+
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path, context=context_name)
+    assert api.auth.namespace == "kube-system"
+
+
+async def test_explicit_context_overrides_current_context_namespace(k8s_cluster):
+    """An explicit context wins over current-context, including its namespace."""
+    kubeconfig = yaml.safe_load(k8s_cluster.kubeconfig_path.read_text())
+    base = kubeconfig["contexts"][0]["context"]
+    kubeconfig["contexts"].append(
+        {"name": "other", "context": {**base, "namespace": "kube-system"}}
+    )
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(yaml.safe_dump(kubeconfig).encode())
+        f.flush()
+        api = await kr8s.asyncio.api(kubeconfig=f.name, context="other")
+    assert api.auth.active_context == "other"
+    assert api.auth.namespace == "kube-system"
+
+
+async def test_no_current_context_and_no_explicit_context(
+    kubeconfig_without_current_context,
+):
+    """Fall back to the first context when neither current-context nor context is set."""
+    kubeconfig_path, _ = kubeconfig_without_current_context
+    api = await kr8s.asyncio.api(kubeconfig=kubeconfig_path)
+    assert await anext(api.get("pods", namespace=kr8s.ALL))
+
+
 async def test_default_service_account(k8s_cluster):
     api = await kr8s.asyncio.api(kubeconfig=k8s_cluster.kubeconfig_path)
     assert (
