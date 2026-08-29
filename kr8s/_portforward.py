@@ -225,7 +225,7 @@ class PortForward:
                 self.pod = await self._select_pod()
             try:
                 assert self.pod.api
-                async with self.pod.api.open_websocket(
+                async with self.pod.api.async_open_websocket(
                     version=self.pod.version,
                     url=f"{self.pod.endpoint}/{self.pod.name}/portforward",
                     namespace=self.pod.namespace,

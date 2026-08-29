@@ -5,22 +5,23 @@ import os
 import time
 from collections.abc import Generator
 from pathlib import Path
-from typing import Optional
 
 import pytest
 import yaml
 from pytest_kind.cluster import KindCluster
 
 
-def get_github_actions_default_kubernetes_version() -> Optional[str]:
+def get_github_actions_default_kubernetes_version() -> str:
     try:
         workflow_file = Path(".github/workflows/test-kr8s.yaml")
-        if not workflow_file.exists():
-            return None
-        workflow = yaml.safe_load(workflow_file.read_text())
-        return workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][0]
+        if workflow_file.exists():
+            workflow = yaml.safe_load(workflow_file.read_text())
+            return workflow["jobs"]["test"]["strategy"]["matrix"]["kubernetes-version"][
+                0
+            ]
     except Exception:
-        return None
+        pass
+    return "1.35.0"
 
 
 @pytest.fixture
@@ -32,13 +33,16 @@ def ensure_gc():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def k8s_cluster(request) -> Generator[KindCluster, None, None]:
-    image = None
-    if version := os.environ.get("KUBERNETES_VERSION"):
-        image = f"kindest/node:v{version}"
-    elif version := get_github_actions_default_kubernetes_version():
-        image = f"kindest/node:v{version}"
+def kubernetes_version(scope="session", autouse=True) -> list[int]:
+    version = os.environ.get("KUBERNETES_VERSION")
+    if not version:
+        version = get_github_actions_default_kubernetes_version()
+    return [int(v) for v in version.split(".")]
 
+
+@pytest.fixture(scope="session", autouse=True)
+def k8s_cluster(request, kubernetes_version) -> Generator[KindCluster, None, None]:
+    image = f"kindest/node:v{'.'.join(str(v) for v in kubernetes_version)}"
     kind_cluster = KindCluster(
         name="pytest-kind",
         image=image,
