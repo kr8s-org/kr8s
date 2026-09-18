@@ -73,10 +73,11 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      # The runner's own kind, for the reason conftest.py prefers it: the
+      # action installs kind v0.31.0, which writes a `kubeadm.k8s.io/v1beta3`
+      # cluster config that kubeadm refuses from 1.37 on.
       - name: Create k8s Kind Cluster
-        uses: helm/kind-action@v1
-        with:
-          node_image: kindest/node:v${{ matrix.kubernetes-version }}
+        run: kind create cluster --image kindest/node:v${{ matrix.kubernetes-version }} --wait 60s
       - name: Install kr8s
         run: pip install -e .
       - name: Ensure kr8s works

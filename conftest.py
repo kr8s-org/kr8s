@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import gc
 import os
+import shutil
 import time
 from collections.abc import Generator
 from pathlib import Path
@@ -39,9 +40,16 @@ def k8s_cluster(request) -> Generator[KindCluster, None, None]:
     elif version := get_github_actions_default_kubernetes_version():
         image = f"kindest/node:v{version}"
 
+    # `pytest-kind` pins the kind it downloads to v0.17.0, from 2022, which
+    # writes a `kubeadm.k8s.io/v1beta3` cluster config. kubeadm refuses that
+    # from 1.37 on, so the bundled kind cannot create a cluster for the
+    # newest version in the matrix. A kind already on PATH usually can.
+    kind_path = os.environ.get("KIND_PATH") or shutil.which("kind")
+
     kind_cluster = KindCluster(
         name="pytest-kind",
         image=image,
+        kind_path=Path(kind_path) if kind_path else None,
     )
     kind_cluster.create()
     os.environ["KUBECONFIG"] = str(kind_cluster.kubeconfig_path)
