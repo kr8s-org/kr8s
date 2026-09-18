@@ -9,11 +9,13 @@ from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 
 import anyio
+import httpx
 import pytest
 from packaging.version import parse as parse_version
 
 import kr8s
 import kr8s.asyncio
+from kr8s._api import _server_error
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -26,6 +28,31 @@ from kr8s.objects import Service as SyncService
 
 if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup
+
+
+@pytest.mark.parametrize(
+    "status_code, body, message, status_type",
+    [
+        (409, {"kind": "Status", "message": "already exists"}, "already exists", dict),
+        (500, {"kind": "Status", "message": "webhook denied"}, "webhook denied", dict),
+        (502, "<html>Bad Gateway</html>", "boom", str),
+        (503, "", "boom", str),
+        (500, {"kind": "Status", "reason": "InternalError"}, "boom", str),
+    ],
+)
+def test_server_error_reads_the_body_whatever_the_status_class(
+    status_code, body, message, status_type
+):
+    kwargs = {"json": body} if isinstance(body, dict) else {"text": body}
+    response = httpx.Response(
+        status_code,
+        request=httpx.Request("GET", "https://kubernetes/api/v1"),
+        **kwargs,
+    )
+    error = httpx.HTTPStatusError("boom", request=response.request, response=response)
+    translated = _server_error(error)
+    assert str(translated) == message
+    assert isinstance(translated.status, status_type)
 
 
 @pytest.mark.parametrize("httpx_ws_version, unwrap", [("0.8", False), ("0.9", True)])

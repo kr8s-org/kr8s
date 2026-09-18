@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 
-from typing import Optional
+from typing import Optional, Union
 
 import httpx
 
@@ -26,14 +26,15 @@ class ServerError(Exception):
     """Error from the Kubernetes API server.
 
     Attributes:
-        status: The Status object from the Kubernetes API server
+        status: The Status object from the Kubernetes API server, or the raw
+            response body when it is not one
         response: The httpx response object
     """
 
     def __init__(
         self,
         message: str,
-        status: Optional[str] = None,
+        status: Optional[Union[str, dict]] = None,
         response: Optional[httpx.Response] = None,
     ) -> None:
         self.status = status
