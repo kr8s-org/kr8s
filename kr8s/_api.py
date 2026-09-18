@@ -452,6 +452,11 @@ class Api:
             obj_cls = kind
         else:
             namespaced: bool | None = None
+            # Bound here because the lookup below may not reach the
+            # assignment. `new_class` reads None as "derive the plural from
+            # the kind", which is the best guess available once discovery
+            # has failed.
+            plural: str | None = None
             try:
                 kind, plural, namespaced = await self.async_lookup_kind(kind)
             except ServerError as e:
