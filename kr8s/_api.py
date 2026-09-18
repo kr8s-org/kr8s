@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import copy
+import functools
 import json
 import logging
 import ssl
@@ -754,7 +755,10 @@ class Api:
     async def async_create(self, resources: list[APIObject]):
         async with anyio.create_task_group() as tg:
             for resource in resources:
-                tg.start_soon(resource.async_create)
+                # Pass `self`, or the request goes through whichever API the
+                # resource happens to be bound to and the `api` argument of
+                # `kr8s.create()` decides nothing.
+                tg.start_soon(functools.partial(resource.async_create, api=self))
 
     async def create(self, resources: list[APIObject]):
         return await self.async_create(resources)

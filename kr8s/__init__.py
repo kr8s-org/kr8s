@@ -40,6 +40,9 @@ from .asyncio import (
     api_resources as _api_resources,
 )
 from .asyncio import (
+    create as _create,
+)
+from .asyncio import (
     get as _get,
 )
 from .asyncio import (
@@ -248,9 +251,11 @@ def whoami():
 
 def create(resources: list[type[APIObject]], api=None):
     """Creates resources in the Kubernetes cluster."""
-    if api is None:
-        api = _as_sync_func(_api)(_asyncio=False)
-    api.create(cast(list[asyncio.objects.APIObject], resources))
+    # Through the async helper rather than repeating its rule about which api
+    # each resource is sent through.
+    return _as_sync_func(partial(_create, _asyncio=False))(
+        cast(list[asyncio.objects.APIObject], resources), api=api
+    )
 
 
 version = _as_sync_func(partial(_k8s_version, _asyncio=False))
