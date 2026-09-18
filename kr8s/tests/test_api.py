@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import copy
 import importlib
 import queue
 import sys
@@ -432,6 +433,31 @@ async def test_lookup_kind():
         "roles",
         True,
     )
+
+
+async def test_lookup_kind_with_a_hyphenated_singular(example_crd_spec):
+    """A CRD whose singular is not the lowercased Kind.
+
+    `parse_kind` lowercases, so `NetworkAttachmentDefinition` matches none
+    of the plural, the singular or the short names. Only a case-folded
+    compare against the Kind itself finds it. Hyphenated singulars are legal
+    and common in the CNI ecosystem.
+    """
+    spec = copy.deepcopy(example_crd_spec)
+    spec["metadata"]["name"] = "network-attachment-definitions.stable.example.com"
+    spec["spec"]["names"] = {
+        "plural": "network-attachment-definitions",
+        "singular": "network-attachment-definition",
+        "kind": "NetworkAttachmentDefinition",
+    }
+
+    async with create_delete_crd(spec):
+        api = await kr8s.asyncio.api()
+        assert await api.lookup_kind("NetworkAttachmentDefinition") == (
+            "network-attachment-definition.stable.example.com/v1",
+            "network-attachment-definitions",
+            True,
+        )
 
 
 async def test_nonexisting_resource_type():
