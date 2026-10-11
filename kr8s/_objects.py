@@ -9,12 +9,7 @@ import re
 import sys
 import time
 from collections.abc import AsyncGenerator, Generator
-from typing import (
-    Any,
-    BinaryIO,
-    Literal,
-    cast,
-)
+from typing import Any, BinaryIO, Literal, cast, overload
 
 import anyio
 import httpx
@@ -919,6 +914,18 @@ class APIObject:
         async for resource in api.async_get(kind=cls, **kwargs):
             if isinstance(resource, dict) or isinstance(resource, cls):
                 yield resource
+
+    @overload
+    @classmethod
+    def list(
+        cls, *, raw: Literal[True], api: Api | None = ..., **kwargs
+    ) -> AsyncGenerator[dict]: ...
+
+    @overload
+    @classmethod
+    def list(
+        cls, *, raw: Literal[False] = False, api: Api | None = ..., **kwargs
+    ) -> AsyncGenerator[Self]: ...
 
     # Must be the last method defined due to https://github.com/python/mypy/issues/17517
     @classmethod
