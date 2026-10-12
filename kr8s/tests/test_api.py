@@ -276,7 +276,7 @@ async def test_api_versions() -> None:
 
 def test_api_versions_sync():
     api = kr8s.api()
-    versions = [version for version in api.api_versions()]
+    versions = [*api.api_versions()]
     assert "apps/v1" in versions
 
 

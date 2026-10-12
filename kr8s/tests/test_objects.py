@@ -1241,8 +1241,8 @@ async def test_pod_list():
 
 
 def test_pod_list_sync():
-    pods1 = [pod for pod in kr8s.get("pods", namespace=kr8s.ALL)]
-    pods2 = [pod for pod in SyncPod.list(namespace=kr8s.ALL)]
+    pods1 = [*kr8s.get("pods", namespace=kr8s.ALL)]
+    pods2 = [*SyncPod.list(namespace=kr8s.ALL)]
     assert pods1 and pods2
     assert len(pods1) == len(pods2)
     assert all(isinstance(p, SyncPod) for p in pods1)
@@ -1261,7 +1261,7 @@ async def test_pod_list_api():
 
 async def test_pod_list_api_sync():
     api = kr8s.api()
-    pods = [pod for pod in SyncPod.list(namespace=kr8s.ALL, api=api)]
+    pods = [*SyncPod.list(namespace=kr8s.ALL, api=api)]
     assert pods
     assert pods[0].api
     assert pods[0].api == api
