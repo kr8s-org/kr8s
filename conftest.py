@@ -9,7 +9,12 @@ from typing import Optional
 
 import pytest
 import yaml
+from pytest_kind import cluster as pytest_kind_cluster
 from pytest_kind.cluster import KindCluster
+
+# pytest-kind reads this at import time, before conftest loads. Keep local tests
+# compatible with the default Kubernetes version while honoring explicit overrides.
+pytest_kind_cluster.KIND_VERSION = os.environ.get("KIND_VERSION", "v0.33.0")
 
 
 def get_github_actions_default_kubernetes_version() -> Optional[str]:

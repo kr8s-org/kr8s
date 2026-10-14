@@ -25,8 +25,10 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-        kubernetes-version: ["1.36.4"]
+        kubernetes-version: ["1.37.0"]
         include:
+          - python-version: "3.14"
+            kubernetes-version: 1.36.4
           - python-version: "3.14"
             kubernetes-version: 1.35.8
           - python-version: "3.14"
@@ -39,6 +41,7 @@ jobs:
             kubernetes-version: 1.31.14
     env:
       KUBECONFIG: .pytest-kind/pytest-kind/kubeconfig
+      KIND_VERSION: v0.33.0
 
     steps:
       - uses: actions/checkout@v2
@@ -67,7 +70,7 @@ jobs:
       matrix:
         # Test the minimal and maximal Python versions only
         python-version: ["3.9", "3.14"]
-        kubernetes-version: ["1.36.4"]
+        kubernetes-version: ["1.37.0"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -76,6 +79,7 @@ jobs:
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1
         with:
+          version: v0.33.0
           node_image: kindest/node:v${{ matrix.kubernetes-version }}
       - name: Install kr8s
         run: pip install -e .

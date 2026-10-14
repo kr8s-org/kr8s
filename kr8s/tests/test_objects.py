@@ -1045,7 +1045,7 @@ async def test_cast_to_from_lightkube(example_pod_spec):
 async def test_cast_to_from_kubernetes(example_pod_spec):
     kubernetes = pytest.importorskip("kubernetes")
 
-    starting_pod = kubernetes.client.models.v1_pod.V1Pod(
+    starting_pod = kubernetes.client.models.V1Pod(
         api_version=example_pod_spec["apiVersion"],
         kind=example_pod_spec["kind"],
         metadata=example_pod_spec["metadata"],
