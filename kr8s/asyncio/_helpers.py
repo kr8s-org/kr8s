@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 from typing import Optional, Union
 
+import anyio
+
 from kr8s._api import Api
 from kr8s._objects import APIObject
 
@@ -117,7 +119,14 @@ async def whoami(api=None, _asyncio=True):
 async def create(resources: list[APIObject], api=None, _asyncio=True):
     """Create resources in the Kubernetes cluster."""
     if api is None:
-        api = await _api(_asyncio=_asyncio)
+        # No api asked for, so each resource keeps the one it is bound to.
+        # Resolving a default here and sending everything through that would
+        # move an object that was given an api of its own, and would make
+        # `create([obj])` reach a different cluster from `obj.create()`.
+        async with anyio.create_task_group() as tg:
+            for resource in resources:
+                tg.start_soon(resource.async_create)
+        return None
     return await api.async_create(resources)
 
 

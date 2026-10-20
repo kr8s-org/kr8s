@@ -362,10 +362,16 @@ class APIObject:
             )
         return False
 
-    async def async_create(self) -> None:
-        """Create this object in Kubernetes."""
-        assert self.api
-        async with self.api.call_api(
+    async def async_create(self, *, api: Api | None = None) -> None:
+        """Create this object in Kubernetes.
+
+        Args:
+            api: Send the request through this API client instead of the one
+                bound to this object. The binding is not changed.
+        """
+        api = api or self.api
+        assert api
+        async with api.call_api(
             "POST",
             version=self.version,
             url=self.endpoint,
@@ -374,9 +380,9 @@ class APIObject:
         ) as resp:
             self.raw = resp.json()
 
-    async def create(self) -> None:
+    async def create(self, *, api: Api | None = None) -> None:
         """Create this object in Kubernetes."""
-        return await self.async_create()
+        return await self.async_create(api=api)
 
     async def delete(
         self,
@@ -963,8 +969,8 @@ class APIObjectSyncMixin(APIObject):
     def exists(self, ensure=False) -> bool:  # type: ignore[override]
         return as_sync_func(self.async_exists)(ensure=ensure)
 
-    def create(self) -> None:  # type: ignore[override]
-        return as_sync_func(self.async_create)()
+    def create(self, *, api: Api | None = None) -> None:  # type: ignore[override]
+        return as_sync_func(self.async_create)(api=api)
 
     def delete(  # type: ignore[override]
         self,
