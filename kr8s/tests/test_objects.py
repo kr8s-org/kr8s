@@ -181,6 +181,26 @@ async def test_pod_wait_ready(example_pod_spec):
     await pod.wait("delete")
 
 
+@pytest.mark.parametrize(
+    "status",
+    [
+        None,
+        # A CustomResourceDefinition the API server has accepted but not
+        # yet given conditions reports this shape, not an empty list.
+        {"conditions": None},
+        {},
+        {"conditions": []},
+    ],
+)
+async def test_conditions_are_unmet_while_the_status_is_empty(example_pod_spec, status):
+    pod = await Pod(example_pod_spec)
+    if status is None:
+        pod.raw.pop("status", None)
+    else:
+        pod.raw["status"] = status
+    assert not await pod._test_conditions(["condition=Established"])
+
+
 async def test_pod_missing_await_error(example_pod_spec):
     pod = Pod(example_pod_spec)  # We intentionally forget to await here
     assert pod._api is None

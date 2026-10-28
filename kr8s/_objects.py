@@ -48,6 +48,19 @@ from kr8s.portforward import PortForward as SyncPortForward
 JSONPATH_CONDITION_EXPRESSION = r"jsonpath='{(?P<expression>.*?)}'=(?P<condition>.*)"
 
 
+def _conditions_of(raw: dict) -> list[dict]:
+    """Status conditions of a resource, empty when it has none yet.
+
+    A resource the API server has accepted but not yet given a status has
+    no conditions. Two shapes mean that, and both appear: no ``status`` at
+    all, and a ``conditions`` field set to ``null``. Kubernetes declares
+    CRD conditions without ``omitempty``, so a fresh
+    CustomResourceDefinition takes the second shape and a plain
+    ``.get("conditions", [])`` returns ``None`` from it.
+    """
+    return (raw.get("status") or {}).get("conditions") or []
+
+
 class APIObject:
     """Base class for Kubernetes objects."""
 
@@ -598,7 +611,7 @@ class APIObject:
                 if value == "true" or value == "false":
                     value = value.title()
                 status_conditions = list_dict_unpack(
-                    self.status.get("conditions", []), "type", "status"
+                    _conditions_of(self.raw), "type", "status"
                 )
                 results.append(status_conditions.get(field, None) == value)
             elif condition == "delete":
@@ -1208,7 +1221,7 @@ class Pod(APIObject):
         """Check if the pod is ready."""
         await self.async_refresh()
         conditions = list_dict_unpack(
-            self.status.get("conditions", []),
+            _conditions_of(self.raw),
             key="type",
             value="status",
         )
