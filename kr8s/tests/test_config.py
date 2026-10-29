@@ -1,13 +1,161 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
+import os
+from copy import deepcopy
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from unittest.mock import patch
 
+import httpx
 import pytest
 import yaml
 from jsonpath import JSONPointerKeyError
 
+import kr8s
+import kr8s.asyncio
 from kr8s._config import KubeConfig, KubeConfigSet
+
+
+def config_with_entries(section, entries):
+    return {
+        "apiVersion": "v1",
+        "kind": "Config",
+        "current-context": "shared",
+        "clusters": [],
+        "users": [],
+        "contexts": [],
+        section: entries,
+    }
+
+
+@pytest.mark.parametrize(
+    "section,value_key,first_value,later_value",
+    [
+        (
+            "clusters",
+            "cluster",
+            {"server": "https://first.invalid"},
+            {"server": "https://second.invalid", "insecure-skip-tls-verify": True},
+        ),
+        (
+            "users",
+            "user",
+            {"token": "test-only-first"},
+            {"token": "test-only-second", "username": "later-user"},
+        ),
+        (
+            "contexts",
+            "context",
+            {"cluster": "first", "user": "first"},
+            {"cluster": "second", "user": "second", "namespace": "later"},
+        ),
+    ],
+)
+async def test_kubeconfigset_first_named_definition_wins(
+    section, value_key, first_value, later_value
+):
+    first = config_with_entries(section, [{"name": "shared", value_key: first_value}])
+    later = config_with_entries(section, [{"name": "shared", value_key: later_value}])
+    originals = deepcopy((first, later))
+
+    config = await KubeConfigSet(first, later)
+
+    assert getattr(config, section) == first[section]
+    assert (first, later) == originals
+
+
+@pytest.mark.parametrize(
+    "section,value_key",
+    [("clusters", "cluster"), ("users", "user"), ("contexts", "context")],
+)
+async def test_kubeconfigset_named_entry_order(section, value_key):
+    shared = {"name": "shared", value_key: {}}
+    first_only = {"name": "first-only", value_key: {}}
+    last_only = {"name": "last-only", value_key: {}}
+    first = config_with_entries(section, [shared, first_only])
+    later = config_with_entries(section, [shared, last_only])
+
+    config = await KubeConfigSet(first, later)
+
+    assert getattr(config, section) == [shared, first_only, last_only]
+
+
+@pytest.mark.parametrize(
+    "section,value_key",
+    [("clusters", "cluster"), ("users", "user"), ("contexts", "context")],
+)
+async def test_kubeconfigset_null_section(section, value_key):
+    entries = [{"name": "later", value_key: {}}]
+    config = await KubeConfigSet(
+        config_with_entries(section, None), config_with_entries(section, entries)
+    )
+
+    assert getattr(config, section) == entries
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="Multiple kubeconfig paths are not supported on Windows"
+)
+@pytest.mark.parametrize("asynchronous", [False, True])
+async def test_kubeconfigset_api_uses_first_file(tmp_path, asynchronous):
+    paths = []
+    for label in ("first", "second"):
+        data = {
+            "apiVersion": "v1",
+            "kind": "Config",
+            "current-context": "shared",
+            "clusters": [
+                {"name": "shared", "cluster": {"server": f"https://{label}.invalid"}}
+            ],
+            "users": [{"name": "shared", "user": {"token": f"test-only-{label}"}}],
+            "contexts": [
+                {
+                    "name": "shared",
+                    "context": {
+                        "cluster": "shared",
+                        "user": "shared",
+                        "namespace": label,
+                    },
+                }
+            ],
+        }
+        path = tmp_path / f"{label}.yaml"
+        path.write_text(yaml.safe_dump(data))
+        paths.append(str(path))
+
+    requests = []
+
+    def handle_request(request):
+        requests.append(request)
+        return httpx.Response(200, json={"gitVersion": "v1.34.0"})
+
+    original_client = httpx.AsyncClient
+
+    def offline_client(*args, **kwargs):
+        return original_client(
+            *args, transport=httpx.MockTransport(handle_request), **kwargs
+        )
+
+    with patch.object(httpx, "AsyncClient", side_effect=offline_client):
+        if asynchronous:
+            client = await kr8s.asyncio.api(kubeconfig=os.pathsep.join(paths))
+            await client.version()
+        else:
+            client = kr8s.api(kubeconfig=os.pathsep.join(paths))
+            client.version()
+    try:
+        assert client.auth.server == "https://first.invalid"
+        assert client.namespace == "first"
+        assert client.auth.token == "test-only-first"
+        assert requests
+        assert all(request.url.host == "first.invalid" for request in requests)
+        assert all(
+            request.headers["Authorization"] == "Bearer test-only-first"
+            for request in requests
+        )
+    finally:
+        if client._session is not None:
+            await client._session.aclose()
 
 
 @pytest.fixture

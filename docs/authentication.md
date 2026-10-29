@@ -29,6 +29,11 @@ Lookup order:
 - `~/.kube/config` (or the path set by the `KUBECONFIG` environment variable)
 - `/var/run/secrets/kubernetes.io/serviceaccount`
 
+When merging multiple kubeconfig files, the first definition of each named cluster,
+user, or context takes precedence, following the
+[Kubernetes merge rules](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#merging-kubeconfig-files).
+Later definitions of the same name do not override or add fields to that entry.
+
 When reading from a kube config file the following authentication methods are supported:
 
 - Client certificate

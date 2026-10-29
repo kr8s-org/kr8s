@@ -8,7 +8,7 @@ import anyio
 import jsonpath
 import yaml
 
-from kr8s._data_utils import dict_list_pack, list_dict_unpack
+from kr8s._data_utils import dict_list_pack
 from kr8s._types import PathType
 
 # TODO Implement set cluster
@@ -182,38 +182,25 @@ class KubeConfigSet(KubeConfigMixin):
     def preferences(self) -> dict:
         return self._configs[0].preferences
 
+    def _merge_named_entries(self, section: str, value_key: str) -> list[dict]:
+        """Merge named entries, preserving the first definition and its order."""
+        entries: dict[str, dict] = {}
+        for config in self._configs:
+            for entry in getattr(config, section) or []:
+                entries.setdefault(entry["name"], entry[value_key])
+        return dict_list_pack(entries, "name", value_key)
+
     @property
     def clusters(self) -> list[dict]:
-        clusters = []
-        for config in self._configs:
-            if config.clusters:
-                clusters.extend(config.clusters)
-        # Unpack and repack to remove duplicates
-        unpacked = list_dict_unpack(clusters, "name", "cluster")
-        repacked = dict_list_pack(unpacked, "name", "cluster")
-        return repacked
+        return self._merge_named_entries("clusters", "cluster")
 
     @property
     def users(self) -> list[dict]:
-        users = []
-        for config in self._configs:
-            if config.users:
-                users.extend(config.users)
-        # Unpack and repack to remove duplicates
-        unpacked = list_dict_unpack(users, "name", "user")
-        repacked = dict_list_pack(unpacked, "name", "user")
-        return repacked
+        return self._merge_named_entries("users", "user")
 
     @property
     def contexts(self) -> list[dict]:
-        contexts = []
-        for config in self._configs:
-            if config.contexts:
-                contexts.extend(config.contexts)
-        # Unpack and repack to remove duplicates
-        unpacked = list_dict_unpack(contexts, "name", "context")
-        repacked = dict_list_pack(unpacked, "name", "context")
-        return repacked
+        return self._merge_named_entries("contexts", "context")
 
     @property
     def extensions(self) -> list[dict]:
