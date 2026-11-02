@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import importlib
 import queue
-import sys
 import threading
 import warnings
 from contextlib import asynccontextmanager
@@ -10,10 +9,10 @@ from unittest.mock import AsyncMock, patch
 
 import anyio
 import pytest
-from packaging.version import parse as parse_version
 
 import kr8s
 import kr8s.asyncio
+from kr8s._api import API_RESOURCES_CACHE_TTL
 from kr8s._async_utils import anext
 from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
@@ -24,23 +23,17 @@ from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
 
-if sys.version_info < (3, 11):
-    from exceptiongroup import BaseExceptionGroup
 
-
-@pytest.mark.parametrize("httpx_ws_version, unwrap", [("0.8", False), ("0.9", True)])
-def test_httpx_ws_exceptions(httpx_ws_version, unwrap):
+def test_httpx_ws_exceptions():
     api_module = importlib.import_module("kr8s._api")
     error = ExecError("command failed")
     exception_group = BaseExceptionGroup("websocket errors", [error])
-    expected = error if unwrap else exception_group
 
-    with patch.object(api_module, "_HTTPX_WS_VERSION", parse_version(httpx_ws_version)):
-        with pytest.raises(type(expected)) as exc_info:
-            with api_module._httpx_ws_exception_fixer():
-                raise exception_group
+    with pytest.raises(ExecError) as exc_info:
+        with api_module._httpx_ws_exception_fixer():
+            raise exception_group
 
-    assert exc_info.value is expected
+    assert exc_info.value is error
 
 
 @pytest.fixture
@@ -380,8 +373,62 @@ async def test_api_resources_cache(caplog: pytest.LogCaptureFixture) -> None:
     assert caplog.text.count('/apis/ "HTTP/1.1 200 OK"') == 1
 
 
+async def test_api_resources_cache_expires() -> None:
+    api = await kr8s.asyncio.api()
+    fetch = AsyncMock(side_effect=[[{"name": "first"}], [{"name": "second"}]])
+    with (
+        patch.object(api, "_api_resources", None),
+        patch.object(api, "async_api_resources_uncached", fetch),
+        patch("kr8s._api.time.monotonic", return_value=1000.0) as monotonic,
+    ):
+        assert await api.async_api_resources() == [{"name": "first"}]
+        monotonic.return_value += API_RESOURCES_CACHE_TTL - 1
+        assert await api.async_api_resources() == [{"name": "first"}]
+        monotonic.return_value += 1
+        assert await api.async_api_resources() == [{"name": "second"}]
+    assert fetch.await_count == 2
+
+
+async def test_api_resources_cache_per_instance() -> None:
+    api1 = await kr8s.asyncio.api(namespace="cache-one")
+    api2 = await kr8s.asyncio.api(namespace="cache-two")
+    assert api1 is not api2
+    fetch1 = AsyncMock(return_value=[{"name": "one"}])
+    fetch2 = AsyncMock(return_value=[{"name": "two"}])
+    with (
+        patch.object(api1, "async_api_resources_uncached", fetch1),
+        patch.object(api2, "async_api_resources_uncached", fetch2),
+    ):
+        for _ in range(2):
+            assert await api1.async_api_resources() == [{"name": "one"}]
+            assert await api2.async_api_resources() == [{"name": "two"}]
+    fetch1.assert_awaited_once()
+    fetch2.assert_awaited_once()
+
+
+async def test_api_resources_cache_concurrent_fetch_once() -> None:
+    api = await kr8s.asyncio.api(namespace="cache-concurrent")
+
+    async def slow_fetch():
+        await anyio.sleep(0.1)
+        return [{"name": "resource"}]
+
+    fetch = AsyncMock(side_effect=slow_fetch)
+    results = []
+
+    async def get_resources():
+        results.append(await api.async_api_resources())
+
+    with patch.object(api, "async_api_resources_uncached", fetch):
+        async with anyio.create_task_group() as tg:
+            for _ in range(5):
+                tg.start_soon(get_resources)
+    assert results == [[{"name": "resource"}]] * 5
+    fetch.assert_awaited_once()
+
+
 async def test_api_timeout() -> None:
-    from httpx import Timeout
+    from httpx2 import Timeout
 
     api = await kr8s.asyncio.api()
     api.timeout = 10

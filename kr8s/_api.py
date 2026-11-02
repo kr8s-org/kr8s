@@ -8,22 +8,20 @@ import copy
 import json
 import logging
 import ssl
-import sys
 import threading
+import time
 import warnings
 import weakref
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager
-from importlib.metadata import version as metadata_version
 from typing import (
     TYPE_CHECKING,
 )
 
 import anyio
-import httpx
-import httpx_ws
-from cachetools import TTLCache  # type: ignore
+import httpx2
 from cryptography import x509
+from httpx2 import websockets
 from packaging.version import InvalidVersion
 from packaging.version import parse as parse_version
 
@@ -34,18 +32,17 @@ from ._constants import (
 )
 from ._data_utils import dict_to_selector, sort_versions
 from ._exceptions import APITimeoutError, ServerError
-from ._vendored.asyncache import cached  # type: ignore
 from ._version import __version__
 
 if TYPE_CHECKING:
     from ._objects import APIObject
 
-if sys.version_info < (3, 11):
-    from exceptiongroup import BaseExceptionGroup
-
 ALL = "all"
 logger = logging.getLogger(__name__)
-_HTTPX_WS_VERSION = parse_version(metadata_version("httpx-ws"))
+
+# Cache API resources for 6 hours because kubectl does
+# https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
+API_RESOURCES_CACHE_TTL = 60 * 60 * 6
 
 
 @contextmanager
@@ -53,8 +50,6 @@ def _httpx_ws_exception_fixer():
     try:
         yield
     except BaseException as exc:
-        if _HTTPX_WS_VERSION < parse_version("0.9"):
-            raise
         while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
             exc = exc.exceptions[0]
         raise exc
@@ -84,8 +79,11 @@ class Api:
         self._url = kwargs.get("url")
         self._kubeconfig = kwargs.get("kubeconfig")
         self._serviceaccount = kwargs.get("serviceaccount")
-        self._session: httpx.AsyncClient | None = None
+        self._session: httpx2.AsyncClient | None = None
         self._timeout = None
+        self._api_resources: list[dict] | None = None
+        self._api_resources_expiry = 0.0
+        self._api_resources_lock = anyio.Lock()
         self.auth = KubeAuth(
             url=self._url,
             kubeconfig=self._kubeconfig,
@@ -130,7 +128,7 @@ class Api:
             with contextlib.suppress(RuntimeError):
                 await self._session.aclose()
             self._session = None
-        self._session = httpx.AsyncClient(
+        self._session = httpx2.AsyncClient(
             base_url=self.auth.server,
             headers=headers,
             verify=await self.auth.ssl_context(),
@@ -172,7 +170,7 @@ class Api:
         raise_for_status: bool = True,
         stream: bool = False,
         **kwargs,
-    ) -> AsyncGenerator[httpx.Response]:
+    ) -> AsyncGenerator[httpx2.Response]:
         """Make a Kubernetes API request."""
         if not self._session or self._session.is_closed:
             await self._create_session()
@@ -188,7 +186,7 @@ class Api:
                     assert self._session
                     async with self._session.stream(**kwargs) as response:
                         if response.is_error and raise_for_status:
-                            # NOTE: Avoid `httpx.ResponseNotRead` w/ streaming requests
+                            # NOTE: Avoid `httpx2.ResponseNotRead` w/ streaming requests
                             # https://github.com/encode/httpx/discussions/1856#discussioncomment-1316674
                             await response.aread()
                             response.raise_for_status()
@@ -199,7 +197,7 @@ class Api:
                     if raise_for_status:
                         response.raise_for_status()
                     yield response
-            except httpx.HTTPStatusError as e:
+            except httpx2.HTTPStatusError as e:
                 # If we get a 401 or 403 our credentials may have expired so we
                 # reauthenticate and try again a few times before giving up.
                 if e.response.status_code in (401, 403) and auth_attempts < 3:
@@ -238,7 +236,7 @@ class Api:
                     continue
                 else:
                     raise
-            except httpx.TimeoutException as e:
+            except httpx2.TimeoutException as e:
                 raise APITimeoutError(
                     "Timeout while waiting for the Kubernetes API server"
                 ) from e
@@ -252,7 +250,7 @@ class Api:
         namespace: str | None = None,
         url: str = "",
         **kwargs,
-    ) -> AsyncGenerator[httpx_ws.AsyncWebSocketSession]:
+    ) -> AsyncGenerator[websockets.AsyncWebSocketSession]:
         """Open a websocket connection to a Kubernetes API endpoint."""
         if not self._session or self._session.is_closed:
             await self._create_session()
@@ -264,11 +262,11 @@ class Api:
         while True:
             try:
                 with _httpx_ws_exception_fixer():
-                    async with httpx_ws.aconnect_ws(
-                        client=self._session, **kwargs
+                    async with websockets.AsyncWebSocketClient(self._session).connect(
+                        **kwargs
                     ) as response:
                         yield response
-            except httpx_ws.WebSocketDisconnect as e:
+            except websockets.WebSocketDisconnect as e:
                 if e.code and e.code != 1000:
                     if e.code in (401, 403) and auth_attempts < 3:
                         auth_attempts += 1
@@ -427,7 +425,7 @@ class Api:
         watch: bool = False,
         allow_unknown_type: bool = True,
         **kwargs,
-    ) -> AsyncGenerator[tuple[type[APIObject], httpx.Response]]:
+    ) -> AsyncGenerator[tuple[type[APIObject], httpx2.Response]]:
         """Get a Kubernetes resource."""
         from ._objects import get_class, new_class
 
@@ -690,11 +688,15 @@ class Api:
         """Get the Kubernetes API resources."""
         return await self.async_api_resources()
 
-    # Cache for 6 hours because kubectl does
-    # https://github.com/kubernetes/cli-runtime/blob/980bedf450ab21617b33d68331786942227fe93a/pkg/genericclioptions/config_flags.go#L297
-    @cached(TTLCache(1, 60 * 60 * 6))
     async def async_api_resources(self) -> list[dict]:
-        return await self.async_api_resources_uncached()
+        async with self._api_resources_lock:
+            if (
+                self._api_resources is None
+                or time.monotonic() >= self._api_resources_expiry
+            ):
+                self._api_resources = await self.async_api_resources_uncached()
+                self._api_resources_expiry = time.monotonic() + API_RESOURCES_CACHE_TTL
+            return self._api_resources
 
     async def async_api_resources_uncached(self) -> list[dict]:
         """Get the Kubernetes API resources."""

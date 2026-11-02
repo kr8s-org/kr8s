@@ -6,14 +6,13 @@ import asyncio
 import contextlib
 import random
 import socket
-import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, Literal, Union
 
 import anyio
-import httpx
-import httpx_ws
+import httpx2
+from httpx2 import websockets
 
 from ._exceptions import ConnectionClosedError, ServerError
 from ._types import APIObjectWithPods
@@ -22,11 +21,6 @@ LocalPortType = Union[Literal["match", "auto"], int, None]
 
 if TYPE_CHECKING:
     from ._objects import APIObject
-
-if sys.version_info < (3, 12, 1):
-    # contextlib.supress() in Python 3.12.1 supprts ExceptionGroups
-    # For older versions, we use the exceptiongroup backport
-    from exceptiongroup import suppress  # type: ignore # noqa: F811
 
 
 class PortForward:
@@ -238,15 +232,15 @@ class PortForward:
                 ) as websocket:
                     yield websocket
                     break
-            except httpx_ws.HTTPXWSException as e:
+            except websockets.HTTPXWSException as e:
                 self.pod = None
                 connection_attempts += 1
                 if connection_attempts > 5:
                     if isinstance(
-                        e, httpx_ws.WebSocketUpgradeError
+                        e, websockets.WebSocketUpgradeError
                     ) and e.response.status_code in (401, 403):
                         error_message = f"Permission denied: {e.response.status_code}"
-                        with suppress(httpx.StreamClosed, httpx.ResponseNotRead):
+                        with suppress(httpx2.StreamClosed, httpx2.ResponseNotRead):
                             await e.response.aread()
                             error_message = e.response.text
                         raise ServerError(error_message, response=e.response) from e
@@ -257,7 +251,7 @@ class PortForward:
         """Start two tasks to copy bytes from tcp=>websocket and websocket=>tcp."""
         try:
             async with self._connect_websocket() as ws:
-                with suppress(ConnectionClosedError, httpx_ws.WebSocketDisconnect):
+                with suppress(ConnectionClosedError, websockets.WebSocketDisconnect):
                     async with anyio.create_task_group() as tg:
                         tg.start_soon(self._tcp_to_ws, ws, reader)
                         tg.start_soon(self._ws_to_tcp, ws, writer)

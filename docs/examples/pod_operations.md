@@ -108,12 +108,12 @@ pf = pod.portforward(port=5000, local_port=8888, address=["127.0.0.1", "10.19.21
 ````{tab-item} Async
 :sync: async
 ```python
-import httpx
+import httpx2
 from kr8s.asyncio.objects import Pod
 
 pod = await Pod.get("my-pod")
 
-async with pod.portforward(remote_port=1234) as local_port, httpx.AsyncClient() as client:
+async with pod.portforward(remote_port=1234) as local_port, httpx2.AsyncClient() as client:
     # Make an API request
     resp = await client.get(f"http://localhost:{local_port}")
     # Do something with the response

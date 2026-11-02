@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import pathlib
 import typing
-from typing import Any, Optional, Protocol, Union
+from typing import Any, Protocol
 
 import anyio
 import jsonpath
@@ -28,8 +28,8 @@ class KubeConfigMixin:
 
     def get(
         self: KubeConfigProtocol,
-        path: Optional[str] = None,
-        pointer: Optional[str] = None,
+        path: str | None = None,
+        pointer: str | None = None,
     ) -> Any:
         """Get a value from the config using a JSON Path or JSON Pointer."""
         if not path and not pointer:
@@ -41,7 +41,7 @@ class KubeConfigMixin:
 
 
 class KubeConfigSet(KubeConfigMixin):
-    def __init__(self, *paths_or_dicts: Union[PathType, dict]):
+    def __init__(self, *paths_or_dicts: PathType | dict):
         self._configs = []
         for path_or_dict in paths_or_dicts:
             try:
@@ -67,7 +67,7 @@ class KubeConfigSet(KubeConfigMixin):
     def path(self) -> PathType:
         return self.get_path()
 
-    def get_path(self, context: Optional[str] = None) -> PathType:
+    def get_path(self, context: str | None = None) -> PathType:
         """Return the path of the config for the current context.
 
         Args:
@@ -225,7 +225,7 @@ class KubeConfigSet(KubeConfigMixin):
 
 
 class KubeConfig(KubeConfigMixin):
-    def __init__(self, path_or_config: Union[PathType, dict]):
+    def __init__(self, path_or_config: PathType | dict):
         self.path: PathType
         self._raw: dict = {}
 
@@ -321,7 +321,7 @@ class KubeConfig(KubeConfigMixin):
         raise ValueError(f"User {user_name} not found")
 
     async def set(
-        self, pointer: str, value: Optional[Any] = None, strict: bool = False
+        self, pointer: str, value: Any | None = None, strict: bool = False
     ) -> None:
         """Replace a value using a JSON Pointer."""
         if strict:

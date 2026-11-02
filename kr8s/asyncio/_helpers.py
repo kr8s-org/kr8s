@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
-from typing import Optional, Union
 
 from kr8s._api import Api
 from kr8s._objects import APIObject
@@ -11,10 +10,10 @@ from ._api import api as _api
 async def get(
     kind: str,
     *names: str,
-    namespace: Optional[str] = None,
-    label_selector: Optional[Union[str, dict]] = None,
-    field_selector: Optional[Union[str, dict]] = None,
-    as_object: Optional[type[APIObject]] = None,
+    namespace: str | None = None,
+    label_selector: str | dict | None = None,
+    field_selector: str | dict | None = None,
+    as_object: type[APIObject] | None = None,
     allow_unknown_type: bool = True,
     raw: bool = False,
     api=None,
@@ -36,7 +35,7 @@ async def get(
         allow_unknown_type: Automatically create a class for the resource if none exists.
         raw: If True, return raw dictionaries instead of APIObject instances, default False.
         api: The api to use to get the resource.
-        **kwargs: Additional keyword arguments to pass to the `httpx` API call.
+        **kwargs: Additional keyword arguments to pass to the `httpx2` API call.
 
     Returns:
         List[APIObject]: The Kubernetes resource objects (or dicts if raw=True).
@@ -83,10 +82,10 @@ async def version(api=None, _asyncio=True):
 
 async def watch(
     kind: str,
-    namespace: Optional[str] = None,
-    label_selector: Optional[Union[str, dict]] = None,
-    field_selector: Optional[Union[str, dict]] = None,
-    since: Optional[str] = None,
+    namespace: str | None = None,
+    label_selector: str | dict | None = None,
+    field_selector: str | dict | None = None,
+    since: str | None = None,
     api=None,
     _asyncio=True,
 ):

@@ -1,9 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2026, Kr8s Developers (See LICENSE for list)
 # SPDX-License-Identifier: BSD 3-Clause License
 
-from typing import Optional
 
-import httpx
+import httpx2
 
 
 class NotFoundError(Exception):
@@ -27,14 +26,14 @@ class ServerError(Exception):
 
     Attributes:
         status: The Status object from the Kubernetes API server
-        response: The httpx response object
+        response: The httpx2 response object
     """
 
     def __init__(
         self,
         message: str,
-        status: Optional[str] = None,
-        response: Optional[httpx.Response] = None,
+        status: str | None = None,
+        response: httpx2.Response | None = None,
     ) -> None:
         self.status = status
         self.response = response
