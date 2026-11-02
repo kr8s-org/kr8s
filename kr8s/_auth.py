@@ -7,7 +7,6 @@ import logging
 import os
 import pathlib
 import ssl
-from typing import Optional, Union
 
 import anyio
 
@@ -23,26 +22,26 @@ class KubeAuth:
 
     def __init__(
         self,
-        kubeconfig: Optional[PathType] = None,
-        url: Optional[str] = None,
-        serviceaccount: Optional[str] = None,
-        namespace: Optional[str] = None,
-        context: Optional[str] = None,
+        kubeconfig: PathType | None = None,
+        url: str | None = None,
+        serviceaccount: str | None = None,
+        namespace: str | None = None,
+        context: str | None = None,
     ) -> None:
         self.server: str = ""
-        self.client_cert_file: Optional[PathType] = None
-        self.client_key_file: Optional[PathType] = None
-        self.server_ca_file: Optional[PathType] = None
-        self.token: Optional[str] = None
-        self._namespace: Optional[str] = namespace
+        self.client_cert_file: PathType | None = None
+        self.client_key_file: PathType | None = None
+        self.server_ca_file: PathType | None = None
+        self.token: str | None = None
+        self._namespace: str | None = namespace
         self.active_context: str = ""
         self.kubeconfig: KubeConfigSet
-        self.tls_server_name: Optional[str] = None
+        self.tls_server_name: str | None = None
         self._url: str = ""
         if url:
             self._url = url
         self._insecure_skip_tls_verify: bool = False
-        self._use_context: Optional[str] = context
+        self._use_context: str | None = context
         self._context: dict = {}
         self._cluster: dict = {}
         self._user: dict = {}
@@ -51,7 +50,7 @@ class KubeAuth:
             if serviceaccount is not None
             else "/var/run/secrets/kubernetes.io/serviceaccount"
         )
-        self._kubeconfig_path_or_dict: Union[dict, PathType]
+        self._kubeconfig_path_or_dict: dict | PathType
         if kubeconfig:
             self._kubeconfig_path_or_dict = kubeconfig
         else:
@@ -119,7 +118,7 @@ class KubeAuth:
         self._namespace = value
 
     @property
-    def proxy(self) -> Optional[str]:
+    def proxy(self) -> str | None:
         if "proxy-url" in self._cluster:
             return self._cluster["proxy-url"]
         return None

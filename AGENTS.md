@@ -24,8 +24,6 @@ default and an async API (`asyncio`/`trio`) under `kr8s.asyncio`.
   - `asyncio/` — the **async** public API. Thin re-exports of the underlying
     async classes/functions from `kr8s._*` modules.
   - `_exec.py`, `_portforward.py`, `_data_utils.py`, `_exceptions.py` — helpers.
-  - `_vendored/` — third-party code (e.g. `asyncache`). **Do not lint, format,
-    or edit** — it is excluded from all tooling.
   - `tests/` — pytest suite (`test_*.py`), plus `resources/` and `scripts/`.
   - `conftest.py` (both root and `kr8s/`) — shared fixtures.
 - `docs/` — Sphinx documentation (MyST markdown). `contributing.md` and
@@ -105,7 +103,7 @@ Key testing facts:
   `patch.object`) for test doubles and temporary replacements. Avoid pytest's
   `monkeypatch` when `unittest.mock` can express the same behavior.
 - Set `KUBERNETES_VERSION` to test against a specific k8s version. CI runs a
-  matrix of Python 3.9–3.14 and multiple Kubernetes versions.
+  matrix of Python 3.12–3.15 and multiple Kubernetes versions.
 - Test/`conftest.py`/`examples`/`docs`/`ci` code is exempt from docstring (`D`),
   naming (`N`), and bugbear (`B`) lint rules.
 
@@ -127,16 +125,14 @@ The hooks (see `.pre-commit-config.yaml`) are:
   Google-style docstrings.
 - **insert-license** — every `.py` file must carry the SPDX header from
   `LICENSE_HEADER` (auto-inserted). Keep it at the top of new files.
-- **mypy** — type checking (excludes `examples`, `ci`, `docs`, `_vendored`).
+- **mypy** — type checking (excludes `examples`, `ci`, `docs`).
   The library is typed and ships `py.typed`; keep annotations correct.
-- **pyupgrade** — enforces modern syntax (`--py39-plus`); the project targets
-  Python **3.9+**, so don't use syntax newer than 3.9 in library code.
-
-`_vendored/` is excluded from every hook — never reformat it.
+- **pyupgrade** — enforces modern syntax (`--py312-plus`); the project targets
+  Python **3.12.1+**, so don't use syntax newer than 3.12 in library code.
 
 ## Conventions
 
-- **Python 3.9+ compatibility** in `kr8s/` library code. Use
+- **Python 3.12.1+ compatibility** in `kr8s/` library code. Use
   `from __future__ import annotations` for modern typing syntax.
 - Keep code **human-readable** — a project goal is no swagger/generated code.
 - Public API changes should be reflected in `docs/` (MyST markdown). Where docs

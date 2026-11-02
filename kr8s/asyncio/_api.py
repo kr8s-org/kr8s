@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD 3-Clause License
 import asyncio
 import threading
-from typing import Optional
 
 from kr8s._api import Api as _AsyncApi
 from kr8s._api import hash_kwargs
@@ -10,11 +9,11 @@ from kr8s._types import PathType
 
 
 async def api(
-    url: Optional[str] = None,
-    kubeconfig: Optional[PathType] = None,
-    serviceaccount: Optional[str] = None,
-    namespace: Optional[str] = None,
-    context: Optional[str] = None,
+    url: str | None = None,
+    kubeconfig: PathType | None = None,
+    serviceaccount: str | None = None,
+    namespace: str | None = None,
+    context: str | None = None,
     _asyncio: bool = True,
 ) -> _AsyncApi:
     """Create a `kr8s.asyncio.Api` object for interacting with the Kubernetes API.

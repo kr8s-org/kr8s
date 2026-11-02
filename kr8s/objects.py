@@ -14,7 +14,7 @@ import pathlib
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
-import httpx
+import httpx2
 
 from ._async_utils import as_sync_func, as_sync_generator
 from ._exec import CompletedExec
@@ -304,29 +304,29 @@ class ServiceAccount(APIObjectSyncMixin, _ServiceAccount):
 class Service(APIObjectSyncMixin, _Service):
     def proxy_http_request(  # type: ignore[override]
         self, method: str, path: str, port: int | None = None, **kwargs: Any
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return as_sync_func(self.async_proxy_http_request)(
             method, path, port=port, **kwargs
         )
 
     def proxy_http_get(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return as_sync_func(self.async_proxy_http_request)("GET", path, port, **kwargs)
 
     def proxy_http_post(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return as_sync_func(self.async_proxy_http_request)("POST", path, port, **kwargs)
 
     def proxy_http_put(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return as_sync_func(self.async_proxy_http_request)("PUT", path, port, **kwargs)
 
     def proxy_http_delete(  # type: ignore[override]
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return as_sync_func(self.async_proxy_http_request)(
             "DELETE", path, port, **kwargs
         )

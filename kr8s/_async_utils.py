@@ -23,22 +23,16 @@ from __future__ import annotations
 import builtins
 import inspect
 import subprocess
-import sys
 import tempfile
-from collections.abc import AsyncGenerator, Awaitable, Generator
+from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from contextlib import asynccontextmanager
 from functools import partial, wraps
 from threading import Thread
 from typing import (
     Any,
-    Callable,
+    ParamSpec,
     TypeVar,
 )
-
-if sys.version_info >= (3, 10):
-    from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
 
 import anyio
 import anyio.from_thread
@@ -255,12 +249,4 @@ async def NamedTemporaryFile(  # noqa: N802
         await fh.unlink()
 
 
-# If Python is less than 3.10 we need to define anext
-if sys.version_info < (3, 10):
-
-    async def anext(ait: AsyncGenerator) -> Any:
-        """Get the next item from an async generator."""
-        return await ait.__anext__()
-
-else:
-    anext = builtins.anext
+anext = builtins.anext

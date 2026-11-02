@@ -6,26 +6,21 @@ import contextlib
 import json
 import pathlib
 import re
-import sys
 import time
 from collections.abc import AsyncGenerator, Generator
 from typing import (
     Any,
     BinaryIO,
     Literal,
+    Self,
     cast,
 )
 
 import anyio
-import httpx
+import httpx2
 import jsonpath
 import yaml
 from box import Box
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 import kr8s
 import kr8s.asyncio
@@ -1329,7 +1324,7 @@ class Pod(APIObject):
         if limit_bytes is not None:
             params["limitBytes"] = int(limit_bytes)
 
-        with contextlib.suppress(httpx.ReadTimeout):
+        with contextlib.suppress(httpx2.ReadTimeout):
             assert self.api
             async with self.api.call_api(
                 "GET",
@@ -1721,7 +1716,7 @@ class Service(APIObject):
 
     async def proxy_http_request(
         self, method: str, path: str, port: int | None = None, **kwargs: Any
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Issue a HTTP request with specific HTTP method to proxy of a Service.
 
         Args:
@@ -1735,7 +1730,7 @@ class Service(APIObject):
 
     async def async_proxy_http_request(
         self, method: str, path: str, port: int | None = None, **kwargs: Any
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         if port is None:
             port = self.raw["spec"]["ports"][0]["port"]
         assert self.api
@@ -1750,7 +1745,7 @@ class Service(APIObject):
 
     async def proxy_http_get(
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return await self.async_proxy_http_request("GET", path, port, **kwargs)
 
     async def proxy_http_post(
@@ -1760,12 +1755,12 @@ class Service(APIObject):
 
     async def proxy_http_put(
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return await self.async_proxy_http_request("PUT", path, port, **kwargs)
 
     async def proxy_http_delete(
         self, path: str, port: int | None = None, **kwargs
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         return await self.async_proxy_http_request("DELETE", path, port, **kwargs)
 
     async def ready_pods(self) -> list[Pod]:

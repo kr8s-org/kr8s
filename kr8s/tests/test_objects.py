@@ -11,7 +11,7 @@ from contextlib import suppress
 from unittest import mock
 
 import anyio
-import httpx
+import httpx2
 import pytest
 import yaml
 
@@ -51,7 +51,7 @@ from kr8s.objects import (
 )
 from kr8s.objects import objects_from_files as sync_objects_from_files
 
-DEFAULT_TIMEOUT = httpx.Timeout(30)
+DEFAULT_TIMEOUT = httpx2.Timeout(30)
 CURRENT_DIR = pathlib.Path(__file__).parent
 
 
@@ -798,7 +798,7 @@ async def test_service_proxy():
     assert isinstance(service, Service)
     assert service.name == "kubernetes"
     data = await service.proxy_http_get("/version", raise_for_status=False)
-    assert isinstance(data, httpx.Response)
+    assert isinstance(data, httpx2.Response)
 
 
 async def test_pod_logs(example_pod_spec):
@@ -814,7 +814,7 @@ async def test_pod_logs(example_pod_spec):
 async def test_pod_port_forward_context_manager(nginx_service):
     [nginx_pod, *_] = await nginx_service.ready_pods()
     async with nginx_pod.portforward(80, local_port=None) as port:
-        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        async with httpx2.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
             resp = await session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
             resp = await session.get(f"http://localhost:{port}/foo")
@@ -829,7 +829,7 @@ def test_pod_port_forward_context_manager_sync(nginx_service):
         nginx_service.name, namespace=nginx_service.namespace
     )
     with nginx_service.portforward(80, local_port=None) as port:
-        with httpx.Client(timeout=DEFAULT_TIMEOUT) as session:
+        with httpx2.Client(timeout=DEFAULT_TIMEOUT) as session:
             resp = session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
             resp = session.get(f"http://localhost:{port}/foo")
@@ -857,7 +857,7 @@ async def test_pod_port_forward_start_stop(nginx_service):
         assert pf._bg_task is None
         port = await pf.start()
         assert pf._bg_task is not None
-        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        async with httpx2.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
             resp = await session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
             resp = await session.get(f"http://localhost:{port}/foo")
@@ -871,7 +871,7 @@ async def test_pod_port_forward_start_stop(nginx_service):
 
 async def test_service_port_forward_context_manager(nginx_service):
     async with nginx_service.portforward(80, local_port=None) as port:
-        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+        async with httpx2.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
             resp = await session.get(f"http://localhost:{port}/")
             assert resp.status_code == 200
             resp = await session.get(f"http://localhost:{port}/foo")
@@ -884,7 +884,7 @@ async def test_service_port_forward_start_stop(nginx_service):
     port = await pf.start()
     assert pf._bg_task is not None
 
-    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+    async with httpx2.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
         resp = await session.get(f"http://localhost:{port}/")
         assert resp.status_code == 200
         resp = await session.get(f"http://localhost:{port}/foo")
@@ -916,7 +916,7 @@ async def test_multiple_bind_addresses_port_forward(nginx_service):
 
     # Start the port forwarding
     await pf.start()
-    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
+    async with httpx2.AsyncClient(timeout=DEFAULT_TIMEOUT) as session:
         for address in multiple_addresses:
             resp = await session.get(f"http://{address}:{pf.local_port}/")
             assert resp.status_code == 200
