@@ -259,7 +259,7 @@ class Popen:
 
     async def __aexit__(self, typ=None, value=None, traceback=None) -> None:
         await self._close(typ, value, traceback)
-        #if self._exec_task:
+        # if self._exec_task:
         #    await self._exec_task.__aexit__(typ, value, traceback)
         #    self._exec_task = None
 
@@ -324,7 +324,7 @@ class Popen:
                                     CLOSE_CHANNEL + STDIN_CHANNEL
                                 )
                     self._websocket = websocket
-                    yield # We need to hold active the httpx-ws WebSocket context manager.
+                    yield  # We need to hold active the httpx-ws WebSocket context manager.
                     return
             except httpx_ws.HTTPXWSException as ex:
                 self.pod = None
@@ -406,7 +406,7 @@ class Popen:
             except (TimeoutError, queue.Empty):
                 return None
             except httpx_ws.WebSocketDisconnect:
-                #self._websocket = None
+                # self._websocket = None
                 await self.close()
                 if self.returncode is None:
                     self.returncode = -4
