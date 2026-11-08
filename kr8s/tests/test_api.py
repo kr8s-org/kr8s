@@ -19,7 +19,7 @@ from kr8s._constants import (
     KUBERNETES_MAXIMUM_SUPPORTED_VERSION,
     KUBERNETES_MINIMUM_SUPPORTED_VERSION,
 )
-from kr8s._exceptions import APITimeoutError, ExecError
+from kr8s._exceptions import APITimeoutError, ExecError, ServerError
 from kr8s.asyncio.objects import Pod, Service, Table
 from kr8s.objects import Pod as SyncPod
 from kr8s.objects import Service as SyncService
@@ -440,6 +440,34 @@ async def test_nonexisting_resource_type():
     with pytest.raises(ValueError):
         async for _ in api.get("foo.bar.baz/v1"):
             pass
+
+
+async def test_get_an_unknown_kind_when_discovery_fails():
+    """A discovery error leaves `lookup_kind` without a plural.
+
+    `async_get_kind` warns and carries on, so what follows has to work with
+    what it has. It used to read a `plural` that the failed lookup never
+    assigned, and raise `UnboundLocalError` from inside the warning path.
+    That is not a ServerError, so a caller guarding against one did not
+    catch it either.
+
+    The call still cannot succeed -- without discovery there is no API
+    group to address -- but it now reaches kr8s' own error for that, which
+    says so.
+
+    The kind does not have to exist. The patched lookup raises before
+    anything consults the cluster, so the name is only a string.
+    """
+    api = await kr8s.asyncio.api()
+    boom = ServerError("the server is currently unable to handle the request")
+
+    with patch.object(api, "async_lookup_kind", side_effect=boom):
+        with pytest.warns(UserWarning, match="unable to handle"):
+            with pytest.raises(ValueError, match="Unknown API version"):
+                async for _ in api.async_get(
+                    "shirts.stable.example.com", namespace=kr8s.ALL
+                ):
+                    pass
 
 
 @pytest.mark.parametrize(
