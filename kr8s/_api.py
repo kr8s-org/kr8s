@@ -393,9 +393,11 @@ class Api:
         if group:
             version = f"{group}/{version}"
         for resource in resources:
+            # `parse_kind` lowercases and `resource["kind"]` is CamelCase, so
+            # the Kind comparison must fold case or it matches nothing.
             if (not version or version in resource["version"]) and (
                 kind == resource["name"]
-                or kind == resource["kind"]
+                or kind == resource["kind"].lower()
                 or kind == resource["singularName"]
                 or ("shortNames" in resource and kind in resource["shortNames"])
             ):
