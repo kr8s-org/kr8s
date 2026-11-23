@@ -60,6 +60,23 @@ def _httpx_ws_exception_fixer():
         raise exc
 
 
+def _server_error(exc: httpx.HTTPStatusError) -> ServerError:
+    """Translate an error response into a ServerError that carries its body.
+
+    The API server answers 5xx with a Status object too, and for a 500 that
+    body is usually the only clue there is, so both classes read the same
+    way. A body that is not a Status -- a proxy's HTML 502, an empty 503 --
+    falls back to httpx' own message, with the raw text as the status.
+    """
+    try:
+        status = exc.response.json()
+        message = status["message"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        status = exc.response.text
+        message = str(exc)
+    return ServerError(message, status=status, response=exc.response)
+
+
 class Api:
     """A kr8s object for interacting with the Kubernetes API.
 
@@ -211,23 +228,7 @@ class Api:
                     await self._create_session()
                     continue
                 else:
-                    if e.response.status_code >= 400 and e.response.status_code < 500:
-                        try:
-                            error = e.response.json()
-                            error_message = error["message"]
-                        except json.JSONDecodeError:
-                            error = e.response.text
-                            error_message = str(e)
-                        raise ServerError(
-                            error_message, status=error, response=e.response
-                        ) from e
-                    elif e.response.status_code >= 500:
-                        raise ServerError(
-                            str(e),
-                            status=str(e.response.status_code),
-                            response=e.response,
-                        ) from e
-                    raise
+                    raise _server_error(e) from e
             except ssl.SSLCertVerificationError:
                 # In some rare edge cases the SSL verification fails, so we try again
                 # a few times before giving up.
