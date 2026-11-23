@@ -198,7 +198,7 @@ class APIObject:
     @property
     def status(self) -> Box:
         """Status of the Kubernetes resource."""
-        return self.raw["status"]
+        return self.raw.get("status", Box())
 
     @status.setter
     def status(self, value: dict) -> None:
